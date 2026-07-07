@@ -9,7 +9,7 @@ struct ReadAloudApp: App {
     init() {
         do {
             container = try ModelContainer(
-                for: Schema(versionedSchema: ReadAloudSchemaV1.self),
+                for: Schema(versionedSchema: ReadAloudSchema.self),
                 migrationPlan: ReadAloudMigrationPlan.self)
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")

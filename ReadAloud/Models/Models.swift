@@ -5,7 +5,8 @@ import SwiftData
 @Model
 final class Book {
     var title: String
-    var languageCode: String?       // BCP-47, e.g. "fr-FR" — nil until the first scan confirms it (capture-first)
+    var languageCode: String?       // BCP-47 source language, e.g. "fr-FR" — nil until the first scan confirms it (capture-first)
+    var translationLanguage: String?  // BCP-47 target; nil = translation OFF for this book (TRANSLATION_DESIGN §2)
     var createdAt: Date
 
     @Attribute(.externalStorage)
@@ -49,6 +50,7 @@ final class Sentence {
     var orderIndex: Int             // position within page
     var isBookmarked: Bool
     var userNote: String?
+    var translatedText: String?     // persisted translation of `text`; nil = not yet translated (TRANSLATION_DESIGN §2)
     var page: ScanPage?
 
     // Review / SRS state (nil until bookmarked)
