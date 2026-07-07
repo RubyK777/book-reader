@@ -178,16 +178,27 @@ case .unsupported: translationIssue = .unsupportedPair
 
 *Trade-off:* we call `status(from:to:)` and let the system own the download-consent UI rather than building our own gate — the framework's consent sheet is the sanctioned path and pre-checking status lets us disable unsupported targets in the picker before the user commits.
 
-## 7. Settings default
+## 7. Settings default — the native language is the destination
 
-Add a **default translate-to language** beside the existing `targetLanguage` / `speechRate` / `voiceID` controls:
+The translation **destination** is the user's **native language**, a per-user global setting
+(`@AppStorage("nativeLanguage")`, defaulting to `LanguageCatalog.deviceDefaultNative`) that replaces the
+misnamed `targetLanguage` (DECISIONS #25). Pages are always translated *into* the native language; there
+is no separate stored per-book target language to choose — only whether a book translates at all.
 
 ```swift
-@AppStorage("translationLanguage") var defaultTranslationLanguage: String = "none"   // "none" = None (off)
+@AppStorage("nativeLanguage")      var nativeLanguage: String = LanguageCatalog.deviceDefaultNative  // destination
+@AppStorage("translationLanguage") var translateNewBooks: String = "none"   // on/off default; "none" = off
 ```
 
-- Seeds `Book.translationLanguage` for **new** books (BookForm reads it at create). Existing books keep their own choice; changing the default never rewrites a book retroactively.
-- Includes a **None** option (`"none"`, the sentinel PHASE3 §4 owns) so a user who doesn't want translation gets books that default to off. *Trade-off:* app-default + per-book override (mirrors the voice/rate model) over a single global target — a learner may read French→English in one book and Japanese→English in another; the target belongs to the pair, seeded from a sensible default.
+- **`nativeLanguage` seeds `Book.translationLanguage`** for **new** books that start with translation on:
+  BookForm sets `Book.translationLanguage = nativeLanguage` at create. (Historically the seeding key was
+  `translationLanguage`; it is now `nativeLanguage` — the destination.) Existing books keep their own
+  choice; changing the native language never rewrites a book's already-stored target retroactively.
+- `translationLanguage` narrows to an **on/off** default (the **None** sentinel, `"none"`, PHASE3 §4 owns)
+  so a user who doesn't want translation gets books that default to off. *Trade-off:* a single per-user
+  destination (native language) + a per-book on/off + per-book override (Reader `[⋯]`) over a separate
+  per-book target — a learner reading French and Japanese both wants the gloss in the **one** language they
+  read fluently, so the destination belongs to the user, not the pair; the source belongs to the book.
 
 ## 8. Word-level translate (optional nice-to-have)
 
@@ -217,7 +228,7 @@ The long-press → word-chip sheet (PHASE2 §7) already isolates a tapped word i
 - [ ] **Inline translation UI + `文A` show/hide toggle** (§5) as one `SentenceCard` — *Accept: translation renders under the source in `.secondary` smaller type; toggle hides/shows instantly without recompute and is disabled when no target; the active card highlights and speaks the SOURCE only.*
 - [ ] **`LanguageAvailability` status handling + first-use download + error/offline/unsupported rows** (§6) reusing AUDIO_DESIGN §8's amber row — *Accept: an uninstalled pair triggers the system download once then works offline; an unsupported pair is blocked in the picker with copy; a session throw shows a retry row that re-sends only pending sentences; airplane-mode after download translates with no network.*
 - [ ] **Guarantee TTS ignores `translatedText`** (§5) — *Accept: with translations visible, playback speaks only source text; no target-language audio is ever enqueued (verified by asserting `SpeechPlayer.sentences == pageSentences.map(\.text)`).*
-- [ ] **Settings default `@AppStorage("translationLanguage")` with None** (§7) seeding new books — *Accept: setting a default makes new books start with that target; existing books keep their own; None yields translation-off new books.*
+- [ ] **Settings native-language destination `@AppStorage("nativeLanguage")` + translate-on/off default** (§7) — new books that translate seed `Book.translationLanguage` from `nativeLanguage`; `translationLanguage`'s None sentinel gates on/off — *Accept: a new book starts translating into the native language when on; existing books keep their own target; None yields translation-off new books.*
 - [ ] **Translation accessibility pass** (§9) — *Accept: VoiceOver reads the translation as its own "Translation: …" element, Dynamic Type scales it, the toggle is labeled, and download/error rows are announced on appearance.*
 - [ ] **(Optional / Phase 4) Word-level translate chip** (§8) reusing the book target — *Accept: the word-chip sheet offers Translate and shows a gloss via one session request without persisting or altering the card.*
 - [ ] **Log DECISIONS #21–#24** (auto-detected source, editable OCR, inline persisted translation + target bump, translation-never-spoken/clear-on-change) — *Accept: DECISIONS.md carries all four with rationale; this doc, PHASE2/PHASE3/UX_SPEC/OCR_PIPELINE cross-references resolve without contradiction.*

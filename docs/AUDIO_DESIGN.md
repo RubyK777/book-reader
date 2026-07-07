@@ -203,7 +203,7 @@ Voice picker (Phase 3, lives in Settings; also reachable from Reader's `[⋯]` m
 Quality label comes straight from `voice.quality`; the footer row appears only when no `.enhanced`/`.premium` voice exists for the language (plan risk: "system TTS quality varies").
 
 Picker semantics an implementer must not guess:
-- **Which language:** opened from a Book/Reader → that Book's `languageCode`; opened from Settings → the target-language setting (`@AppStorage("targetLanguage")`, plan §4.6). One picker per language, never a merged list.
+- **Which language:** opened from a Book/Reader → that Book's `languageCode`; opened from Settings → one row per **source** language the user has scanned/saved (PHASE3 §4's group derivation over `Book.languageCode` ∪ `SavedWord.languageCode`). *Not* an `@AppStorage("targetLanguage")` setting — that key is retired; the per-user Settings language is now the **native**/translation-destination language (`@AppStorage("nativeLanguage")`), which is never spoken, so it does not select a voice (DECISIONS #25). One picker per language, never a merged list.
 - **Preview vs. Reader playback:** opening the picker from Reader's `[⋯]` menu first pauses playback (`togglePlayPause()` if speaking); the ▶︎ preview stops any in-flight preview before starting. Sample text: one fixed sentence per 2-letter language from a small inline table (fallback: the language's display name spoken by the candidate voice). Never two synthesizers audible at once.
 - The §8 missing-voice row navigates to this picker (Settings destination) for the Book's language — "instructions" in the footer are what the row lands on.
 

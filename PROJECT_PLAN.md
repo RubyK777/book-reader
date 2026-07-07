@@ -151,9 +151,13 @@ Photo/Live Text → OCR → sentence split → tap to listen
 - Session = all items with `dueDate <= now`, capped at 20
 
 ### 4.6 Settings
-- Target language, preferred voice, default speech rate
-- **Default translate-to language** — `@AppStorage("translationLanguage")`, seeds new books;
-  includes a **None** (off) option. Sits beside `targetLanguage` / `speechRate` / `voiceID`.
+- **Native language** — your own language (`@AppStorage("nativeLanguage")`, default = device language),
+  the translation **destination**. Replaces the misnamed `targetLanguage`; it is *not* a source picker —
+  the source language of each book is per-book and **auto-detected** at scan (DECISIONS.md #25).
+- Preferred voice (per source language), default speech rate
+- **Translate new books (on/off default)** — `@AppStorage("translationLanguage")` with a **None** (off)
+  option; when on, new books translate into the **native language**. Sits beside `nativeLanguage` /
+  `speechRate` / `voiceID`.
 - Enhanced-voice download guidance: in-app instruction card — Settings deep links into
   Accessibility are private API (`App-Prefs:` schemes) and App Store-rejectable; see
   [docs/PHASE3_DESIGN.md](docs/PHASE3_DESIGN.md) §4
@@ -161,8 +165,9 @@ Photo/Live Text → OCR → sentence split → tap to listen
 
 ### 4.7 Translation *(new — inline learning aid)*
 - Whole-page, **persisted** translation shown under each sentence card (§4.3), never spoken.
-- Target language is **per Book** (Reader `[⋯]` menu · OCRReview · BookForm), seeded from the
-  Settings default. Changing `Book.translationLanguage` clears that book's stale
+- Destination is the user's **native language** (`@AppStorage("nativeLanguage")`, §4.6); the per-Book
+  target `Book.translationLanguage` (Reader `[⋯]` menu · OCRReview · BookForm) is **seeded from it**
+  when translation is on. Changing `Book.translationLanguage` clears that book's stale
   `Sentence.translatedText` → re-translated lazily on next Reader open.
 - iOS 18 Translation framework: SwiftUI's `.translationTask` provides a `TranslationSession`;
   sentences are batch-translated and written back to `Sentence.translatedText` (offline thereafter).
@@ -175,7 +180,7 @@ Photo/Live Text → OCR → sentence split → tap to listen
 | Concern | Technology | Notes |
 |---|---|---|
 | UI | SwiftUI, iOS 18+ | @Observable macro |
-| OCR | Vision `VNRecognizeTextRequest` | `automaticallyDetectsLanguage = true`; optional `languageHint` from Book.languageCode |
+| OCR | Vision `VNRecognizeTextRequest` | `automaticallyDetectsLanguage = true`; optional `languageHint` from Book.languageCode or a pre-capture Page-language hint; source options = `LanguageCatalog` (unrestricted, replaced 9-item `SupportedLanguage`) |
 | Language detect | NaturalLanguage `NLLanguageRecognizer` | dominant language of assembled OCR text → `detectedLanguageCode` |
 | Live scan | VisionKit `DataScannerViewController` | stretch |
 | Sentence split | NaturalLanguage `NLTokenizer(.sentence)` | language-aware |
@@ -218,8 +223,11 @@ ReadAloud/
 Key decisions:
 - `contextSentence` is a **string snapshot** so vocab survives page deletion
 - `SRSState` is a value type shared by words and sentences
-- `languageCode` on Book drives both OCR language and voice selection; it is no longer pre-picked —
-  detection (`OCRResult.detectedLanguageCode`, via NLLanguageRecognizer) confirms it in OCRReview
+- `languageCode` on Book is the **source** language: it drives both OCR language and voice selection,
+  and is no longer pre-picked — detection (`OCRResult.detectedLanguageCode`, via NLLanguageRecognizer)
+  confirms it in OCRReview; where a source language is chosen the options are the **full, unrestricted
+  `LanguageCatalog`** (Vision-derived, not a curated nine — DECISIONS.md #25). The user's **native**
+  language (`@AppStorage("nativeLanguage")`) is a separate per-user setting = the translation destination.
 - `translatedText` is cleared when `Book.translationLanguage` changes (stale) → re-translated lazily
 
 ### 5.4 Key Component: SpeechPlayer

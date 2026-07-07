@@ -8,6 +8,8 @@ On-device pipeline. No networking **except** the one-time system language-pack d
 
 Capture-first: the user no longer pre-picks a source language. OCR auto-detects it, and the user confirms/corrects it in a review screen **before** anything is persisted.
 
+**Two language axes** (DECISIONS #25). *Source* = the language on the page: a property of the **Book/page**, auto-detected, correctable, optionally hinted before capture — its option set is `LanguageCatalog` (`Shared/Languages.swift`), derived from Vision's `supportedRecognitionLanguages`, which **replaced the old 9-item `SupportedLanguage` enum** (source is no longer restricted to nine curated languages). *Native* = the user's own language: the per-user global setting `@AppStorage("nativeLanguage")` (default `LanguageCatalog.deviceDefaultNative`), which is the translation **destination** and **replaces the misnamed `targetLanguage`**. Recognizing, hearing (installed voices), and translating (`LanguageAvailability`) a language are three separately-bounded sets, never one gate.
+
 ```
 VNDocumentCameraViewController / PhotosPicker
         │  UIImage
@@ -36,7 +38,7 @@ Persistence (SwiftData, `Models.swift`) is **defined but not wired** — `ReadAl
 `recognizeText(in: UIImage, languageHint: String? = nil) async throws -> OCRResult`
 - Runs Vision `.accurate` with `usesLanguageCorrection` and `automaticallyDetectsLanguage = true` (iOS 16+), on a detached user-initiated task — the source language is **no longer required up front**. When a Book already has a language (Add-Page path), callers pass it as `languageHint`, which sets `recognitionLanguages = [hint]` to bias accuracy.
 - Returns `OCRResult` (struct defined in [OCR_PIPELINE.md](OCR_PIPELINE.md)): `text: String` plus `detectedLanguageCode: String`, computed by running `NLLanguageRecognizer` over the assembled text (`.dominantLanguage` → BCP-47, e.g. `"fr"`). Vision exposes no reliable per-page language, so NL does the detection.
-- **Honest limit:** "any language" = anything in `VNRecognizeTextRequest.supportedRecognitionLanguages` for the `.accurate` revision (Latin scripts + zh/ja/ko/…) — a bounded list, **not literally every language**.
+- **Honest limit:** "any language" = anything in `VNRecognizeTextRequest.supportedRecognitionLanguages` for the `.accurate` revision (Latin scripts + zh/ja/ko/…) — a bounded list, **not literally every language**, surfaced app-wide as `LanguageCatalog` (`Shared/Languages.swift`, which replaced the old 9-item `SupportedLanguage` enum). Far broader than the retired nine, but still bounded.
 - Sorts observations by `boundingBox.midY` descending (Vision origin is bottom-left) → **single-column assumption**. Two-column pages will interleave; mitigation (column clustering by midX) is a backlog item, not v1. Hyphenation at line breaks is not repaired (known OCR-quality item). Cancellable per DECISIONS #16.
 
 ### SentenceSplitter (`Services/SentenceSplitter.swift`)
@@ -59,7 +61,7 @@ The playback source of truth. `@Observable`; views read, never mutate, playback 
 - Audio session: `.playback` + `.spokenAudio` set once at init, activated on each `play`. **Never deactivated**, and there is **no interruption / route-change handling** (phone call, unplugging headphones) — backlog items.
 
 ### Views (`Features/`)
-- `ScanHomeView` — Phase 1 root: language picker (`@AppStorage("targetLanguage")`), camera/photo import, runs OCR+split inline, pushes Reader via `navigationDestination(item:)`. The `extension [String]: @retroactive Identifiable` at the bottom exists only to make that work — it dies when Phase 2 navigation lands.
+- `ScanHomeView` — Phase 1 root: a mandatory source-language picker, camera/photo import, runs OCR+split inline, pushes Reader via `navigationDestination(item:)`. The `extension [String]: @retroactive Identifiable` at the bottom exists only to make that work — it dies when Phase 2 navigation lands. *Superseded:* its mandatory pre-pick is gone (source is auto-detected); what survives is an **optional pre-capture "Page language" hint** over `LanguageCatalog` on the Library scan entry, and the old `@AppStorage("targetLanguage")` is replaced by `@AppStorage("nativeLanguage")` (the native/translation-destination setting — DECISIONS #25).
 - `OCRReviewView` (`Features/Scan/OCRReviewView.swift`) — **new; shown after OCR, before persistence.** Full-height editable `TextEditor` prefilled with `OCRResult.text`; a source-language `Picker` prefilled with `detectedLanguageCode` (correcting it here is how a wrong detection is fixed); the optional translate-to `Picker`. "Use" splits the edited text with the confirmed language then persists; "Retake" returns to capture. Nothing is saved until "Use", so free-text editing risks no srs/bookmark. Wiring in [PHASE2_DESIGN.md](PHASE2_DESIGN.md); Reader display of the result in [UX_SPEC.md](UX_SPEC.md).
 
 ```
@@ -85,7 +87,7 @@ The playback source of truth. `@Observable`; views read, never mutate, playback 
 ### Models (`Models/Models.swift`) — defined, unused until Phase 2
 `Book (title, languageCode, translationLanguage?) 1─* ScanPage (imageData, rawText, orderIndex) 1─* Sentence (text, translatedText?, orderIndex, isBookmarked, userNote, srs)`, plus standalone `SavedWord (word, contextSentence snapshot, languageCode, srs)`. `SRSState` is a Codable **value type** (SM-2) embedded in both Sentence and SavedWord.
 
-`Book.languageCode` is now **auto-set** from the confirmed source language of the first page (detected by OCR, editable later) rather than pre-picked; `BookFormView` no longer forces a language choice at create time. `Book.translationLanguage: String?` (BCP-47; nil = translation off) and `Sentence.translatedText: String?` join **ReadAloudSchemaV2** — the single lightweight migration (introduced in PHASE3 for `SavedWord.sourceBookTitle`) that adds all new optional fields at once. Changing `translationLanguage` clears the book's `translatedText` (now stale) → re-translated lazily on next Reader open (DECISIONS #24).
+`Book.languageCode` (the **source** language) is now **auto-set** from the confirmed source language of the first page (detected by OCR, editable later) rather than pre-picked; `BookFormView` no longer forces a language choice at create time, and where a source language *is* chosen (OCRReview, BookForm edit, pre-capture hint) the options are the full `LanguageCatalog` set. `Book.translationLanguage: String?` (BCP-47; nil = translation off) is the **destination**, seeded from the user's `@AppStorage("nativeLanguage")` when translation is on (DECISIONS #25). `Book.translationLanguage` and `Sentence.translatedText: String?` join **ReadAloudSchemaV2** — the single lightweight migration (introduced in PHASE3 for `SavedWord.sourceBookTitle`) that adds all new optional fields at once. Changing `translationLanguage` clears the book's `translatedText` (now stale) → re-translated lazily on next Reader open (DECISIONS #24).
 
 > ⚠️ Because `SRSState` is a Codable blob, **`#Predicate` cannot reach `srs.dueDate`**. Due-item queries must fetch candidates (bookmarked sentences / all saved words) and filter in memory. Fine at personal-library scale; if it ever isn't, promote `dueDate` to a stored property. Logged in [DECISIONS.md](DECISIONS.md).
 
@@ -95,6 +97,7 @@ The playback source of truth. `@Observable`; views read, never mutate, playback 
 - iOS 18.0+ (raised from 17.4 for the inline/programmatic `TranslationSession` API — DECISIONS #23; `project.yml` already regenerated), SwiftUI, `@Observable` (not ObservableObject). No third-party dependencies — Apple frameworks only, by design.
 - Feature-first layout: `Features/<Name>/` per screen area; cross-cutting logic in `Services/`; shared UI in `Shared/`.
 - `languageCode` is always full BCP-47 (`"fr-FR"`); trim to 2 letters only at NL/Vision API boundaries.
+- **Source vs. native language** (DECISIONS #25): the *source* language is per-Book, auto-detected, and chosen (when needed) from `LanguageCatalog` (Vision-derived, unrestricted — not a curated nine); the *native* language is `@AppStorage("nativeLanguage")`, the per-user translation destination that replaced `targetLanguage`. Never route a source language through a `targetLanguage` setting.
 - All user-facing strings inline for now; localization is out of scope for v1.
 
 ## 4. Known gaps / tech debt (as of 2026-07-06)

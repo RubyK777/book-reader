@@ -141,3 +141,32 @@ entries stand as history).*
     one migration for all V2 optionals; speaking a machine translation would mis-teach pronunciation, and
     stale translations after a target switch would be worse than none. (TRANSLATION_DESIGN §3–§9, PHASE2
     §8, PHASE3 §3/§4, UX_SPEC §3/§6)
+
+## 2026-07-07 — Language model
+
+25. **Two language axes: unrestricted source vs. native language.** ReadAloud cleanly separates the two
+    language axes that #21/#24 still conflated under the misnamed `targetLanguage`, because the language
+    *on the page* and the language *in the user's head* are different facts with different owners and
+    lifetimes:
+    - **Source language = per Book/page.** The language printed on a page. Auto-detected per page
+      (`NLLanguageRecognizer`), correctable in **OCRReview** from the **full** set, and now with an
+      **optional pre-capture hint** ("Page language: Auto-detect ▾", Library-entry only) that biases
+      Vision's `recognitionLanguages` before OCR — **Auto-detect stays the default**. It is **no longer
+      restricted to a curated 9-language list**: options come from Vision's supported recognition
+      languages via the new `LanguageCatalog` (`ReadAloud/Shared/Languages.swift`), which **replaces the
+      old 9-item `SupportedLanguage` enum**. Source belongs to the Book, not the user.
+    - **Native language = per user.** The user's *own* language — the translation **destination**. This
+      is the real global setting: `@AppStorage("nativeLanguage")`, defaulting to the device language
+      (`LanguageCatalog.deviceDefaultNative`). It **replaces `@AppStorage("targetLanguage")`** (whose
+      confusing meaning had been "default *source* language"), and it seeds `Book.translationLanguage`
+      when translation is built.
+    - **Three separately-bounded "supported" sets — never one gate.** *OCR / detect it* = Vision
+      recognition languages (broad, unrestricted); *hear it* = installed `AVSpeechSynthesisVoice` (you
+      can OCR a language you have no voice for — surface that gap, do not hide the language); *translate
+      it* = Translation framework `LanguageAvailability`. The old 9-item list must stop being the single
+      gate for all three.
+    **Supersedes** the 9-item `SupportedLanguage` list wherever it gated source options, and the
+    source-meaning of `targetLanguage`. Refines #24: the per-book target is still `Book.translationLanguage`,
+    but its **default seed is now `nativeLanguage`** (the destination), not a separate source default.
+    *Why:* forcing a per-book detected value and a per-user setting through one 9-item list mislabeled
+    both and hid the honest three-set nuance. (OCR_PIPELINE §1/§2/§4.5, PHASE3 §4, TRANSLATION_DESIGN §7)

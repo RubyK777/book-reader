@@ -29,8 +29,11 @@ enum ReviewItem: Identifiable {
     var id: PersistentIdentifier { ... }        // underlying model's persistentModelID
     var promptText: String { ... }              // what TTS speaks: sentence.text / word.word
     var revealText: String { ... }              // sentence.text / "word — contextSentence"
-    var languageCode: String { ... }            // word.languageCode; sentence.page?.book?.languageCode
-                                                //   ?? UserDefaults "targetLanguage" (the §4 setting)
+    var languageCode: String { ... }            // the SOURCE language spoken by TTS:
+                                                //   word.languageCode; sentence.page?.book?.languageCode
+                                                //   ?? a defensive constant (book language is auto-set, so
+                                                //   this rarely fires; there is NO source-language setting —
+                                                //   §4's setting is the user's NATIVE language, a destination)
     var srs: SRSState { get set }               // nil-coalesced to SRSState() (never-reviewed ⇒ due now)
 }
 
@@ -227,10 +230,10 @@ free view invalidation).
 
 | Key | Type | Default | Consumed by |
 |---|---|---|---|
-| `targetLanguage` (exists) | String BCP-47 | `"fr-FR"` | default for new Books / quick scan |
+| `nativeLanguage` (**replaces `targetLanguage`**) | String BCP-47 | device language (`LanguageCatalog.deviceDefaultNative`) | the user's **own** language = translation **destination**; seeds `Book.translationLanguage` (TRANSLATION_DESIGN §7). *Not* a source picker — the source language is per-book and auto-detected (DECISIONS #25). |
 | `speechRate` | Double | 1.0 | `SpeechPlayer.speedMultiplier` initial value |
-| `voiceID.<languageCode>` | String (voice identifier) | unset | voice selection per language |
-| `translationLanguage` | String BCP-47 or `"none"` | `"none"` | default translate-to seeding new Books (TRANSLATION_DESIGN) |
+| `voiceID.<languageCode>` | String (voice identifier) | unset | voice selection per **source** language (TTS speaks the source, never the native/translation) |
+| `translationLanguage` | String BCP-47 or `"none"` | `"none"` | on/off (None) default for new Books; when on, the **destination is `nativeLanguage`**, not a separate stored target (TRANSLATION_DESIGN §7) |
 
 ```swift
 enum VoiceStore {   // thin UserDefaults wrapper; keyed per full BCP-47 code
@@ -259,21 +262,30 @@ not `voice.<code>` / `defaultSpeed`), AUDIO_DESIGN's fallback ordering absorbed 
 missing-voice UX, UX_SPEC §2 wins per precedence — **disable play + banner**, not AUDIO_DESIGN §8's
 "speak the system default" row. AUDIO_DESIGN must be amended (carry-forward task; logged in DECISIONS.md).
 
-The plain (non-voice) rows are three. **Target language**: a `Picker` over `BookFormView`'s nine-language
-list, bound to `targetLanguage` (defaults *new* Books only). **Default speech rate**: the Reader speed
-picker's exact stepped 0.5×–1.0× values (`SpeechPlayer.speedMultiplier`'s displayed range), bound to
-`speechRate` — a continuous slider was rejected so Settings and Reader never show unrepresentable values.
-**Default translate-to language**: a `Picker` over the same nine-language list plus a leading **None (off)**
-row, bound to `translationLanguage` (`"none"` ⇒ new Books start with translation off). It only seeds
-`Book.translationLanguage` at create time (per-book override lives in the Reader [⋯] menu / OCRReview /
-BookForm); the translation engine that consumes it is TRANSLATION_DESIGN's, not re-specified here. It sits
-beside `targetLanguage` because a learner's read-and-listen language and their gloss language differ.
+The plain (non-voice) rows are three. **Native language**: a `Picker` over the **full `LanguageCatalog`
+set** (Vision's recognizable languages — no longer a curated nine), bound to `nativeLanguage`, defaulting
+to the device language (`LanguageCatalog.deviceDefaultNative`). This is the user's *own* language — the
+translation **destination**, never spoken by TTS — not a source picker; the source language of each book
+is per-book and **auto-detected** at scan (confirmed in OCRReview), so it is never set here (DECISIONS #25).
+**Default speech rate**: the Reader speed picker's exact stepped 0.5×–1.0× values
+(`SpeechPlayer.speedMultiplier`'s displayed range), bound to `speechRate` — a continuous slider was
+rejected so Settings and Reader never show unrepresentable values. **Translate pages (on/off default)**:
+bound to `translationLanguage`, whether *new* Books start with translation **on** (destination =
+`nativeLanguage`) or **off** (the **None** sentinel). When on, the destination is `nativeLanguage` — there
+is no separate stored source-default language to pick here anymore. It only affects *new* Books at create
+time (per-book override lives in the Reader [⋯] menu / OCRReview / BookForm); the translation engine that
+consumes it is TRANSLATION_DESIGN's, not re-specified here. Native and source are separate rows precisely
+because a learner's read-and-listen (source, per-book/detected) language and their gloss (native) language
+differ.
 
-Voice picker rows, grouped per language. **Group list derivation:** `targetLanguage` ∪ distinct
-`Book.languageCode` ∪ distinct `SavedWord.languageCode` (two fetches, dedup in memory). Each row: voice
+Voice picker rows, grouped per language. **Group list derivation:** distinct `Book.languageCode` ∪
+distinct `SavedWord.languageCode` (two fetches, dedup in memory) — i.e. the **source** languages the user
+has actually scanned or saved words in. `nativeLanguage` is deliberately **not** seeded in here: it is the
+translation destination, never spoken, so it needs no voice. Each row: voice
 name + quality tag (`.default`/`.enhanced`/`.premium` → "Standard/Enhanced/Premium") + a preview 🔊 that
-speaks `VoiceStore.sampleText(for:)` with that voice. One fixed sentence can't serve nine languages, so
-the sample table (same language list as `BookFormView`'s picker) is: fr "Le soleil se couche sur la mer."
+speaks `VoiceStore.sampleText(for:)` with that voice. One fixed sentence can't serve every language, so
+the sample table covers the common source languages (English sample as the fallback for the rest, per
+`VoiceStore.sampleText`): fr "Le soleil se couche sur la mer."
 · es "El sol se pone sobre el mar." · de "Die Sonne versinkt im Meer." · it "Il sole tramonta sul mare."
 · pt "O sol se põe sobre o mar." · ja "太陽が海に沈みます。" · ko "해가 바다 위로 집니다." ·
 zh "太阳正落在海面上。" · en "The sun sets over the sea." Prefix matching matters: `"zh-Hans"` has no
@@ -416,12 +428,14 @@ has a `userNote` or `srs.repetitions > 0`**, and is immediate otherwise.
       in the Reader (unstarred), and word deletes survive relaunch.
 - [ ] **Saved item detail view** — note editing + SRS stats + Look Up; acceptance: edited note persists
       across relaunch and stats reflect the last review.
-- [ ] **SettingsView + VoiceStore** — language default, per-language voice picker with per-language sample
-      preview, rate; acceptance: chosen voice is used by Reader and Review playback for that language.
-- [ ] **Settings default translate-to language** — `@AppStorage("translationLanguage")` picker (nine
-      languages + None) beside `targetLanguage`/`speechRate`/`voiceID` per §4; acceptance: picking a
-      language seeds `Book.translationLanguage` on newly created Books, picking None leaves new Books with
-      translation off, and existing Books are unaffected.
+- [ ] **SettingsView + VoiceStore** — **native-language** default (`@AppStorage("nativeLanguage")`, full
+      `LanguageCatalog` set, device-language default), per-source-language voice picker with per-language
+      sample preview, rate; acceptance: chosen voice is used by Reader and Review playback for that
+      source language.
+- [ ] **Settings translate-pages on/off default** — `@AppStorage("translationLanguage")` on/off (None)
+      default beside `nativeLanguage`/`speechRate`/`voiceID` per §4; the destination when on is
+      `nativeLanguage`; acceptance: on seeds `Book.translationLanguage` toward the native language on newly
+      created Books, None leaves new Books with translation off, and existing Books are unaffected.
 - [ ] **Read-only translation in Saved sentence detail** — surface non-nil `Sentence.translatedText` in
       `.secondary` style per §3; acceptance: a bookmarked sentence that was translated in the Reader shows
       its stored translation read-only, an untranslated one shows nothing, and the detail view never kicks

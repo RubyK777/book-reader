@@ -61,7 +61,7 @@ From [PHASE3_DESIGN.md](PHASE3_DESIGN.md) § Carry-forward:
 - [ ] SRSEngine · `ReadAloudSchemaV2` (`SavedWord.sourceBookTitle`)
 - [ ] ReviewView + tab badge (due-count holder) · ReviewSessionView/Model · session summary
 - [ ] SavedItemsView + detail · SettingsView + VoiceStore · SpeechPlayer voice/rate resolution
-- [ ] Settings default translate-to `@AppStorage("translationLanguage")` (nine languages + None) beside `targetLanguage`/`speechRate`/`voiceID` (PHASE3 §4, DECISIONS #24) — *acceptance: picking a language seeds `Book.translationLanguage` on new Books; None leaves new Books translation-off; existing Books unaffected.*
+- [ ] Settings **native language** `@AppStorage("nativeLanguage")` (full `LanguageCatalog`, defaults to device language) beside `speechRate`/`voiceID`; it is the translation destination and seeds `Book.translationLanguage` (PHASE3 §4, DECISIONS #24, #25) — *acceptance: the native-language picker persists; new Books translate into it (translate on/off via a None sentinel); existing Books unaffected.*
 - [ ] Read-only translation in Saved sentence detail — surface non-nil `Sentence.translatedText` in `.secondary` style (PHASE3 §3) — *acceptance: a translated bookmarked sentence shows its stored translation read-only; the detail view never kicks off a translation.*
 - [ ] Relax PHASE3 §6 "no free-text editing in v1" note — full-text edit happens at scan time in `OCRReviewView`; after save, structure is fixed via merge/split, re-splitting a saved page is out of scope for v1 (DECISIONS #22) — *acceptance: PHASE3 §6 note reads as relaxed; no doc claims sentence text is uneditable everywhere.*
 - [ ] Amend AUDIO_DESIGN §6/§8 to the VoiceStore contract (DECISIONS #10)
