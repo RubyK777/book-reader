@@ -139,6 +139,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					77C66E34CAA102934E11953D = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -251,6 +252,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "ReadAloud uses the camera to photograph book pages so it can read the text aloud.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -275,6 +277,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "ReadAloud uses the camera to photograph book pages so it can read the text aloud.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
