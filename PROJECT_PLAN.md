@@ -1,10 +1,12 @@
 # ReadAloud — Project Plan & Handoff Spec
 *Language-learning iOS app: turn physical book text into listenable, reviewable audio.*
 
-**Status:** Phase 1 — OCR spike in progress
+**Status:** Phase 1 core loop built (scan → tap-to-hear works; word highlight shipped early). OCR spike on real fixtures still pending. Phase 2 next.
 **Last updated:** 2026-07-06
 **Owner:** Ruby
 **Target:** iOS 17.4+, SwiftUI, fully on-device
+
+> **Detailed design docs live in [`docs/`](docs/)** — architecture, per-phase designs, UX/audio/OCR/testing specs, the carry-forward backlog ([docs/TASKS.md](docs/TASKS.md)), and the decision log ([docs/DECISIONS.md](docs/DECISIONS.md)). This file stays the high-level spec; the docs carry the implementation detail.
 
 ---
 
@@ -40,14 +42,19 @@ Photo/Live Text → OCR → sentence split → tap to listen
 ## 4. Screens
 
 ### 4.1 Home / Library
+- Library is the first tab of the app-wide TabView root — Library · Saved · Review · Settings
+  (docs/UX_SPEC.md §1; DECISIONS.md #3)
 - List of Books (user-created containers for scan sessions)
-- Primary CTA: "Scan" button
-- Secondary: link to Saved Items, Review (with due-count badge)
+- Toolbar `+` creates a Book; a separate **Scan** button (and the empty-state CTA) launches capture
+  (docs/PHASE2_DESIGN.md §3; DECISIONS.md #20)
+- Saved Items and Review are sibling tabs, not links; the Review tab carries the due-count badge
 
 ### 4.2 Camera / Scan
-- Live camera preview, capture button
+- System document camera (`VNDocumentCameraViewController`) — auto edge detection, deskew,
+  multi-page capture (docs/OCR_PIPELINE.md §1)
 - Photo-library import fallback
-- Post-capture crop/rotate
+- Post-capture crop/rotate — provided by the document camera's corner-adjust review step on the
+  camera path; imports skip crop in v1 (the OCR quality gate catches bad ones)
 - Assign scan to a Book (or quick-create)
 - **Stretch:** VisionKit Live Text mode for instant tap-to-hear
 
@@ -56,7 +63,8 @@ Photo/Live Text → OCR → sentence split → tap to listen
 - Tap → TTS playback, active card highlighted, word-level highlight follows speech
 - Bottom playback bar: prev / play-pause / next, repeat toggle, speed (0.5×–1.0×)
 - Star icon per sentence → bookmark
-- Long-press word → Dictionary / Save Word / Translate
+- Long-press sentence card → word-chip sheet → Save Word / Look Up (card-level gesture supersedes
+  per-word long-press — see docs/PHASE2_DESIGN.md §7; Translate stays a Phase 4 stretch)
 - Auto-scroll keeps active card centered
 
 ```
@@ -95,7 +103,9 @@ Photo/Live Text → OCR → sentence split → tap to listen
 
 ### 4.6 Settings
 - Target language, preferred voice, default speech rate
-- Link to iOS enhanced-voice downloads (Settings deep link)
+- Enhanced-voice download guidance: in-app instruction card — Settings deep links into
+  Accessibility are private API (`App-Prefs:` schemes) and App Store-rejectable; see
+  [docs/PHASE3_DESIGN.md](docs/PHASE3_DESIGN.md) §4
 - Data export (JSON) — stretch
 
 ## 5. Architecture
@@ -150,30 +160,33 @@ Key decisions:
 ├── AVSpeechSynthesizer + AVSpeechSynthesizerDelegate
 ├── currentSentenceIndex: Int?
 ├── highlightRange: NSRange?     ← from willSpeakRangeOfSpeechString
-├── rate: Float, repeatMode: Bool
-└── play(sentences:startingAt:) / pause() / next() / previous()
+├── speedMultiplier: Float (0.5×–1.0×, applies on next utterance), repeatMode: Bool
+└── load(sentences:languageCode:) / play(at:) / togglePlayPause() / next() / previous() / stop()
 ```
 Audio session: `.playback` category so audio continues with silent switch on.
+This mirrors the shipped surface — docs/ARCHITECTURE.md §2 is the authoritative current-state
+contract; docs/AUDIO_DESIGN.md §1 designs its evolution.
 
 ## 6. Build Phases
 
 ### Phase 1 — MVP core loop (~1–2 wks)
-- [ ] Camera capture + photo import
-- [ ] OCRService (single language, hardcoded ok)
-- [ ] SentenceSplitter
-- [ ] Reader view: tap-to-play, playback bar (no highlight yet)
-- [ ] No persistence
+- [x] Camera capture + photo import
+- [x] OCRService (language picker, per-scan)
+- [x] SentenceSplitter
+- [x] Reader view: tap-to-play, playback bar (word highlight shipped early too)
+- [x] No persistence
+- [ ] OCR spike validated on 5 real book-page fixtures (§7 risk #1 — still open)
 - **Exit criteria:** photograph a real book page, hear any sentence spoken correctly
 
 ### Phase 2 — Persistence + learning (~2 wks)
 - [ ] SwiftData schema wired in
 - [ ] Library, Book/Page management
-- [ ] Bookmark sentences, save words (long-press menu)
-- [ ] Saved Items screen with notes
-- [ ] Word-level highlight in Reader
+- [ ] Bookmark sentences, save words (card long-press → chip sheet, per docs/PHASE2_DESIGN.md §7)
+- [x] Word-level highlight in Reader *(done in Phase 1)*
 
 ### Phase 3 — Review + polish (~2 wks)
 - [ ] SRSEngine + Review mode
+- [ ] Saved Items screen with notes *(moved from Phase 2 — needs SRS stats + `sourceBookTitle`; see docs/PHASE2_DESIGN.md §3, docs/PHASE3_DESIGN.md §3)*
 - [ ] Speed control, voice picker, Settings
 - [ ] Dictionary lookup integration
 - [ ] Empty states, error states, haptics
@@ -202,7 +215,8 @@ Audio session: `.playback` category so audio continues with silent switch on.
 4. Minimum iOS: **17.4** — unlocks Translation framework for Phase 4 stretch
 
 ## 9. Acceptance Criteria (v1 ship)
-- Scan → listenable sentences in ≤ 10 s on iPhone 12+
+- Scan → listenable sentences in ≤ 10 s **per page** on iPhone 12+ (a multi-page batch legitimately
+  takes proportionally longer — docs/OCR_PIPELINE.md §1; DECISIONS.md #17)
 - OCR word accuracy ≥ 95% on flat, well-lit pages
 - Word highlight drift imperceptible (< 100 ms)
 - All features functional in airplane mode
@@ -211,7 +225,8 @@ Audio session: `.playback` category so audio continues with silent switch on.
 
 ## 10. Handoff Checklist
 - [ ] This document reviewed with new owner
-- [ ] `Models.swift` added to repo
+- [x] `Models.swift` added to repo (not yet wired — first Phase 2 task)
 - [ ] Target languages confirmed + TTS voices tested
 - [ ] 5 sample book-page photos added as test fixtures
-- [ ] Open questions (§8) answered and logged here
+- [x] Open questions (§8) answered and logged here
+- [x] Detailed design docs written (`docs/` — 2026-07-06)
