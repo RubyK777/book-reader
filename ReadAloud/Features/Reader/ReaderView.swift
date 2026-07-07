@@ -42,9 +42,10 @@ struct ReaderView: View {
     private var languageCode: String {
         switch source {
         case let .persisted(page):
-            return page.book?.languageCode
-                ?? UserDefaults.standard.string(forKey: "targetLanguage")
-                ?? "en-US"
+            // Source (spoken) language — a persisted page's book language is
+            // set at first scan; the fallback is defensive, never the user's
+            // native language (that's the translation destination, not the source).
+            return page.book?.languageCode ?? "en-US"
         case let .ephemeral(_, code):
             return code
         }

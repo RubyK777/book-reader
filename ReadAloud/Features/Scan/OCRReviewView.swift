@@ -36,12 +36,16 @@ struct OCRReviewView: View {
 
   var body: some View {
     Form {
-      Section("Source language") {
+      Section {
         Picker("Language", selection: $languageCode) {
-          ForEach(SupportedLanguage.all, id: \.code) { lang in
+          ForEach(LanguageCatalog.options, id: \.code) { lang in
             Text(lang.name).tag(lang.code)
           }
         }
+      } header: {
+        Text("Source language")
+      } footer: {
+        Text("Detected automatically — correct it here if it's wrong.")
       }
       Section("Page text") {
         TextEditor(text: $text)
@@ -100,17 +104,20 @@ struct OCRReviewView: View {
     }
   }
 
-  /// Map a detected BCP-47 code onto a supported language, matching on the
-  /// language subtag ("fr" → "fr-FR"). Falls back to English when unmatched.
+  /// Map a detected BCP-47 code onto a recognizable language option, matching
+  /// on the language subtag ("fr" → "fr-FR"). Falls back to the device's
+  /// native language, then the first option, when the detection is unmatched.
   private static func matchLanguage(_ detected: String) -> String {
-    if let exact = SupportedLanguage.all.first(where: { $0.code == detected }) {
+    let options = LanguageCatalog.options
+    if let exact = options.first(where: { $0.code == detected }) {
       return exact.code
     }
     let base = String(detected.prefix(2)).lowercased()
-    if let loose = SupportedLanguage.all.first(where: { $0.code.lowercased().hasPrefix(base) }) {
+    if let loose = options.first(where: { $0.code.lowercased().hasPrefix(base) }) {
       return loose.code
     }
-    return "en-US"
+    return options.first(where: { $0.code.hasPrefix(LanguageCatalog.deviceDefaultNative) })?.code
+      ?? options.first?.code ?? "en-US"
   }
 }
 
@@ -141,7 +148,7 @@ private struct AssignBookView: View {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                   Text(book.title)
                     .foregroundStyle(.primary)
-                  Text("\(SupportedLanguage.name(for: book.languageCode)) · \(book.pages.count) pages")
+                  Text("\(LanguageCatalog.name(for: book.languageCode)) · \(book.pages.count) pages")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }

@@ -127,7 +127,7 @@ private struct BookRow: View {
 
   private var subtitle: String {
     let count = book.pages.count
-    let language = SupportedLanguage.name(for: book.languageCode)
+    let language = LanguageCatalog.name(for: book.languageCode)
     return "\(language) · \(count) page\(count == 1 ? "" : "s")"
   }
 }

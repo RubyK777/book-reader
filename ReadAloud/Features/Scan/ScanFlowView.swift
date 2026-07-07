@@ -16,6 +16,9 @@ struct ScanFlowView: View {
   @State private var errorMessage: String?
   @State private var pickerItem: PhotosPickerItem?
   @State private var showCamera = false
+  /// Optional pre-capture hint biasing Vision toward a language (Library path
+  /// only; Add Page already knows the book's language). `nil` = auto-detect.
+  @State private var languageHint: String?
 
   private enum Step {
     case capture
@@ -53,6 +56,16 @@ struct ScanFlowView: View {
           .font(.footnote)
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
+
+        if book == nil {
+          Picker("Page language", selection: $languageHint) {
+            Text("Auto-detect").tag(String?.none)
+            ForEach(LanguageCatalog.options, id: \.code) { lang in
+              Text(lang.name).tag(String?.some(lang.code))
+            }
+          }
+          .pickerStyle(.menu)
+        }
 
         if let errorMessage {
           Text(errorMessage)
@@ -130,7 +143,7 @@ struct ScanFlowView: View {
     isReading = true
     Task { @MainActor in
       do {
-        let result = try await PageIngestor().recognize(image, languageHint: book?.languageCode)
+        let result = try await PageIngestor().recognize(image, languageHint: languageHint ?? book?.languageCode)
         isReading = false
         if result.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
           errorMessage = "No text found — try a flatter page with more light."

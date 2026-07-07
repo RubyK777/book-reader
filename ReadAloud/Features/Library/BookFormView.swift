@@ -27,11 +27,11 @@ struct BookFormView: View {
     switch mode {
     case .create:
       _title = State(initialValue: "")
-      _languageCode = State(initialValue: SupportedLanguage.all.first?.code ?? "en-US")
+      _languageCode = State(initialValue: LanguageCatalog.options.first?.code ?? "en-US")
       _coverData = State(initialValue: nil)
     case .edit(let book):
       _title = State(initialValue: book.title)
-      _languageCode = State(initialValue: book.languageCode ?? SupportedLanguage.all.first?.code ?? "en-US")
+      _languageCode = State(initialValue: book.languageCode ?? LanguageCatalog.options.first?.code ?? "en-US")
       _coverData = State(initialValue: book.coverImageData)
     }
   }
@@ -83,7 +83,7 @@ struct BookFormView: View {
       let locked = !book.pages.isEmpty
       Section {
         Picker("Language", selection: $languageCode) {
-          ForEach(SupportedLanguage.all, id: \.code) { language in
+          ForEach(LanguageCatalog.options, id: \.code) { language in
             Text(language.name).tag(language.code)
           }
         }
