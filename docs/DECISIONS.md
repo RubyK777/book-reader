@@ -189,3 +189,9 @@ entries stand as history).*
     cross-device sync for now; the SwiftData default (no CloudKit) already delivers exactly this, so no
     code beyond confirming it. Revisit if shared libraries are wanted later (would add a CloudKit
     container + entitlement). (project.yml, ReadAloudApp.swift)
+28. **One playback-speed control, on the Reader, 0.5×–2.0×.** The Settings "speech rate" stepper is
+    removed — it was never wired to `SpeechPlayer` (dead UI), and two speed controls confused the user.
+    The Reader picker is the single control; its range widens from 0.5–1.0× to **0.5×–2.0×**
+    (`utterance.rate = AVSpeechUtteranceDefaultSpeechRate × multiplier`, so 2.0× = the max valid rate).
+    Speed stays session-local (resets per Reader open) — persisting it wasn't requested. *Why:* the user
+    asked for exactly one speed control, on the reading screen, up to 2×. (ReaderView, SettingsView)
