@@ -5,16 +5,17 @@ import SwiftData
 @Model
 final class Book {
     var title: String
-    var languageCode: String        // BCP-47, e.g. "fr-FR" — drives OCR + TTS voice
+    var languageCode: String?       // BCP-47, e.g. "fr-FR" — nil until the first scan confirms it (capture-first)
     var createdAt: Date
+
+    @Attribute(.externalStorage)
     var coverImageData: Data?
 
     @Relationship(deleteRule: .cascade, inverse: \ScanPage.book)
     var pages: [ScanPage] = []
 
-    init(title: String, languageCode: String) {
+    init(title: String) {
         self.title = title
-        self.languageCode = languageCode
         self.createdAt = .now
     }
 }
@@ -22,10 +23,12 @@ final class Book {
 // MARK: - ScanPage (one captured photo)
 @Model
 final class ScanPage {
+    @Attribute(.externalStorage)
     var imageData: Data             // original photo, for re-reading later
     var rawText: String             // full OCR output
     var orderIndex: Int             // page order within book
     var scannedAt: Date
+    var lastOpenedAt: Date?         // drives Resume; nil until first opened
     var book: Book?
 
     @Relationship(deleteRule: .cascade, inverse: \Sentence.page)
