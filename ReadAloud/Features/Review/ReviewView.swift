@@ -16,6 +16,7 @@ struct ReviewView: View {
 
     @State private var due: [ReviewItem] = []
     @State private var isSessionPresented = false
+    @State private var sessionItems: [ReviewItem] = []
 
     private var deck: [ReviewItem] {
         bookmarkedSentences.map(ReviewItem.sentence) + savedWords.map(ReviewItem.word)
@@ -29,10 +30,8 @@ struct ReviewView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if !due.isEmpty {
-                    dueState
-                } else if !deck.isEmpty {
-                    nothingDueState
+                if !deck.isEmpty {
+                    deckState
                 } else {
                     emptyState
                 }
@@ -41,25 +40,37 @@ struct ReviewView: View {
         }
         .task { refresh() }
         .fullScreenCover(isPresented: $isSessionPresented, onDismiss: refresh) {
-            ReviewSessionView(items: SRSEngine.buildSession(from: due))
+            ReviewSessionView(items: sessionItems)
         }
     }
 
     // MARK: - States
 
-    private var dueState: some View {
+    /// One screen whether or not anything is due: you can always start a
+    /// session. Due items get a "smart" review; the whole deck is always
+    /// available to practice on demand.
+    private var deckState: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
             Spacer()
             VStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: "brain.head.profile")
                     .font(.system(size: 52))
                     .foregroundStyle(DesignSystem.accent)
-                Text("\(due.count) due")
-                    .font(.largeTitle.bold())
-                    .contentTransition(.numericText())
-                Text(due.count == 1 ? "1 card ready to review" : "\(due.count) cards ready to review")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                if !due.isEmpty {
+                    Text("\(due.count) due")
+                        .font(.largeTitle.bold())
+                        .contentTransition(.numericText())
+                    Text(due.count == 1 ? "1 card ready to review" : "\(due.count) cards ready to review")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("All caught up")
+                        .font(.largeTitle.bold())
+                    Text(nextDueText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             }
             .padding(DesignSystem.Spacing.xl)
             .frame(maxWidth: .infinity)
@@ -68,30 +79,46 @@ struct ReviewView: View {
 
             Spacer()
 
-            Button {
-                isSessionPresented = true
-            } label: {
-                Text("Start session")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                if !due.isEmpty {
+                    Button { startSession(with: due) } label: {
+                        Text("Review \(due.count) due")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                }
+
+                // Always available — practice the whole deck whenever you want.
+                // Prominent when nothing is due (the primary action then), else secondary.
+                if due.isEmpty {
+                    Button { startSession(with: deck) } label: {
+                        Text("Practice all \(deck.count)")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                } else {
+                    Button { startSession(with: deck) } label: {
+                        Text("Practice all \(deck.count)")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                }
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
             .padding(.horizontal, DesignSystem.Spacing.lg)
             .padding(.bottom, DesignSystem.Spacing.lg)
         }
     }
 
-    private var nothingDueState: some View {
-        ContentUnavailableView {
-            Label("Nothing due", systemImage: "checkmark.circle")
-        } description: {
-            if let next = nextDueDate {
-                Text("Come back tomorrow — next review \(next.formatted(.relative(presentation: .named))).")
-            } else {
-                Text("Come back tomorrow.")
-            }
-        }
+    private var nextDueText: String {
+        guard let next = nextDueDate else { return "Practice any time." }
+        if next <= .now { return "Practice any time." }
+        return "Next up \(next.formatted(.relative(presentation: .named))) — or practice any time."
     }
 
     private var emptyState: some View {
@@ -102,6 +129,11 @@ struct ReviewView: View {
     }
 
     // MARK: - Helpers
+
+    private func startSession(with items: [ReviewItem]) {
+        sessionItems = SRSEngine.buildSession(from: items)
+        isSessionPresented = true
+    }
 
     private func refresh() {
         due = SRSEngine.dueItems(in: modelContext)

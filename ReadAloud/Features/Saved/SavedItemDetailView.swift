@@ -1,23 +1,31 @@
 import SwiftUI
 import SwiftData
+import Translation
 
 /// Detail for one saved item — a word or a bookmarked sentence. Shows the full
-/// text, a replay button, the source context (words only), an editable note
-/// (autosaved), the SRS schedule, and a destructive removal action. A word is
-/// deleted outright; a sentence only loses its bookmark (its SRS state is kept).
+/// text, its meaning (translated into the native language), a replay button,
+/// the source context (words only), an editable note (autosaved), the SRS
+/// schedule, and a destructive removal action. A word is deleted outright; a
+/// sentence only loses its bookmark (its SRS state is kept).
 struct SavedItemDetailView: View {
   private enum Item {
     case word(SavedWord)
     case sentence(Sentence)
   }
 
+  /// Meaning (translation into the native language) for this item.
+  private enum Meaning: Equatable { case none, translating, ready(String), unavailable }
+
   @Environment(\.modelContext) private var modelContext
   @Environment(AppRouter.self) private var router
   @Environment(\.dismiss) private var dismiss
+  @AppStorage("nativeLanguage") private var nativeLanguage = LanguageCatalog.deviceDefaultNative
 
   private let item: Item
   @State private var player = SpeechPlayer()
   @State private var isConfirmingRemoval = false
+  @State private var meaning: Meaning = .none
+  @State private var translateConfig: TranslationSession.Configuration?
 
   init(word: SavedWord) { item = .word(word) }
   init(sentence: Sentence) { item = .sentence(sentence) }
@@ -40,6 +48,8 @@ struct SavedItemDetailView: View {
           Label("Play", systemImage: "speaker.wave.2.fill")
         }
       }
+
+      meaningSection
 
       if let contextText {
         Section("Context") {
@@ -75,6 +85,68 @@ struct SavedItemDetailView: View {
     ) {
       Button(removalActionLabel, role: .destructive) { performRemoval() }
       Button("Cancel", role: .cancel) {}
+    }
+    .task { resolveMeaning() }
+    .translationTask(translateConfig) { session in
+      await translate(using: session)
+    }
+  }
+
+  /// The translated meaning, once resolved. Hidden when the item is already in
+  /// the native language or no translation is available.
+  @ViewBuilder
+  private var meaningSection: some View {
+    switch meaning {
+    case .translating:
+      Section("Meaning") {
+        HStack(spacing: DesignSystem.Spacing.sm) {
+          ProgressView().controlSize(.small)
+          Text("Translating…").foregroundStyle(.secondary)
+        }
+      }
+    case let .ready(translated):
+      Section("Meaning") {
+        Text(translated).font(.body)
+      }
+    case .none, .unavailable:
+      EmptyView()
+    }
+  }
+
+  /// Resolve the meaning: reuse a stored sentence translation, skip when the
+  /// item is already the native language, else translate live into it.
+  private func resolveMeaning() {
+    guard meaning == .none else { return }
+    if case let .sentence(s) = item, let stored = s.translatedText, !stored.isEmpty {
+      meaning = .ready(stored)
+      return
+    }
+    let sourceBase = String(languageCode.prefix(2)).lowercased()
+    let nativeBase = String(nativeLanguage.prefix(2)).lowercased()
+    guard sourceBase != nativeBase else { meaning = .unavailable; return }
+    meaning = .translating
+    translateConfig = TranslationSession.Configuration(
+      source: Locale.Language(identifier: languageCode),
+      target: Locale.Language(identifier: nativeLanguage))
+  }
+
+  @MainActor
+  private func translate(using session: TranslationSession) async {
+    do {
+      let responses = try await session.translations(
+        from: [TranslationSession.Request(sourceText: text)])
+      if let translated = responses.first?.targetText, !translated.isEmpty {
+        meaning = .ready(translated)
+        // Persist for sentences (they have a field); words translate live only.
+        if case let .sentence(s) = item, s.translatedText == nil {
+          s.translatedText = translated
+          try? modelContext.save()
+        }
+      } else {
+        meaning = .unavailable
+      }
+    } catch {
+      meaning = .unavailable
     }
   }
 
