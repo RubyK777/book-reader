@@ -30,6 +30,7 @@ struct ReaderView: View {
     }
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppRouter.self) private var router
     @State private var player = SpeechPlayer()
     @State private var wordSheetSentence: Sentence?
 
@@ -246,6 +247,7 @@ struct ReaderView: View {
             sentence.srs = SRSState()
         }
         try? modelContext.save()
+        router.recomputeDueCount(in: modelContext)
         Haptics.bookmark()
     }
 
@@ -278,7 +280,7 @@ struct ReaderView: View {
                 Spacer()
 
                 Picker("Speed", selection: $player.speedMultiplier) {
-                    ForEach([0.5, 0.65, 0.75, 0.9, 1.0], id: \.self) { speed in
+                    ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0], id: \.self) { speed in
                         Text("\(speed, specifier: "%.2g")×").tag(Float(speed))
                     }
                 }
@@ -413,4 +415,5 @@ private struct SentenceCard: View {
             languageCode: "fr-FR"
         )
     }
+    .environment(AppRouter())
 }

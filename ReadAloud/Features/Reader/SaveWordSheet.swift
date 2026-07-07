@@ -8,6 +8,7 @@ struct SaveWordSheet: View {
     let languageCode: String
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppRouter.self) private var router
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedWord: String?
@@ -85,6 +86,7 @@ struct SaveWordSheet: View {
         }
         modelContext.insert(saved)
         try? modelContext.save()
+        router.recomputeDueCount(in: modelContext)
         Haptics.success()
         dismiss()
     }
@@ -143,4 +145,5 @@ private struct FlowLayout: Layout {
         sentence: Sentence(text: "Le petit prince regardait le coucher du soleil.", orderIndex: 0),
         languageCode: "fr-FR"
     )
+    .environment(AppRouter())
 }
