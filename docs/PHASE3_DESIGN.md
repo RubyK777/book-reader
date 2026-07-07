@@ -10,7 +10,8 @@ here builds on the existing `SpeechPlayer` word-highlighting playback and the Sw
 [PHASE2_DESIGN.md](PHASE2_DESIGN.md) (SwiftData wiring, Library) · [UX_SPEC.md](UX_SPEC.md) — per its
 precedence clause, UX_SPEC **wins on navigation, screen states, interaction, and haptics**; this doc is
 written to conform · [AUDIO_DESIGN.md](AUDIO_DESIGN.md) — §4 below reconciles its §6 voice-selection
-sketch · [DECISIONS.md](DECISIONS.md)
+sketch · [TRANSLATION_DESIGN.md](TRANSLATION_DESIGN.md) — owns the translation engine; §3–4 below only
+consume it (Settings default, read-only saved translations) · [DECISIONS.md](DECISIONS.md)
 
 ---
 
@@ -211,7 +212,10 @@ would make `ModelContainer` creation throw on those stores. Instead: declare **`
 Detail view (both kinds): full text · replay · context sentence (words) · `TextField` bound to
 `userNote` (autosaves via SwiftData on edit end) · SRS stats block (`repetitions`, `easeFactor`
 formatted ×1 decimal, `intervalDays`, `dueDate` relative) · "Look Up" (words, §5) · Delete / Remove
-from Saved per the semantics above, with confirmation. Empty states per tab tell the user *where* the
+from Saved per the semantics above, with confirmation. For a bookmarked **sentence**, if its
+`Sentence.translatedText` is non-nil (populated by TRANSLATION_DESIGN's Reader pass), show it read-only
+in the same `.secondary` style as the Reader card, labeled "Translation"; this view never triggers or
+edits a translation — it just surfaces what's already stored, and shows nothing when the field is nil. Empty states per tab tell the user *where* the
 action lives: "Star a sentence in the Reader" / "Long-press a sentence in the Reader, then pick a word"
 (matches the Phase 2 §7 chip sheet — there is no word-level long-press gesture).
 
@@ -226,6 +230,7 @@ free view invalidation).
 | `targetLanguage` (exists) | String BCP-47 | `"fr-FR"` | default for new Books / quick scan |
 | `speechRate` | Double | 1.0 | `SpeechPlayer.speedMultiplier` initial value |
 | `voiceID.<languageCode>` | String (voice identifier) | unset | voice selection per language |
+| `translationLanguage` | String BCP-47 or `"none"` | `"none"` | default translate-to seeding new Books (TRANSLATION_DESIGN) |
 
 ```swift
 enum VoiceStore {   // thin UserDefaults wrapper; keyed per full BCP-47 code
@@ -254,10 +259,15 @@ not `voice.<code>` / `defaultSpeed`), AUDIO_DESIGN's fallback ordering absorbed 
 missing-voice UX, UX_SPEC §2 wins per precedence — **disable play + banner**, not AUDIO_DESIGN §8's
 "speak the system default" row. AUDIO_DESIGN must be amended (carry-forward task; logged in DECISIONS.md).
 
-The two non-voice rows are plain. **Target language**: a `Picker` over `BookFormView`'s nine-language
+The plain (non-voice) rows are three. **Target language**: a `Picker` over `BookFormView`'s nine-language
 list, bound to `targetLanguage` (defaults *new* Books only). **Default speech rate**: the Reader speed
 picker's exact stepped 0.5×–1.0× values (`SpeechPlayer.speedMultiplier`'s displayed range), bound to
 `speechRate` — a continuous slider was rejected so Settings and Reader never show unrepresentable values.
+**Default translate-to language**: a `Picker` over the same nine-language list plus a leading **None (off)**
+row, bound to `translationLanguage` (`"none"` ⇒ new Books start with translation off). It only seeds
+`Book.translationLanguage` at create time (per-book override lives in the Reader [⋯] menu / OCRReview /
+BookForm); the translation engine that consumes it is TRANSLATION_DESIGN's, not re-specified here. It sits
+beside `targetLanguage` because a learner's read-and-listen language and their gloss language differ.
 
 Voice picker rows, grouped per language. **Group list derivation:** `targetLanguage` ∪ distinct
 `Book.languageCode` ∪ distinct `SavedWord.languageCode` (two fetches, dedup in memory). Each row: voice
@@ -335,7 +345,11 @@ card's context menu, stop playback first (indices shift), and rewrite `orderInde
   half is meaningless). The original model keeps the first part (and its srs/note/bookmark); the
   remainder becomes a new un-bookmarked `Sentence` at the next `orderIndex`.
 
-No free-text editing of sentence text in v1 (that's transcription repair, a different feature). No undo
+Free-text editing of the OCR transcription happens **at scan time** in `OCRReviewView` (Change 2 /
+DECISIONS #22 / OCR_PIPELINE) — the full page text is freely editable there before anything is saved.
+Once a page is persisted, structure is fixed only via merge/split above; **re-splitting a saved page from
+edited full text is out of scope for v1** because rebuilding the sentence list would destroy each
+sentence's `srs`, `userNote`, `isBookmarked`, and `translatedText`. No undo
 stack — but not on an invertibility claim: **merge is lossy** for the absorbed sentence (its `srs`
 history and `userNote` are discarded; only text and bookmark flag survive), and a later split can't
 restore them. Accepted because the action is rare and the stakes are one sentence's stats — and the
@@ -377,6 +391,8 @@ has a `userNote` or `srs.repetitions > 0`**, and is immediate otherwise.
 3. `speechRate` is a global default while `SpeechPlayer.speedMultiplier` is per-screen mutable — should
    the Reader's speed picker write back to the global default or stay session-local? (Design: session-local.)
 4. Cap of 20 is fixed per plan §4.5 — expose as a Settings stepper in v1 or hold until users ask?
+5. Should changing the Settings `translationLanguage` default retro-offer to apply to existing Books, or
+   only seed new ones? (Design: seed new only — existing books keep their per-book choice; TRANSLATION_DESIGN owns any bulk-apply.)
 
 ## Carry-forward tasks
 
@@ -402,6 +418,14 @@ has a `userNote` or `srs.repetitions > 0`**, and is immediate otherwise.
       across relaunch and stats reflect the last review.
 - [ ] **SettingsView + VoiceStore** — language default, per-language voice picker with per-language sample
       preview, rate; acceptance: chosen voice is used by Reader and Review playback for that language.
+- [ ] **Settings default translate-to language** — `@AppStorage("translationLanguage")` picker (nine
+      languages + None) beside `targetLanguage`/`speechRate`/`voiceID` per §4; acceptance: picking a
+      language seeds `Book.translationLanguage` on newly created Books, picking None leaves new Books with
+      translation off, and existing Books are unaffected.
+- [ ] **Read-only translation in Saved sentence detail** — surface non-nil `Sentence.translatedText` in
+      `.secondary` style per §3; acceptance: a bookmarked sentence that was translated in the Reader shows
+      its stored translation read-only, an untranslated one shows nothing, and the detail view never kicks
+      off a translation.
 - [ ] **SpeechPlayer voice/rate resolution** — identifier lookup, then exact-language, then primary-subtag
       fallback per §4; acceptance: with a stored voiceID that exact voice speaks; with none, a "zh-Hans"
       book resolves to a zh-* voice — never the system-default voice in the wrong language.

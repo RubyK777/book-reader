@@ -257,7 +257,7 @@ targets:
 
 1. Should auto-advance insert a short inter-sentence `postUtteranceDelay` (e.g. 0.2 s) even outside repeat mode, for read-along pacing? Needs testing against highlight-drift perception.
 2. When Phase 2 wires SwiftData, should `SpeechPlayer` speak `Sentence` models directly (enabling per-sentence bookmark state in Now Playing) or stay `[String]`-based with the view mapping indices? Leaning `[String]` + index mapping to keep the service model-free.
-3. Does `pauseSpeaking(at: .word)` + `continueSpeaking()` survive a full app-suspension cycle on iOS 17.4 devices, or is replay-from-sentence-start needed there too (§3 chose replay for interruptions; the toggle path still uses continue)? Needs on-device verification.
+3. Does `pauseSpeaking(at: .word)` + `continueSpeaking()` survive a full app-suspension cycle on iOS 18 devices, or is replay-from-sentence-start needed there too (§3 chose replay for interruptions; the toggle path still uses continue)? Needs on-device verification.
 4. Review-mode audio (plan §4.5, listen-first flashcards) will reuse `SpeechPlayer` with a 1-element queue — does it need `repeatMode` semantics or a dedicated `speakOnce(_:)` API?
 
 ## Carry-forward tasks

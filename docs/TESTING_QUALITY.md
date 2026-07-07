@@ -174,8 +174,8 @@ Error/permission states are covered manually (§4) — camera permission dialogs
 
 ## 4. Manual release checklist (run per TestFlight/App Store build)
 
-- **Device matrix:** iPhone 12 (the §9 performance baseline, physical), newest iPhone (physical), any iPad (simulator OK — layout only). Oldest supported OS 17.4 on at least one device.
-- **Airplane-mode run-through:** enable airplane mode + Wi-Fi off *before launch*; full loop: scan → read → highlight → save word → review. Zero degradation allowed (§9 "all features functional in airplane mode").
+- **Device matrix:** iPhone 12 (the §9 performance baseline, physical), newest iPhone (physical), any iPad (simulator OK — layout only). Oldest supported OS **18.0** on at least one device.
+- **Airplane-mode run-through:** enable airplane mode + Wi-Fi off *before launch*; full loop: scan → read → highlight → save word → review. Zero degradation allowed (§9 "all features functional in airplane mode"). **Translation caveat:** the language pack for a pair downloads once online (DECISIONS #23) — pre-download the test pair before going offline, then confirm translations render with the network off.
 - **VoiceOver pass (Reader):** every sentence card focusable and read; playback bar buttons labeled (prev/play-pause/next/repeat/speed); tap-to-play works via double-tap; active-card change is announced or discoverable.
 - **Voice quality check:** for each of the 9 supported languages: play one sentence with the default **compact** voice, then install the **enhanced** voice (Settings → Accessibility → Spoken Content) and replay. Confirm the app picks up the better voice and word highlighting still tracks (enhanced voices have different timing granularity).
 - **Highlight-drift check (§9 "< 100 ms"):** verified by observation, not instrumentation — the observable proxy is: at 0.5× speed on the slowest device (iPhone 12), the highlight never visibly lags or leads the audible word, for one compact and one enhanced voice. If borderline, take a screen recording with audio and scrub frame-by-frame (each frame ≈ 17–33 ms). Per-voice anomalies feed Open Question 2.

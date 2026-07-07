@@ -95,3 +95,49 @@ entries stand as history).*
     rejected "link to Saved/Review" hub to the TabView shape (#3); Library's `+` is new-book, a
     separate Scan button launches capture (PHASE2 §3 wins); first-scan tip copy standardizes on
     "Long-press to save words" (UX_SPEC §7). (ARCHITECTURE §2, PHASE2 §3, UX_SPEC §1/§7)
+
+## 2026-07-06 — Any-language, OCR editing & translation
+
+21. **Auto-detected source language; the scan flow becomes capture-first.** OCR no longer needs a
+    pre-picked language: `recognizeText(in:languageHint:)` runs Vision with
+    `automaticallyDetectsLanguage = true` (or `recognitionLanguages = [hint]` when a Book's language is
+    known), and `OCRResult.detectedLanguageCode` is computed via `NLLanguageRecognizer` over the
+    assembled text. `Book.languageCode` is auto-set from the language confirmed on the first page
+    (editable later), so `BookFormView` no longer forces a create-time pick. *Why:* the user shouldn't
+    have to name a language before scanning it; detection then confirm is fewer taps and fixes wrong
+    guesses. *Honest limit:* "any language" = any in `VNRecognizeTextRequest.supportedRecognitionLanguages`
+    for the `.accurate` revision (Latin scripts + zh/ja/ko/…), not literally every language.
+    **Supersedes the ordering clause of #4** (assign-before-capture "so the language is known before
+    OCR") — capture and OCR now run first, assign after; #4's "every scan persists into a Book" clause
+    still stands. (OCR_PIPELINE §1/§4.5, PHASE2 §5, UX_SPEC §2)
+22. **Editable OCR result — `OCRReviewView` between OCR and persistence.** A new post-OCR/pre-persist
+    screen (`Features/Scan/OCRReviewView.swift`) shows a full-height editable `TextEditor` prefilled with
+    `OCRResult.text`, a source-language Picker prefilled with `detectedLanguageCode` (correctable — this
+    is how a wrong detection is fixed), and the translate-to Picker; **Use** splits the *edited* text via
+    `SentenceSplitter` under the confirmed language then persists, **Retake** returns to capture. *Why:*
+    nothing is saved yet, so full-text editing here is free and risks no sentence-level srs/bookmark.
+    Relaxes PHASE3 §6's "no free-text editing in v1" to: full-text edit only at scan time; after save,
+    structure is fixed via merge/split, and re-splitting a saved page from edited full text is out of
+    scope for v1 (it would destroy sentence-level srs/bookmarks). (OCR_PIPELINE §4.5, PHASE2 §5.1,
+    UX_SPEC §2, PHASE3 §6)
+23. **Inline, persisted translation via the Translation framework; minimum target 17.4 → 18.0.** The
+    Reader attaches SwiftUI's `.translationTask(_:action:)` (iOS 18), which provides a
+    `TranslationSession`; a batch `session.translations(from:)` writes each `response.targetText` back to
+    `Sentence.translatedText` (persisted → offline thereafter). `LanguageAvailability().status(from:to:)`
+    gates the pair; first use of a new pair triggers the system language-download consent — network once,
+    then fully offline (honestly denting "works on a plane" for that first pair only). *Why:* the
+    programmatic/inline Translation API is iOS 18, so the target rises from 17.4 (PROJECT_PLAN §8
+    decision 4's rationale is rewritten accordingly). *Rejected:* `.translationPresentation(isPresented:text:)`
+    (iOS 17.4) — an on-demand single-string system sheet — because the user wants inline, persisted,
+    whole-page translation. Full design lives in the new **docs/TRANSLATION_DESIGN.md**. (TRANSLATION_DESIGN
+    §3/§6, PROJECT_PLAN §8, ARCHITECTURE §3)
+24. **Translation fields join `ReadAloudSchemaV2`; translation is never spoken; clear-on-target-change.**
+    `Book.translationLanguage: String?` (nil = off) and `Sentence.translatedText: String?` are added
+    alongside PHASE3's `SavedWord.sourceBookTitle` in one lightweight migration stage. The target is
+    chosen per Book (Reader `[⋯]`, OCRReview, BookForm, plus a Settings `@AppStorage("translationLanguage")`
+    default with None seeding new books); changing it clears that book's now-stale `translatedText`,
+    re-translated lazily on next Reader open. TTS **always** speaks the source — translation is a visual
+    aid rendered `.secondary` under each card with a toolbar toggle, its own VoiceOver element. *Why:*
+    one migration for all V2 optionals; speaking a machine translation would mis-teach pronunciation, and
+    stale translations after a target switch would be worse than none. (TRANSLATION_DESIGN §3–§9, PHASE2
+    §8, PHASE3 §3/§4, UX_SPEC §3/§6)

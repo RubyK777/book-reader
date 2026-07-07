@@ -9,7 +9,7 @@ iOS app for language learners: photograph a book page → on-device OCR → list
 | What are we building, in what order? | [PROJECT_PLAN.md](PROJECT_PLAN.md) — master spec (screens, phases, risks, acceptance criteria) |
 | What exists right now, and its contracts? | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | What do I build next? | [docs/TASKS.md](docs/TASKS.md) — **source of truth backlog; check items off as they land** |
-| How is feature X designed? | `docs/PHASE2_DESIGN.md`, `PHASE3_DESIGN.md`, `UX_SPEC.md`, `AUDIO_DESIGN.md`, `OCR_PIPELINE.md`, `TESTING_QUALITY.md` |
+| How is feature X designed? | `docs/PHASE2_DESIGN.md`, `PHASE3_DESIGN.md`, `UX_SPEC.md`, `AUDIO_DESIGN.md`, `OCR_PIPELINE.md`, `TRANSLATION_DESIGN.md`, `TESTING_QUALITY.md` |
 | Why was it decided this way? | [docs/DECISIONS.md](docs/DECISIONS.md) — append-only decision log |
 
 Keep these documents current: when you finish a task, tick it in TASKS.md; when you make a nontrivial design choice, append it to DECISIONS.md; when structure changes, update ARCHITECTURE.md.
@@ -40,8 +40,10 @@ Ruby's standing rule for all agents working in this repo:
 
 ## Conventions
 
-- iOS 17.4+ · SwiftUI · `@Observable` macro (never ObservableObject) · SwiftData · Swift Concurrency.
+- iOS 18.0+ · SwiftUI · `@Observable` macro (never ObservableObject) · SwiftData · Swift Concurrency.
 - Layout: `Features/<Screen>/` for views, `Services/` for logic, `Models/Models.swift` for the SwiftData schema, `Shared/` for reusable UI.
 - `languageCode` is full BCP-47 (`"fr-FR"`) everywhere; trim to 2 letters only at NL/Vision API call sites.
 - `SRSState` is a Codable struct → `#Predicate` can't reach `srs.dueDate`; fetch candidates and filter in memory (see DECISIONS.md).
 - `SpeechPlayer.isJumping` suppresses auto-advance on programmatic jumps — preserve this if touching playback (state machine in docs/AUDIO_DESIGN.md).
+- `Book.languageCode` is **auto-detected** at scan time (confirmed in `OCRReviewView`), not pre-picked; the scan flow is capture-first (see DECISIONS #21–#22).
+- Translation is a **visual aid, never spoken** — TTS always speaks the source; translations persist in `Sentence.translatedText` and clear when a book's target changes (iOS 18 Translation framework, docs/TRANSLATION_DESIGN.md).

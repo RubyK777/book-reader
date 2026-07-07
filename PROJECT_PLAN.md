@@ -4,7 +4,7 @@
 **Status:** Phase 1 core loop built (scan → tap-to-hear works; word highlight shipped early). OCR spike on real fixtures still pending. Phase 2 next.
 **Last updated:** 2026-07-06
 **Owner:** Ruby
-**Target:** iOS 17.4+, SwiftUI, fully on-device
+**Target:** iOS 18.0+, SwiftUI, fully on-device
 
 > **Detailed design docs live in [`docs/`](docs/)** — architecture, per-phase designs, UX/audio/OCR/testing specs, the carry-forward backlog ([docs/TASKS.md](docs/TASKS.md)), and the decision log ([docs/DECISIONS.md](docs/DECISIONS.md)). This file stays the high-level spec; the docs carry the implementation detail.
 
@@ -20,10 +20,17 @@ Language learners acquire vocabulary and pronunciation best by **reading while l
 
 **Goals**
 - Convert photographed book text to per-sentence audio, offline
+- Read text in **any auto-detected source language** — no pre-picking; the language is detected
+  from the page and confirmed at scan (bounded to Vision's `.accurate` supported scripts —
+  Latin + zh/ja/ko/… — see §5.1, docs/OCR_PIPELINE.md)
+- **Correct the OCR text** before it is saved (full-text edit at scan time)
+- **Inline, persisted translation** under each sentence as a learning aid (never spoken — TTS
+  stays on the source; iOS 18 Translation framework, docs/TRANSLATION_DESIGN.md)
 - Karaoke-style word highlighting synced with speech
 - Save words and sentences with notes
 - Spaced-repetition review mode
-- Zero server dependency — private, works on a plane
+- Zero server dependency — private, works on a plane (one exception: the first translation of a
+  new language pair triggers a one-time system pack download — §9)
 
 **Non-Goals (v1)**
 - No user accounts, sync, or cloud storage
@@ -31,6 +38,8 @@ Language learners acquire vocabulary and pronunciation best by **reading while l
 - No full-book audiobook generation
 - No social/sharing features
 - No custom neural TTS voices (system voices only)
+- No re-splitting a saved page from edited full text (would destroy sentence-level SRS/bookmarks —
+  post-save fixes are merge/split only; docs/PHASE3_DESIGN.md §6)
 
 ## 3. Core User Flow
 
@@ -49,14 +58,49 @@ Photo/Live Text → OCR → sentence split → tap to listen
   (docs/PHASE2_DESIGN.md §3; DECISIONS.md #20)
 - Saved Items and Review are sibling tabs, not links; the Review tab carries the due-count badge
 
-### 4.2 Camera / Scan
+### 4.2 Camera / Scan *(capture-first)*
+- **Capture-first flow** — OCR auto-detects the source language, so nothing is picked up front.
+  This supersedes the old "assign-before-capture so OCR knows the language" ordering (every scan
+  still persists into a Book — DECISIONS.md #4/#21):
+  ```
+  Library (book unknown):
+    capture/import → OCR(auto-detect) → OCRReview(edit text · confirm source language · choose translate-to)
+      → assign (pick or quick-create Book; source language pre-filled from detection) → persist → push Reader
+  Book-detail "Add Page" (book known):
+    capture/import → OCR(languageHint = book.languageCode) → OCRReview(edit text · confirm source language ·
+      translate-to inherited from book) → persist → push Reader
+  ```
 - System document camera (`VNDocumentCameraViewController`) — auto edge detection, deskew,
   multi-page capture (docs/OCR_PIPELINE.md §1)
 - Photo-library import fallback
 - Post-capture crop/rotate — provided by the document camera's corner-adjust review step on the
   camera path; imports skip crop in v1 (the OCR quality gate catches bad ones)
-- Assign scan to a Book (or quick-create)
 - **Stretch:** VisionKit Live Text mode for instant tap-to-hear
+
+### 4.2a OCR Review / Edit *(new — between OCR and persistence)*
+- `Features/Scan/OCRReviewView.swift`, shown AFTER OCR and BEFORE anything is saved — so editing
+  is free (no SRS/bookmark at risk).
+- Full-height `TextEditor` prefilled with `OCRResult.text`; a **source-language Picker** prefilled
+  with `detectedLanguageCode` (correcting it here is how the user fixes a wrong detection); the
+  optional **translate-to Picker** (§4.7).
+- `Use` splits the **edited** text via `SentenceSplitter` using the confirmed source language, then
+  persists (source language auto-sets `Book.languageCode` on the first page). `Retake` → capture.
+
+```
+┌─────────────────────────────┐
+│ ✕ Review          [Use]     │
+├─────────────────────────────┤
+│ Source: [Français ▾]        │  ← prefilled from detection, correctable
+│ Translate to: [English ▾]   │  ← optional (None = off)
+├─────────────────────────────┤
+│ Le petit prince vivait sur  │
+│ une planète à peine plus    │  ← editable full OCR text
+│ grande que lui.             │
+│ …                           │
+├─────────────────────────────┤
+│           [Retake]          │
+└─────────────────────────────┘
+```
 
 ### 4.3 Sentence Reader *(core screen — wireframe below)*
 - Sentences rendered as tappable cards
@@ -64,7 +108,12 @@ Photo/Live Text → OCR → sentence split → tap to listen
 - Bottom playback bar: prev / play-pause / next, repeat toggle, speed (0.5×–1.0×)
 - Star icon per sentence → bookmark
 - Long-press sentence card → word-chip sheet → Save Word / Look Up (card-level gesture supersedes
-  per-word long-press — see docs/PHASE2_DESIGN.md §7; Translate stays a Phase 4 stretch)
+  per-word long-press — see docs/PHASE2_DESIGN.md §7)
+- **Translation under each card** — if the book has a translate-to language, the persisted
+  `Sentence.translatedText` renders under the sentence in a secondary style (`.secondary`, slightly
+  smaller, visually separated). Toolbar `[⋯]` menu picks the per-book translate-to language; a
+  toolbar toggle shows/hides translations. TTS always speaks the SOURCE — translation is visual only.
+  Full design in docs/TRANSLATION_DESIGN.md.
 - Auto-scroll keeps active card centered
 
 ```
@@ -103,24 +152,37 @@ Photo/Live Text → OCR → sentence split → tap to listen
 
 ### 4.6 Settings
 - Target language, preferred voice, default speech rate
+- **Default translate-to language** — `@AppStorage("translationLanguage")`, seeds new books;
+  includes a **None** (off) option. Sits beside `targetLanguage` / `speechRate` / `voiceID`.
 - Enhanced-voice download guidance: in-app instruction card — Settings deep links into
   Accessibility are private API (`App-Prefs:` schemes) and App Store-rejectable; see
   [docs/PHASE3_DESIGN.md](docs/PHASE3_DESIGN.md) §4
 - Data export (JSON) — stretch
+
+### 4.7 Translation *(new — inline learning aid)*
+- Whole-page, **persisted** translation shown under each sentence card (§4.3), never spoken.
+- Target language is **per Book** (Reader `[⋯]` menu · OCRReview · BookForm), seeded from the
+  Settings default. Changing `Book.translationLanguage` clears that book's stale
+  `Sentence.translatedText` → re-translated lazily on next Reader open.
+- iOS 18 Translation framework: SwiftUI's `.translationTask` provides a `TranslationSession`;
+  sentences are batch-translated and written back to `Sentence.translatedText` (offline thereafter).
+  Full design + API facts in docs/TRANSLATION_DESIGN.md. Word-level translate is a nice-to-have
+  reusing the same target.
 
 ## 5. Architecture
 
 ### 5.1 Stack
 | Concern | Technology | Notes |
 |---|---|---|
-| UI | SwiftUI, iOS 17+ | @Observable macro |
-| OCR | Vision `VNRecognizeTextRequest` | `recognitionLanguages` from Book.languageCode |
+| UI | SwiftUI, iOS 18+ | @Observable macro |
+| OCR | Vision `VNRecognizeTextRequest` | `automaticallyDetectsLanguage = true`; optional `languageHint` from Book.languageCode |
+| Language detect | NaturalLanguage `NLLanguageRecognizer` | dominant language of assembled OCR text → `detectedLanguageCode` |
 | Live scan | VisionKit `DataScannerViewController` | stretch |
 | Sentence split | NaturalLanguage `NLTokenizer(.sentence)` | language-aware |
-| TTS | `AVSpeechSynthesizer` | offline; `willSpeakRangeOfSpeechString` → highlight |
+| TTS | `AVSpeechSynthesizer` | offline; `willSpeakRangeOfSpeechString` → highlight; speaks source only |
 | Dictionary | `UIReferenceLibraryViewController` | built-in |
-| Translation | Translation framework (iOS 17.4+) | stretch |
-| Persistence | SwiftData | schema below |
+| Translation | Translation framework (iOS 18) | inline persisted; `.translationTask` + `TranslationSession`; docs/TRANSLATION_DESIGN.md |
+| Persistence | SwiftData | schema below (ReadAloudSchemaV2) |
 
 ### 5.2 Module Layout
 ```
@@ -143,16 +205,22 @@ ReadAloud/
 ```
 
 ### 5.3 Data Model (summary — full code in Models.swift)
-- **Book** — title, languageCode (BCP-47), pages[] (cascade)
+- **Book** — title, languageCode (BCP-47, **auto-set** from the confirmed source language of the
+  first page; editable later), `translationLanguage: String?` (BCP-47; nil = translation off), pages[] (cascade)
 - **ScanPage** — imageData, rawText, orderIndex, sentences[] (cascade)
-- **Sentence** — text, orderIndex, isBookmarked, userNote?, srs?
+- **Sentence** — text, orderIndex, isBookmarked, userNote?, srs?, `translatedText: String?` (persisted)
 - **SavedWord** — word, contextSentence (snapshot), languageCode, userNote?, srs?
 - **SRSState** — Codable struct, SM-2 (repetitions, easeFactor, intervalDays, dueDate)
+
+`translationLanguage` + `translatedText` (plus PHASE3's `SavedWord.sourceBookTitle`) join
+**ReadAloudSchemaV2** — one lightweight migration adds all the optional fields together.
 
 Key decisions:
 - `contextSentence` is a **string snapshot** so vocab survives page deletion
 - `SRSState` is a value type shared by words and sentences
-- `languageCode` on Book drives both OCR language and voice selection
+- `languageCode` on Book drives both OCR language and voice selection; it is no longer pre-picked —
+  detection (`OCRResult.detectedLanguageCode`, via NLLanguageRecognizer) confirms it in OCRReview
+- `translatedText` is cleared when `Book.translationLanguage` changes (stale) → re-translated lazily
 
 ### 5.4 Key Component: SpeechPlayer
 ```
@@ -179,21 +247,28 @@ contract; docs/AUDIO_DESIGN.md §1 designs its evolution.
 - **Exit criteria:** photograph a real book page, hear any sentence spoken correctly
 
 ### Phase 2 — Persistence + learning (~2 wks)
-- [ ] SwiftData schema wired in
+- [ ] SwiftData schema wired in (ReadAloudSchemaV2)
 - [ ] Library, Book/Page management
+- [ ] **Auto-detected source language** — capture-first OCR (`automaticallyDetectsLanguage`) +
+  `NLLanguageRecognizer` → `detectedLanguageCode`; Book.languageCode auto-set (docs/OCR_PIPELINE.md)
+- [ ] **OCR review/edit** — `OCRReviewView` (edit text · confirm source · pick translate-to) before persist
+- [ ] **Inline translation** (iOS 18 Translation framework) — `.translationTask` batch-translates a
+  page, persists `Sentence.translatedText`, renders under cards with a Reader toggle
+  *(spans Phase 2/3; full design docs/TRANSLATION_DESIGN.md)*
 - [ ] Bookmark sentences, save words (card long-press → chip sheet, per docs/PHASE2_DESIGN.md §7)
 - [x] Word-level highlight in Reader *(done in Phase 1)*
 
 ### Phase 3 — Review + polish (~2 wks)
 - [ ] SRSEngine + Review mode
 - [ ] Saved Items screen with notes *(moved from Phase 2 — needs SRS stats + `sourceBookTitle`; see docs/PHASE2_DESIGN.md §3, docs/PHASE3_DESIGN.md §3)*
-- [ ] Speed control, voice picker, Settings
+- [ ] Speed control, voice picker, Settings (incl. default translate-to language)
+- [ ] Translation polish — per-book language picker, show/hide toggle, clear-on-target-change
 - [ ] Dictionary lookup integration
 - [ ] Empty states, error states, haptics
 
 ### Phase 4 — Stretch
 - [ ] Live Text scan mode
-- [ ] On-device translation popups
+- [ ] Word-level translate (reuse the book's translate-to target)
 - [ ] Shadowing: record & compare
 - [ ] Continuous page playback
 - [ ] JSON export
@@ -209,19 +284,27 @@ contract; docs/AUDIO_DESIGN.md §1 designs its evolution.
 | SwiftData migration pain later | Low | Keep schema minimal; version from start |
 
 ## 8. Open Questions — ✅ decided 2026-07-06
-1. Target language: **per Book** (as modeled — `Book.languageCode` drives OCR + TTS voice)
+1. Source language: **auto-detected**, confirmed in OCRReview (capture-first) and auto-set on the
+   Book; `Book.languageCode` still drives OCR hint + TTS voice. Translate-to language: **per Book**.
 2. Storage expiry: **keep pages forever** in v1; revisit if storage complaints arrive
 3. Pricing: **free for v1** — no StoreKit; learn what users value before gating
-4. Minimum iOS: **17.4** — unlocks Translation framework for Phase 4 stretch
+4. Minimum iOS: **18.0** — the inline/programmatic Translation API (`TranslationSession`,
+   `.translationTask`) is iOS 18. (17.4 gave the framework but only the on-demand
+   `.translationPresentation` sheet, rejected for not being inline/persisted — DECISIONS.md #23)
 
 ## 9. Acceptance Criteria (v1 ship)
 - Scan → listenable sentences in ≤ 10 s **per page** on iPhone 12+ (a multi-page batch legitimately
   takes proportionally longer — docs/OCR_PIPELINE.md §1; DECISIONS.md #17)
 - OCR word accuracy ≥ 95% on flat, well-lit pages
 - Word highlight drift imperceptible (< 100 ms)
-- All features functional in airplane mode
+- Source language auto-detected correctly on flat, well-lit pages of a supported script; wrong
+  detection is fixable in OCRReview before saving
+- Inline translation renders under each sentence and persists across restart; TTS speaks the source
+  only; changing a book's translate-to language re-translates on next open
+- All features functional in airplane mode — **one exception**: the first translation of a new
+  language pair needs network once to download the system language pack (fully offline thereafter)
 - Saved items and SRS state survive app restart
-- VoiceOver-navigable Reader screen
+- VoiceOver-navigable Reader screen (translation is its own labeled element within the sentence card)
 
 ## 10. Handoff Checklist
 - [ ] This document reviewed with new owner

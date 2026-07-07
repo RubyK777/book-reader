@@ -20,6 +20,12 @@ From [PHASE2_DESIGN.md](PHASE2_DESIGN.md) § Carry-forward:
 - [ ] Reader accessibility pass · ImageProcessor · `ReadAloudTests` target · due-item query helper
 - [x] Append Phase 2 decisions to DECISIONS.md + matching PROJECT_PLAN §4.3/§6 edits *(done 2026-07-06 — entries 4–8)*
 
+Capture-first + auto-detected source language + editable OCR (DECISIONS #21–#22), from [OCR_PIPELINE.md](OCR_PIPELINE.md) / [PHASE2_DESIGN.md](PHASE2_DESIGN.md) / [UX_SPEC.md](UX_SPEC.md) § Carry-forward:
+- [ ] Rework `OCRService` to `recognizeText(in:languageHint:) async throws -> OCRResult` — `automaticallyDetectsLanguage = true` (hint-less) / `recognitionLanguages = [hint]` (hinted), `detectedLanguageCode` via `NLLanguageRecognizer.dominantLanguage` over assembled text (OCR_PIPELINE §1) — *acceptance: a hint-less French photo returns `detectedLanguageCode == "fr"`; too-short text yields `"und"`.*
+- [ ] Wire the **capture-first** ScanFlow (drop scan-entry/`BookFormView` language pre-pick; `Book.languageCode` auto-set from OCRReview's confirmed language on the first page) per OCR_PIPELINE §1 flow strings — *acceptance: creating a book no longer asks for a language; the first page's confirmed source becomes `Book.languageCode`, editable later.*
+- [ ] Build `Features/Scan/OCRReviewView` between OCR and persist (PHASE2 §5.1, UX_SPEC §2): editable `TextEditor` prefilled with `OCRResult.text`, source-language Picker prefilled from `detectedLanguageCode` (correctable), optional translate-to Picker (incl. None); **Use** splits the *edited* text under the confirmed language then persists, **Retake** returns to capture — *acceptance: editing text + correcting language before Use changes saved sentences and the book language; empty editor disables Use; nothing persists until Use.*
+- [ ] `BookFormView`: no forced source-language pick on create (auto-set on first scan); source + translate-to editable in edit mode (PHASE2 §5.1) — *acceptance: a book created before any scan shows "Set on first scan"; editing language later does not re-OCR pages.*
+
 From [UX_SPEC.md](UX_SPEC.md) § Carry-forward (Phase 2 items):
 - [ ] TabView root + `AppRouter` (incl. `dueCount`/`recomputeDueCount`, DECISIONS #18) + versioned container (all four models registered)
 - [ ] ScanFlowView built on `VNDocumentCameraViewController`; crop = the doc camera's corner-adjust review, no custom overlay (DECISIONS #14); imports skip crop (DECISIONS #15)
@@ -36,12 +42,28 @@ From [AUDIO_DESIGN.md](AUDIO_DESIGN.md) § Carry-forward (Phase 2 items):
 - [ ] `PlaybackState` enum refactor · session activate/deactivate lifecycle
 - [ ] Interruption observer · route-change observer
 
+## Translation (iOS 18) — new subsystem
+
+From [TRANSLATION_DESIGN.md](TRANSLATION_DESIGN.md) § Carry-forward (DECISIONS #23–#24; dependency order):
+- [ ] Bump minimum target 17.4 → 18.0 in `project.yml` + `xcodegen generate` and sweep every "iOS 17.4+" mention (PROJECT_PLAN §5.1/§8, ARCHITECTURE §3) — *acceptance: builds against the 18.0 floor; no doc still asserts 17.4; PROJECT_PLAN §8 decision 4 reads "18.0 for the programmatic Translation API".*
+- [ ] Add `Book.translationLanguage` + `Sentence.translatedText` to `ReadAloudSchemaV2` (joint with `SavedWord.sourceBookTitle`, one lightweight migration stage) — *acceptance: a V1 store opens under V2 with no data loss; both fields default nil.*
+- [ ] `.translationTask` batch translate on `ReaderView` (§3): build `Configuration` from `book.languageCode`/`translationLanguage`, send pending sentences, write `translatedText`, `context.save()` — *acceptance: opening a page with a target fills every card within one batch and persists; reopening offline shows them with zero network; a partial page completes gaps on reopen.*
+- [ ] Per-book target picker in Reader `[⋯]` + clear-on-change with a None option (§4) — *acceptance: changing the target wipes that book's `translatedText` and next open re-translates lazily; None hides + clears; other books untouched.*
+- [ ] Inline translation UI + `文A` show/hide toggle as one `SentenceCard` (§5) — *acceptance: translation renders under the source in `.secondary` smaller type; toggle hides/shows without recompute, disabled when no target; active card speaks SOURCE only.*
+- [ ] `LanguageAvailability` status handling + first-use download + error/offline/unsupported rows (§6, reuse AUDIO_DESIGN §8 amber row) — *acceptance: an uninstalled pair triggers the system download once then works offline; unsupported pair blocked in picker; a throw shows a retry row re-sending only pending sentences.*
+- [ ] Guarantee TTS ignores `translatedText` (§5) — *acceptance: with translations visible, playback speaks only source; assert `SpeechPlayer.sentences == pageSentences.map(\.text)`.*
+- [ ] Translation accessibility pass (§9) — *acceptance: VoiceOver reads the translation as its own "Translation: …" element, Dynamic Type scales it, the toggle is labeled, download/error rows are announced.*
+- [ ] (Optional / Phase 4) Word-level translate chip (§8) reusing the book target — *acceptance: the word-chip sheet offers Translate and shows a gloss via one session request without persisting.*
+
 ## Phase 3 — Review + polish
 
 From [PHASE3_DESIGN.md](PHASE3_DESIGN.md) § Carry-forward:
 - [ ] SRSEngine · `ReadAloudSchemaV2` (`SavedWord.sourceBookTitle`)
 - [ ] ReviewView + tab badge (due-count holder) · ReviewSessionView/Model · session summary
 - [ ] SavedItemsView + detail · SettingsView + VoiceStore · SpeechPlayer voice/rate resolution
+- [ ] Settings default translate-to `@AppStorage("translationLanguage")` (nine languages + None) beside `targetLanguage`/`speechRate`/`voiceID` (PHASE3 §4, DECISIONS #24) — *acceptance: picking a language seeds `Book.translationLanguage` on new Books; None leaves new Books translation-off; existing Books unaffected.*
+- [ ] Read-only translation in Saved sentence detail — surface non-nil `Sentence.translatedText` in `.secondary` style (PHASE3 §3) — *acceptance: a translated bookmarked sentence shows its stored translation read-only; the detail view never kicks off a translation.*
+- [ ] Relax PHASE3 §6 "no free-text editing in v1" note — full-text edit happens at scan time in `OCRReviewView`; after save, structure is fixed via merge/split, re-splitting a saved page is out of scope for v1 (DECISIONS #22) — *acceptance: PHASE3 §6 note reads as relaxed; no doc claims sentence text is uneditable everywhere.*
 - [ ] Amend AUDIO_DESIGN §6/§8 to the VoiceStore contract (DECISIONS #10)
 - [ ] Enhanced-voice guidance card · DictionaryService/View · sentence merge & split
 - [ ] Reader "Add Note…" · accessibility pass · polish pass (haptics, empty/error states)

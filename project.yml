@@ -2,7 +2,7 @@ name: ReadAloud
 options:
   bundleIdPrefix: com.rubyhung
   deploymentTarget:
-    iOS: "17.4"
+    iOS: "18.0"
   createIntermediateGroups: true
 
 targets:
