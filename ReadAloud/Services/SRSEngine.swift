@@ -38,6 +38,30 @@ enum ReviewItem: Identifiable {
     }
   }
 
+  /// A translation already persisted for this item (bookmarked sentences
+  /// translated in the Reader). Words have none — the session translates them
+  /// live on reveal. Used as the flashcard "answer" (the meaning).
+  var existingTranslation: String? {
+    switch self {
+    case let .sentence(s): s.translatedText
+    case .word: nil
+    }
+  }
+
+  /// The user's own note, shown on the answer side.
+  var note: String? {
+    switch self {
+    case let .sentence(s): s.userNote
+    case let .word(w): w.userNote
+    }
+  }
+
+  /// A single word vs. a full sentence — drives front-card typography.
+  var isWord: Bool {
+    if case .word = self { return true }
+    return false
+  }
+
   /// BCP-47 language for TTS.
   var languageCode: String {
     switch self {

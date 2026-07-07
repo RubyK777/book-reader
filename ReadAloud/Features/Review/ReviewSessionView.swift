@@ -1,16 +1,23 @@
 import SwiftUI
 import SwiftData
+import Translation
 
-/// Listen-first flashcard session (PHASE3_DESIGN §2). Each card auto-plays its
-/// prompt via `SpeechPlayer`; the reviewer recalls, reveals, then grades. A
-/// grade of "Again" re-enqueues the item once at the tail. Reaching the end
-/// shows a summary. All grading persists immediately via `SRSEngine.grade`.
+/// Recognition flashcard session (PHASE3_DESIGN §2). The FRONT shows the
+/// foreign word/sentence (read it, hear it); the reviewer recalls its meaning,
+/// then reveals the BACK — the translation into their native language, plus
+/// their note and (for words) the source sentence. A grade of "Again"
+/// re-enqueues the item once at the tail; the end shows a summary. Grading
+/// persists immediately via `SRSEngine.grade`.
 struct ReviewSessionView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppRouter.self) private var router
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("nativeLanguage") private var nativeLanguage = LanguageCatalog.deviceDefaultNative
 
     private enum Phase { case recall, revealed, summary }
+
+    /// The revealed meaning (translation) for the current card.
+    private enum Meaning: Equatable { case none, translating, ready(String), unavailable }
 
     @State private var queue: [ReviewItem]
     @State private var index = 0
@@ -20,6 +27,10 @@ struct ReviewSessionView: View {
     @State private var player = SpeechPlayer()
     @State private var showEndConfirm = false
     @State private var remainingDue = 0
+
+    // Meaning resolution for the current card.
+    @State private var meaning: Meaning = .none
+    @State private var translateConfig: TranslationSession.Configuration?
 
     init(items: [ReviewItem]) {
         _queue = State(initialValue: items)
@@ -57,6 +68,9 @@ struct ReviewSessionView: View {
             } message: {
                 Text("Cards you've already graded keep their progress.")
             }
+            .translationTask(translateConfig) { session in
+                await translateCurrent(using: session)
+            }
         }
     }
 
@@ -71,48 +85,38 @@ struct ReviewSessionView: View {
 
             Spacer()
 
-            if phase == .recall {
-                Image(systemName: "speaker.wave.2.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(DesignSystem.accent)
-                    .accessibilityLabel("Listen to the prompt")
+            // FRONT: the foreign word/sentence — read it and hear it, recall the meaning.
+            VStack(spacing: DesignSystem.Spacing.md) {
+                Text(item.promptText)
+                    .font(item.isWord ? .largeTitle.weight(.bold) : .title2.weight(.semibold))
+                    .multilineTextAlignment(.center)
 
                 Button {
                     speak(item.promptText, item.languageCode)
                 } label: {
-                    Label("Replay", systemImage: "arrow.clockwise")
+                    Label("Play", systemImage: "speaker.wave.2.fill")
                 }
                 .buttonStyle(.bordered)
-            } else {
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    Text(item.revealText)
-                        .font(.title2.weight(.semibold))
-                        .multilineTextAlignment(.center)
+                .controlSize(.small)
+            }
+            .padding(.horizontal, DesignSystem.Spacing.md)
 
-                    if let context = item.contextText, !context.isEmpty {
-                        VStack(spacing: DesignSystem.Spacing.sm) {
-                            Text(context)
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                            Button {
-                                speak(context, item.languageCode)
-                            } label: {
-                                Label("Play sentence", systemImage: "speaker.wave.2")
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                        }
-                    }
-                }
-                .padding(.horizontal, DesignSystem.Spacing.md)
+            // BACK: the meaning + note + source sentence.
+            if phase == .revealed {
+                Divider().padding(.horizontal, DesignSystem.Spacing.xl)
+                answerView(item)
+                    .padding(.horizontal, DesignSystem.Spacing.md)
+            } else {
+                Text("What does this mean?")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
 
             if phase == .recall {
                 Button {
-                    withAnimation { phase = .revealed }
+                    reveal(item)
                 } label: {
                     Text("Reveal answer")
                         .font(.headline)
@@ -127,6 +131,61 @@ struct ReviewSessionView: View {
         .padding(DesignSystem.Spacing.lg)
         .task(id: index) {
             speak(item.promptText, item.languageCode)
+        }
+    }
+
+    /// The answer side: translated meaning, the user's note, and (for words)
+    /// the source sentence.
+    @ViewBuilder
+    private func answerView(_ item: ReviewItem) -> some View {
+        VStack(spacing: DesignSystem.Spacing.md) {
+            switch meaning {
+            case .translating:
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    ProgressView().controlSize(.small)
+                    Text("Translating…").foregroundStyle(.secondary)
+                }
+            case let .ready(text):
+                Text(text)
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(DesignSystem.accent)
+                    .multilineTextAlignment(.center)
+            case .unavailable:
+                if item.note == nil || item.note?.isEmpty == true {
+                    Text("No translation available for this language")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            case .none:
+                EmptyView()
+            }
+
+            if let note = item.note, !note.isEmpty {
+                VStack(spacing: DesignSystem.Spacing.xs) {
+                    Text("Your note")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text(note)
+                        .font(.callout)
+                        .multilineTextAlignment(.center)
+                }
+            }
+
+            if let context = item.contextText, !context.isEmpty {
+                VStack(spacing: DesignSystem.Spacing.sm) {
+                    Text(context)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button {
+                        speak(context, item.languageCode)
+                    } label: {
+                        Label("Play sentence", systemImage: "speaker.wave.2")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
         }
     }
 
@@ -226,6 +285,43 @@ struct ReviewSessionView: View {
         player.play(at: 0)
     }
 
+    /// Flip to the answer and resolve its meaning: reuse a stored translation,
+    /// skip when the source is already the native language, else translate live.
+    private func reveal(_ item: ReviewItem) {
+        withAnimation { phase = .revealed }
+
+        if let existing = item.existingTranslation, !existing.isEmpty {
+            meaning = .ready(existing)
+            return
+        }
+        let sourceBase = String(item.languageCode.prefix(2)).lowercased()
+        let nativeBase = String(nativeLanguage.prefix(2)).lowercased()
+        guard sourceBase != nativeBase else {
+            meaning = .unavailable   // already in the reader's language — nothing to translate
+            return
+        }
+        meaning = .translating
+        translateConfig = TranslationSession.Configuration(
+            source: Locale.Language(identifier: item.languageCode),
+            target: Locale.Language(identifier: nativeLanguage))
+    }
+
+    @MainActor
+    private func translateCurrent(using session: TranslationSession) async {
+        guard let item = current else { return }
+        do {
+            let responses = try await session.translations(
+                from: [TranslationSession.Request(sourceText: item.promptText)])
+            if let text = responses.first?.targetText, !text.isEmpty {
+                meaning = .ready(text)
+            } else {
+                meaning = .unavailable
+            }
+        } catch {
+            meaning = .unavailable
+        }
+    }
+
     private func submit(_ grade: ReviewGrade, _ item: ReviewItem) {
         SRSEngine.grade(item, grade, in: modelContext)
         tally[grade, default: 0] += 1
@@ -241,6 +337,8 @@ struct ReviewSessionView: View {
 
     private func advance() {
         player.stop()
+        meaning = .none
+        translateConfig = nil
         if index + 1 < queue.count {
             phase = .recall
             index += 1
@@ -264,6 +362,8 @@ struct ReviewSessionView: View {
         phase = .recall
         tally = [:]
         requeuedIDs = []
+        meaning = .none
+        translateConfig = nil
     }
 
     private func finish() {
