@@ -190,19 +190,40 @@ struct ReviewSessionView: View {
     }
 
     private func gradeButtons(_ item: ReviewItem) -> some View {
-        HStack(spacing: DesignSystem.Spacing.sm) {
-            ForEach(ReviewGrade.allCases) { grade in
-                Button {
-                    submit(grade, item)
-                } label: {
-                    Text(grade.label)
-                        .font(.subheadline.weight(.semibold))
+        VStack(spacing: DesignSystem.Spacing.sm) {
+            Text("How well did you know it?")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                ForEach(ReviewGrade.allCases) { grade in
+                    Button {
+                        submit(grade, item)
+                    } label: {
+                        VStack(spacing: 2) {
+                            Text(grade.label)
+                                .font(.subheadline.weight(.semibold))
+                            Text(grade.hint)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                         .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .tint(tint(for: grade))
+                    .accessibilityLabel("\(grade.label), \(grade.hint)")
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .accessibilityLabel("Grade \(grade.label)")
             }
+        }
+    }
+
+    private func tint(for grade: ReviewGrade) -> Color {
+        switch grade {
+        case .again: .red
+        case .hard: .orange
+        case .good: .green
+        case .easy: .blue
         }
     }
 

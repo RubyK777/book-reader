@@ -102,6 +102,16 @@ enum ReviewGrade: Int, CaseIterable, Identifiable {
     case .easy: "Easy"
     }
   }
+
+  /// Plain-language hint under each grade, so the choice is self-explanatory.
+  var hint: String {
+    switch self {
+    case .again: "Forgot"
+    case .hard: "Tough"
+    case .good: "Knew it"
+    case .easy: "Too easy"
+    }
+  }
 }
 
 /// Spaced-repetition scheduling. Pure orchestration over `SRSState.review`.
