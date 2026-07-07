@@ -170,3 +170,22 @@ entries stand as history).*
     but its **default seed is now `nativeLanguage`** (the destination), not a separate source default.
     *Why:* forcing a per-book detected value and a per-user setting through one 9-item list mislabeled
     both and hid the honest three-set nuance. (OCR_PIPELINE §1/§2/§4.5, PHASE3 §4, TRANSLATION_DESIGN §7)
+
+## 2026-07-07 — Translation build, iPad, device delivery
+
+26. **Schema stays single-version pre-ship; the V2 split is deferred.** Refines the migration *mechanism*
+    of #24 (the V2 fields themselves stand). A `ReadAloudSchemaV2` that lists the *same* `@Model` classes
+    as V1 produces an identical version checksum, and SwiftData aborts at launch with "Duplicate version
+    checksums detected." A genuine V2 needs a **frozen V1 snapshot** (its own nested model copies without
+    the new fields) — worth writing only to migrate a *shipped* store, of which there is none. So the
+    translation fields (and, later, `SavedWord.sourceBookTitle`) fold into the single current version.
+    **Carry-forward, load-bearing:** before the FIRST model change that lands *after* a build reaches a
+    real device (e.g. Ruby's install below), freeze current models as V1 + add a real V2 + `.lightweight`
+    stage — that snapshot is what her store migrates from. (Schema.swift, TRANSLATION_DESIGN §2)
+27. **Universal app, local-only per-device storage, no sync.** The app targets iPhone **and** iPad
+    (`TARGETED_DEVICE_FAMILY "1,2"`, verified running on both simulators). The SwiftData store is
+    **local to each device** — no CloudKit, no `ModelConfiguration` cloud database, so a phone and an
+    iPad keep independent libraries. *Why:* the user explicitly wants per-device storage without
+    cross-device sync for now; the SwiftData default (no CloudKit) already delivers exactly this, so no
+    code beyond confirming it. Revisit if shared libraries are wanted later (would add a CloudKit
+    container + entitlement). (project.yml, ReadAloudApp.swift)
