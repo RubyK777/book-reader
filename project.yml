@@ -1,0 +1,25 @@
+name: ReadAloud
+options:
+  bundleIdPrefix: com.rubyhung
+  deploymentTarget:
+    iOS: "17.4"
+  createIntermediateGroups: true
+
+targets:
+  ReadAloud:
+    type: application
+    platform: iOS
+    sources:
+      - ReadAloud
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSCameraUsageDescription: ReadAloud uses the camera to photograph book pages so it can read the text aloud.
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
