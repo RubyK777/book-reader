@@ -14,7 +14,7 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
     private(set) var highlightRange: NSRange?
     private(set) var isSpeaking = false
 
-    /// Displayed multiplier 0.5×–1.0×; applied on the next utterance.
+    /// Displayed multiplier 0.5×–2.0×; applied on the next utterance.
     var speedMultiplier: Float = 1.0
     var repeatMode = false
 
@@ -22,11 +22,67 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
     /// didFinish/didCancel doesn't also trigger auto-advance.
     private var isJumping = false
 
+    /// The sentence to resume after an interruption (phone call, Siri) that
+    /// paused us; nil when we weren't interrupted mid-speech.
+    private var interruptedIndex: Int?
+
     override init() {
         super.init()
         synthesizer.delegate = self
         // .playback so audio plays even with the silent switch on.
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
+        observeAudioSession()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    // MARK: - Audio session robustness
+
+    private func observeAudioSession() {
+        let center = NotificationCenter.default
+        center.addObserver(self, selector: #selector(handleInterruption(_:)),
+                           name: AVAudioSession.interruptionNotification,
+                           object: AVAudioSession.sharedInstance())
+        center.addObserver(self, selector: #selector(handleRouteChange(_:)),
+                           name: AVAudioSession.routeChangeNotification,
+                           object: AVAudioSession.sharedInstance())
+    }
+
+    /// Phone call / Siri / another app grabs audio: pause on `.began`, and on
+    /// `.ended` resume from the current sentence only if the system says we may.
+    @objc private func handleInterruption(_ note: Notification) {
+        guard let info = note.userInfo,
+              let raw = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
+
+        switch type {
+        case .began:
+            if isSpeaking {
+                interruptedIndex = currentSentenceIndex
+                stop()
+            }
+        case .ended:
+            guard let index = interruptedIndex else { return }
+            interruptedIndex = nil
+            let options = (info[AVAudioSessionInterruptionOptionKey] as? UInt).map(AVAudioSession.InterruptionOptions.init)
+            if options?.contains(.shouldResume) == true {
+                play(at: index)   // reactivates the session and replays the sentence
+            }
+        @unknown default:
+            break
+        }
+    }
+
+    /// Headphones unplugged (`.oldDeviceUnavailable`): pause, matching the
+    /// system convention so audio doesn't suddenly blast from the speaker.
+    @objc private func handleRouteChange(_ note: Notification) {
+        guard let info = note.userInfo,
+              let raw = info[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: raw),
+              reason == .oldDeviceUnavailable else { return }
+        if isSpeaking { stop() }
     }
 
     func load(sentences: [String], languageCode: String) {
