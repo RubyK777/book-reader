@@ -100,7 +100,7 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
         highlightRange = nil
 
         let utterance = AVSpeechUtterance(string: sentences[index])
-        utterance.voice = AVSpeechSynthesisVoice(language: languageCode)
+        utterance.voice = VoiceStore.resolvedVoice(for: languageCode)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate * speedMultiplier
         try? AVAudioSession.sharedInstance().setActive(true)
         synthesizer.speak(utterance)

@@ -1,9 +1,23 @@
 import SwiftUI
+import SwiftData
+import AVFoundation
 
-/// Minimal settings this milestone — native language.
-/// Playback speed lives only on the Reader (0.5–2.0×); full settings land later.
+/// Native language + a per-language voice picker for the languages the user
+/// reads. Playback speed lives only on the Reader (0.5–2.0×).
 struct SettingsView: View {
     @AppStorage("nativeLanguage") private var nativeLanguage = LanguageCatalog.deviceDefaultNative
+
+    @Query private var books: [Book]
+    @Query private var words: [SavedWord]
+    @State private var previewer = VoicePreviewer()
+
+    /// Distinct source languages the user actually reads (books + saved words).
+    private var spokenLanguages: [String] {
+        var set = Set<String>()
+        for book in books { if let code = book.languageCode { set.insert(code) } }
+        for word in words { set.insert(word.languageCode) }
+        return set.sorted { LanguageCatalog.name(for: $0) < LanguageCatalog.name(for: $1) }
+    }
 
     var body: some View {
         NavigationStack {
@@ -17,8 +31,65 @@ struct SettingsView: View {
                 } footer: {
                     Text("The language you read fluently. Pages are translated into it; the source language of each book is detected automatically when you scan.")
                 }
+
+                if !spokenLanguages.isEmpty {
+                    Section {
+                        ForEach(spokenLanguages, id: \.self) { code in
+                            VoicePickerRow(languageCode: code, previewer: previewer)
+                        }
+                    } header: {
+                        Text("Voices")
+                    } footer: {
+                        Text("The voice used when reading each language aloud. Download higher-quality voices in Settings → Accessibility → Spoken Content → Voices.")
+                    }
+                }
             }
             .navigationTitle("Settings")
         }
+    }
+}
+
+/// One language's voice choice: a menu of installed voices (name + quality)
+/// plus a preview button. "Default" defers to the system/best-match voice.
+private struct VoicePickerRow: View {
+    let languageCode: String
+    let previewer: VoicePreviewer
+    @State private var voiceID: String?
+
+    private var voices: [AVSpeechSynthesisVoice] { VoiceStore.voices(for: languageCode) }
+
+    var body: some View {
+        HStack {
+            Picker(LanguageCatalog.name(for: languageCode), selection: $voiceID) {
+                Text("Default").tag(String?.none)
+                ForEach(voices, id: \.identifier) { voice in
+                    Text("\(voice.name) · \(voice.quality.label)").tag(String?.some(voice.identifier))
+                }
+            }
+            Button {
+                previewer.play(languageCode: languageCode, voiceID: voiceID)
+            } label: {
+                Image(systemName: "play.circle")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Preview voice")
+        }
+        .onAppear { voiceID = VoiceStore.voiceID(for: languageCode) }
+        .onChange(of: voiceID) { VoiceStore.setVoiceID(voiceID, for: languageCode) }
+    }
+}
+
+/// Small throwaway synthesizer for previewing a voice in Settings.
+@Observable
+final class VoicePreviewer {
+    private let synthesizer = AVSpeechSynthesizer()
+
+    func play(languageCode: String, voiceID: String?) {
+        synthesizer.stopSpeaking(at: .immediate)
+        let utterance = AVSpeechUtterance(string: VoiceStore.sampleText(for: languageCode))
+        utterance.voice = voiceID.flatMap(AVSpeechSynthesisVoice.init(identifier:))
+            ?? VoiceStore.resolvedVoice(for: languageCode)
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+        synthesizer.speak(utterance)
     }
 }
