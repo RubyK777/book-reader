@@ -1,14 +1,21 @@
 import AVFoundation
+import MediaPlayer
 import Observation
 
 /// TTS engine + word-highlight source of truth (PROJECT_PLAN.md §5.4).
 /// Owns the sentence queue; views observe currentSentenceIndex / highlightRange.
+///
+/// The Reader's player sets `managesNowPlaying` so it drives the lock-screen
+/// Now Playing info and remote (play/pause/next/prev) commands; the short
+/// replay players in Saved/Review do not, so they never fight over the
+/// lock screen (AUDIO_DESIGN §7).
 @Observable
 final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
     private let synthesizer = AVSpeechSynthesizer()
 
     private(set) var sentences: [String] = []
     private var languageCode = "en-US"
+    private var nowPlayingTitle = "ReadAloud"
 
     private(set) var currentSentenceIndex: Int?
     private(set) var highlightRange: NSRange?
@@ -26,16 +33,76 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
     /// paused us; nil when we weren't interrupted mid-speech.
     private var interruptedIndex: Int?
 
-    override init() {
+    /// Whether this player owns the lock-screen Now Playing info + remote commands.
+    private let managesNowPlaying: Bool
+
+    init(managesNowPlaying: Bool = false) {
+        self.managesNowPlaying = managesNowPlaying
         super.init()
         synthesizer.delegate = self
-        // .playback so audio plays even with the silent switch on.
+        // .playback so audio plays even with the silent switch on, and keeps
+        // playing when the screen locks (with the `audio` background mode).
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
         observeAudioSession()
+        if managesNowPlaying { configureRemoteCommands() }
     }
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+        if managesNowPlaying {
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        }
+    }
+
+    /// After returning from the background/lock screen, reconcile a stale
+    /// `isSpeaking` if the OS suspended the synthesizer while we were away.
+    func reconcile() {
+        if isSpeaking && !synthesizer.isSpeaking && !synthesizer.isPaused {
+            isSpeaking = false
+            updateNowPlaying()
+        }
+    }
+
+    // MARK: - Lock-screen: Now Playing + remote commands
+
+    private func configureRemoteCommands() {
+        let center = MPRemoteCommandCenter.shared()
+        center.playCommand.addTarget { [weak self] _ in
+            guard let self else { return .commandFailed }
+            if !self.isSpeaking { self.togglePlayPause() }
+            return .success
+        }
+        center.pauseCommand.addTarget { [weak self] _ in
+            guard let self else { return .commandFailed }
+            if self.isSpeaking { self.togglePlayPause() }
+            return .success
+        }
+        center.togglePlayPauseCommand.addTarget { [weak self] _ in
+            self?.togglePlayPause(); return .success
+        }
+        center.nextTrackCommand.addTarget { [weak self] _ in self?.next(); return .success }
+        center.previousTrackCommand.addTarget { [weak self] _ in self?.previous(); return .success }
+        // Sentences, not time, are the unit — skip/scrub commands don't apply.
+        center.skipForwardCommand.isEnabled = false
+        center.skipBackwardCommand.isEnabled = false
+        center.changePlaybackPositionCommand.isEnabled = false
+    }
+
+    private func updateNowPlaying() {
+        guard managesNowPlaying else { return }
+        var info: [String: Any] = [
+            MPMediaItemPropertyAlbumTitle: nowPlayingTitle,
+            MPNowPlayingInfoPropertyPlaybackRate: isSpeaking ? 1.0 : 0.0,
+            MPNowPlayingInfoPropertyDefaultPlaybackRate: 1.0,
+        ]
+        if let index = currentSentenceIndex, sentences.indices.contains(index) {
+            info[MPMediaItemPropertyTitle] = sentences[index]
+            info[MPNowPlayingInfoPropertyPlaybackQueueCount] = sentences.count
+            info[MPNowPlayingInfoPropertyPlaybackQueueIndex] = index
+        } else {
+            info[MPMediaItemPropertyTitle] = nowPlayingTitle
+        }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 
     // MARK: - Audio session robustness
@@ -85,10 +152,11 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
         if isSpeaking { stop() }
     }
 
-    func load(sentences: [String], languageCode: String) {
+    func load(sentences: [String], languageCode: String, title: String? = nil) {
         stop()
         self.sentences = sentences
         self.languageCode = languageCode
+        self.nowPlayingTitle = title ?? "ReadAloud"
     }
 
     func play(at index: Int) {
@@ -105,6 +173,7 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
         try? AVAudioSession.sharedInstance().setActive(true)
         synthesizer.speak(utterance)
         isSpeaking = true
+        updateNowPlaying()
     }
 
     func togglePlayPause() {
@@ -117,6 +186,7 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
         } else {
             play(at: currentSentenceIndex ?? 0)
         }
+        updateNowPlaying()
     }
 
     func next() {
@@ -135,6 +205,9 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
         currentSentenceIndex = nil
         highlightRange = nil
         isSpeaking = false
+        if managesNowPlaying {
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        }
     }
 
     // MARK: - AVSpeechSynthesizerDelegate
@@ -156,6 +229,7 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
             play(at: index + 1)
         } else {
             isSpeaking = false
+            updateNowPlaying()   // reached the end of the page — reflect paused state
         }
     }
 

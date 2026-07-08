@@ -31,7 +31,9 @@ struct ReaderView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(AppRouter.self) private var router
-    @State private var player = SpeechPlayer()
+    @Environment(\.scenePhase) private var scenePhase
+    // The Reader's player owns the lock-screen Now Playing + remote controls.
+    @State private var player = SpeechPlayer(managesNowPlaying: true)
     @State private var wordSheetSentence: Sentence?
 
     // Translation
@@ -46,6 +48,9 @@ struct ReaderView: View {
     }
     private var book: Book? { page?.book }
     private var translationTarget: String? { book?.translationLanguage }
+
+    /// Shown on the lock screen while this page plays.
+    private var playerTitle: String { book?.title ?? "ReadAloud" }
 
     /// Ordered sentence rows. `sentence` is nil in ephemeral mode.
     private var rows: [(text: String, sentence: Sentence?)] {
@@ -108,10 +113,11 @@ struct ReaderView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { translationToolbar }
         .onAppear {
-            player.load(sentences: rows.map(\.text), languageCode: languageCode)
+            player.load(sentences: rows.map(\.text), languageCode: languageCode, title: playerTitle)
             refreshTranslationConfig()
         }
         .onDisappear { player.stop() }
+        .onChange(of: scenePhase) { if scenePhase == .active { player.reconcile() } }
         .onChange(of: translationTarget) { refreshTranslationConfig() }
         .translationTask(translationConfig) { session in
             await translateMissing(using: session)
