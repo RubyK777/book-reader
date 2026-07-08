@@ -59,13 +59,19 @@ From [TRANSLATION_DESIGN.md](TRANSLATION_DESIGN.md) § Carry-forward (DECISIONS 
 
 **Critical path shipped 2026-07-07 (commit f552672, on device):**
 - [x] `SRSEngine` — due items (in-memory srs filter), overdue-first capped-20 shuffled sessions, SM-2 grading
-- [x] `ReviewView` (due / nothing-due / empty states) + `ReviewSessionView` (listen-first, Again re-enqueue, summary) + Review-tab due-count badge via `AppRouter.recomputeDueCount`
-- [x] `SavedItemsView` (Words | Sentences, shared-player replay, delete/remove) + `SavedItemDetailView` (note editing + SRS stats)
+- [x] `ReviewView` + `ReviewSessionView` (now a **recognition flashcard**: foreign prompt → reveal meaning/translation + note + context; color-coded grade choices) + Review-tab due-count badge
+- [x] Review any time — "Practice all" regardless of due dates (not just when due)
+- [x] `SavedItemsView` (Words | Sentences, replay, delete/remove) + `SavedItemDetailView` (note editing, SRS stats, live-translated **Meaning** section)
 - [x] Single playback speed control on the Reader, 0.5×–2.0×; redundant Settings speed stepper removed (DECISIONS #28)
 - [ ] Deferred (no-schema-change scope): `SavedWord.sourceBookTitle` — word source shows its language for now; needs the frozen-V1→V2 migration (DECISIONS #26) once done
 
+**Quality & robustness shipped 2026-07-08 (on device):**
+- [x] `ReadAloudTests` target — 14 tests (SM-2 scheduling, SentenceSplitter, WordTokenizer), all passing
+- [x] Audio interruption + route-change handling in `SpeechPlayer` (call/Siri pauses & resumes; headphone unplug pauses)
+- [x] Per-language voice selection: `VoiceStore` + Settings Voices picker (name + quality + preview); `SpeechPlayer` uses the resolved voice
+- [ ] **OCR accuracy spike — needs 5 real book-page photos dropped into `Fixtures/`** (the plan's #1 risk, still unmeasured)
+
 From [PHASE3_DESIGN.md](PHASE3_DESIGN.md) § Carry-forward:
-- [ ] SettingsView + VoiceStore · SpeechPlayer voice/rate resolution
 - [ ] Settings **native language** `@AppStorage("nativeLanguage")` (full `LanguageCatalog`, defaults to device language) beside `speechRate`/`voiceID`; it is the translation destination and seeds `Book.translationLanguage` (PHASE3 §4, DECISIONS #24, #25) — *acceptance: the native-language picker persists; new Books translate into it (translate on/off via a None sentinel); existing Books unaffected.*
 - [ ] Read-only translation in Saved sentence detail — surface non-nil `Sentence.translatedText` in `.secondary` style (PHASE3 §3) — *acceptance: a translated bookmarked sentence shows its stored translation read-only; the detail view never kicks off a translation.*
 - [ ] Relax PHASE3 §6 "no free-text editing in v1" note — full-text edit happens at scan time in `OCRReviewView`; after save, structure is fixed via merge/split, re-splitting a saved page is out of scope for v1 (DECISIONS #22) — *acceptance: PHASE3 §6 note reads as relaxed; no doc claims sentence text is uneditable everywhere.*
