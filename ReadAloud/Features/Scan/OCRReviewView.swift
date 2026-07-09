@@ -64,7 +64,7 @@ struct OCRReviewView: View {
       }
     }
     .sheet(isPresented: $showingAssign) {
-      AssignBookView(books: books) { chosen in
+      AssignBookView(books: books, suggestedTitle: suggestedTitle) { chosen in
         showingAssign = false
         performIngest(into: chosen)
       }
@@ -76,6 +76,15 @@ struct OCRReviewView: View {
     } message: {
       Text(errorMessage ?? "")
     }
+  }
+
+  /// Auto-title for Quick Scan sources: the first few scanned words.
+  private var suggestedTitle: String {
+    let words = text
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .split(whereSeparator: \.isWhitespace)
+    let head = words.prefix(5).joined(separator: " ")
+    return words.count > 5 ? head + "…" : head
   }
 
   // MARK: Actions
@@ -121,10 +130,12 @@ struct OCRReviewView: View {
   }
 }
 
-/// Assign step for the Library entry path: pick an existing book or
-/// quick-create one by title. The chosen Book is handed back for ingest.
+/// Assign step for the Library entry path: Quick Scan (no book — a
+/// lightweight source auto-titled from the text, PIVOT_PLAN Phase 1), pick an
+/// existing book, or quick-create one by title.
 private struct AssignBookView: View {
   let books: [Book]
+  let suggestedTitle: String
   let onAssign: (Book) -> Void
 
   @Environment(\.modelContext) private var modelContext
@@ -138,6 +149,21 @@ private struct AssignBookView: View {
   var body: some View {
     NavigationStack {
       Form {
+        Section {
+          ForEach([SourceKind.sign, .menu, .screenshot, .other], id: \.self) { kind in
+            Button {
+              createQuick(kind)
+            } label: {
+              Label(kind.displayName, systemImage: kind.systemImage)
+                .foregroundStyle(.primary)
+            }
+          }
+        } header: {
+          Text("Quick scan — no book")
+        } footer: {
+          Text("Saves as “\(suggestedTitle)”.")
+        }
+
         Section("New book") {
           TextField("Title", text: $newTitle)
         }
@@ -175,5 +201,12 @@ private struct AssignBookView: View {
     let book = Book(title: trimmedTitle)
     modelContext.insert(book)
     onAssign(book)
+  }
+
+  private func createQuick(_ kind: SourceKind) {
+    let source = Book(title: suggestedTitle.isEmpty ? kind.displayName : suggestedTitle,
+                      kind: kind)
+    modelContext.insert(source)
+    onAssign(source)
   }
 }

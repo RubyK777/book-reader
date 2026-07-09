@@ -107,7 +107,7 @@ private struct BookRow: View {
 
   var body: some View {
     HStack(spacing: DesignSystem.Spacing.md) {
-      CoverThumbnail(data: coverData, placeholder: "book.closed")
+      CoverThumbnail(data: coverData, placeholder: book.kind.systemImage)
       VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
         Text(book.title)
           .font(.body)
@@ -128,7 +128,9 @@ private struct BookRow: View {
   private var subtitle: String {
     let count = book.pages.count
     let language = LanguageCatalog.name(for: book.languageCode)
-    return "\(language) · \(count) page\(count == 1 ? "" : "s")"
+    let base = "\(language) · \(count) page\(count == 1 ? "" : "s")"
+    // Quick-scanned sources wear their kind (PIVOT_PLAN Phase 1).
+    return book.kind == .book ? base : "\(book.kind.displayName) · \(base)"
   }
 }
 

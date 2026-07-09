@@ -53,7 +53,7 @@ struct ScanFlowView: View {
         Image(systemName: "doc.text.viewfinder")
           .font(.system(size: 56))
           .foregroundStyle(.secondary)
-        Text(book == nil ? "Scan a book page" : "Add a page")
+        Text(book == nil ? "Scan a page, sign, or menu" : "Add a page")
           .font(.headline)
         Text("Any supported language — detected automatically.")
           .font(.footnote)

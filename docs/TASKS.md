@@ -20,8 +20,8 @@ phases further down are the shipped foundation plus optional polish.**
 - [x] `Book.kindRaw` + `SourceKind` (book | sign | menu | screenshot | other)
 - [x] `Annotation` @Model (typed word/phrase/sentence/grammar, optional intent, tags, SRS, sentence-parented) — the pivot's save unit (D3)
 - [x] `LearningAssets` Codable on `Sentence` (chunks, key vocab, grammar point, D7 provenance fields)
-- [ ] Quick Scan entry (scan without book assignment → lightweight source) — `ScanFlowView`/`OCRReviewView` "no book" branch
-- [ ] Library renders non-book source kinds (kind icon instead of cover ceremony)
+- [x] Quick Scan entry — the assign step's "Quick scan — no book" section: pick sign/menu/screenshot/other → lightweight source auto-titled from the first scanned words
+- [x] Library renders non-book source kinds — kind icon placeholder + "Sign · French · 1 page" subtitle; first page photo doubles as the thumbnail
 - [ ] Port Saved tab from `SavedWord` to `Annotation`, then migrate old rows and delete `SavedWord`
 
 ## Pivot Phase 2 — Sentence Learning View (PIVOT_PLAN §7)
