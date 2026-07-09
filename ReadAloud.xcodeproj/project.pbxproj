@@ -37,6 +37,7 @@
 		9461FED56153753D5C6E091F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDB4B97B22174C66A13D1FD0 /* Models.swift */; };
 		955F285689DE5904DC2D4CA6 /* SavedItemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84155B48D97C2768DBA97847 /* SavedItemsView.swift */; };
 		A4C4A44471198E7F13D32198 /* SRSEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD2190E582454180E1BEA356 /* SRSEngine.swift */; };
+		A7A7AE67016A3CC26185BA8D /* AnnotationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEC7440E6ACE7DD03DF1A94E /* AnnotationDetailView.swift */; };
 		A9B1AB19A51E409B0D451CBF /* CameraAuthorizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 921F537C0F4FB33AD46DFDF9 /* CameraAuthorizer.swift */; };
 		B08A8D5939042FF96F32E215 /* BookFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D468E8D1096002454579462B /* BookFormView.swift */; };
 		B19CB493153DBAAC5A42F620 /* Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = A472F3E00866672DDC1274A4 /* Schema.swift */; };
@@ -118,6 +119,7 @@
 		FAF3F2DB98C5E0D76F887581 /* SentenceSplitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentenceSplitter.swift; sourceTree = "<group>"; };
 		FD2190E582454180E1BEA356 /* SRSEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRSEngine.swift; sourceTree = "<group>"; };
 		FDB4B97B22174C66A13D1FD0 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		FEC7440E6ACE7DD03DF1A94E /* AnnotationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -142,6 +144,7 @@
 		0D0C8632689462E3C17E1F6E /* Notes */ = {
 			isa = PBXGroup;
 			children = (
+				FEC7440E6ACE7DD03DF1A94E /* AnnotationDetailView.swift */,
 				8B605E962B7275F251C747CE /* NotesView.swift */,
 			);
 			path = Notes;
@@ -411,6 +414,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A7A7AE67016A3CC26185BA8D /* AnnotationDetailView.swift in Sources */,
 				0E3103361F486FEBBFC20EB5 /* AppRouter.swift in Sources */,
 				458722027C19E105E1787019 /* BookDetailView.swift in Sources */,
 				B08A8D5939042FF96F32E215 /* BookFormView.swift in Sources */,

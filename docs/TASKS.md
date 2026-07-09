@@ -46,7 +46,15 @@ phases further down are the shipped foundation plus optional polish.**
 - [x] Card faces by item TYPE (D4/D11): word/grammar → meaning, sentence → listening (audio-first, text hidden until reveal, Play/Slow), phrase → cloze via `ClozeBuilder` (D5 deterministic blank, 5 tests; falls back to meaning when unblankable). Cloze never auto-speaks (audio contains the answer)
 - [x] `VoiceRecorder` service (UI-free: playAndRecord category swap, last-take-only) + `ShadowingPracticeView` — ungraded, offered from the session summary for the session's full sentences; mic denial degrades to listen-and-repeat; NSMicrophoneUsageDescription added
 - [ ] Legacy bookmarked sentences now get listening cards — confirm Ruby likes this (revert to meaning face is one line in `ReviewItem.face`)
-- [ ] Phase 4 next: Notes tab annotation upgrade, after-session digest, confusion state (PIVOT_PLAN §7 Phase 4)
+
+## Pivot Phase 4 — Notebook, digest, confusion (PIVOT_PLAN §7)
+
+- [x] Schema V4 (V3 frozen per DECISIONS #35): `Annotation.isSuspended` + `Annotation.aiExplanation`; `MigrationTests.v3StoreMigratesToV4`
+- [x] Notes tab → **Notebook**: annotation list with type/Confused filter chips, search across text/context/note/example/tags; legacy per-item notes kept in an "Item notes" segment
+- [x] `AnnotationDetailView` — full lifecycle: edit note/example/tags/intent, **suspend** (leaves due queue, keeps history), delete with cascade confirmation, SRS stats; AI **example drafting** + **confusion explanation** via two new availability-gated `LearningAssetsProviding` methods (marked-generated per D7)
+- [x] After-session digest: Reader shows "Saved this session: 2 words · 1 phrase" bar with Review-now (session items only) and dismiss (nothing lost)
+- [ ] Digest for scan sessions (Quick Scan flow doesn't exist yet — Phase 1 leftover)
+- [ ] Phase 5 / deferred next: PIVOT_PLAN §7 (pronunciation compare, intent routing, cloud provider opt-in, stats view, Quick Scan + Saved-tab port from Phase 1)
 
 ## Phase 1 — leftovers
 

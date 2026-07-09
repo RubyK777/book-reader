@@ -39,6 +39,12 @@ struct ReaderView: View {
     @State private var sentenceToDelete: Sentence?
     @State private var learnSentence: Sentence?
 
+    // After-session digest (PIVOT_PLAN Phase 4): what got saved while this
+    // Reader was open, with a one-tap path into reviewing it.
+    @State private var sessionStart = Date.distantFuture
+    @State private var digestDismissed = false
+    @State private var reviewingDigest = false
+
     // Translation
     @AppStorage("nativeLanguage") private var nativeLanguage = LanguageCatalog.deviceDefaultNative
     @AppStorage("showTranslations") private var showTranslations = true
@@ -113,6 +119,9 @@ struct ReaderView: View {
             if let translationIssue, translationTarget != nil {
                 translationIssueRow(translationIssue)
             }
+            if !sessionAnnotations.isEmpty && !digestDismissed {
+                digestBar
+            }
             playbackBar(sentenceCount: rows.count)
         }
         .navigationTitle("Reader")
@@ -121,6 +130,7 @@ struct ReaderView: View {
         .onAppear {
             player.load(sentences: rows.map(\.text), languageCode: languageCode, title: playerTitle)
             refreshTranslationConfig()
+            if sessionStart == .distantFuture { sessionStart = .now }
         }
         .onDisappear { player.stop() }
         .onChange(of: scenePhase) { if scenePhase == .active { player.reconcile() } }
@@ -133,6 +143,9 @@ struct ReaderView: View {
         }
         .sheet(item: $learnSentence) { sentence in
             SentenceLearnView(sentence: sentence, languageCode: languageCode)
+        }
+        .sheet(isPresented: $reviewingDigest) {
+            ReviewSessionView(items: sessionAnnotations.map(ReviewItem.annotation))
         }
         .sheet(item: $editingSentence) { sentence in
             EditSentenceSheet(sentence: sentence) { reloadPlayer() }
@@ -283,6 +296,56 @@ struct ReaderView: View {
             .background(Color.orange.opacity(0.12))
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: After-session digest (Phase 4)
+
+    /// Annotations saved anywhere on this page since the Reader opened.
+    private var sessionAnnotations: [Annotation] {
+        guard let page else { return [] }
+        return page.sentences
+            .flatMap(\.annotations)
+            .filter { $0.savedAt >= sessionStart }
+            .sorted { $0.savedAt < $1.savedAt }
+    }
+
+    /// "2 words · 1 phrase" — counts by type, in a fixed readable order.
+    private var digestSummary: String {
+        let counts = Dictionary(grouping: sessionAnnotations, by: \.type)
+            .mapValues(\.count)
+        let order: [AnnotationType] = [.sentence, .phrase, .word, .grammar]
+        return order.compactMap { type in
+            guard let count = counts[type], count > 0 else { return nil }
+            let name = type.rawValue + (count == 1 ? "" : "s")
+            return "\(count) \(name)"
+        }.joined(separator: " · ")
+    }
+
+    private var digestBar: some View {
+        HStack(spacing: DesignSystem.Spacing.sm) {
+            Image(systemName: "bookmark.fill")
+                .font(.caption)
+                .foregroundStyle(Theme.accent)
+            Text("Saved this session: \(digestSummary)")
+                .font(.footnote)
+                .lineLimit(1)
+            Spacer()
+            Button("Review now") { reviewingDigest = true }
+                .font(.footnote.weight(.semibold))
+                .buttonStyle(.borderless)
+            Button {
+                digestDismissed = true
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss — items stay saved and scheduled")
+        }
+        .padding(.horizontal, DesignSystem.Spacing.lg)
+        .padding(.vertical, DesignSystem.Spacing.sm)
+        .background(Theme.accentSoft)
     }
 
     // MARK: Bookmark

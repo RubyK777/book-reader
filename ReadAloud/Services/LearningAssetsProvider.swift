@@ -19,6 +19,20 @@ protocol LearningAssetsProviding {
     func generateAssets(for sentenceText: String,
                         sourceLanguage: String,
                         explanationLanguage: String) async throws -> LearningAssets
+
+    /// Draft one new example sentence using `term`, in the source language —
+    /// an editable starting point for the user's own example (Phase 4).
+    func draftExample(for term: String,
+                      context: String,
+                      sourceLanguage: String,
+                      explanationLanguage: String) async throws -> String
+
+    /// Explain a confusing item in the user's native language (Phase 4
+    /// confusion workflow). Short, concrete, tied to the context sentence.
+    func explainConfusion(about text: String,
+                          context: String,
+                          sourceLanguage: String,
+                          explanationLanguage: String) async throws -> String
 }
 
 enum LearningAssetsProviderFactory {
@@ -96,6 +110,40 @@ struct FoundationModelsAssetsProvider: LearningAssetsProviding {
             isGenerated: true,
             modelVersion: Self.modelVersion,
             generatedAt: .now)
+    }
+
+    func draftExample(for term: String,
+                      context: String,
+                      sourceLanguage: String,
+                      explanationLanguage: String) async throws -> String {
+        let source = Self.languageName(for: sourceLanguage)
+        let native = Self.languageName(for: explanationLanguage)
+        let session = LanguageModelSession(instructions: """
+            You help a \(native)-speaking learner practice \(source). Write \
+            exactly one natural, everyday \(source) sentence using the given \
+            term — different from the original context, simple vocabulary, no \
+            translation, no quotes, nothing else.
+            """)
+        let response = try await session.respond(to:
+            "Term: \(term)\nOriginal context: \(context)")
+        return response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    func explainConfusion(about text: String,
+                          context: String,
+                          sourceLanguage: String,
+                          explanationLanguage: String) async throws -> String {
+        let source = Self.languageName(for: sourceLanguage)
+        let native = Self.languageName(for: explanationLanguage)
+        let session = LanguageModelSession(instructions: """
+            You help a \(native)-speaking learner who is confused by some \
+            \(source). Explain in \(native), in 2-4 short sentences, what the \
+            confusing part means and why it is used this way in the given \
+            context. Be concrete; no preamble.
+            """)
+        let response = try await session.respond(to:
+            "Confusing: \(text)\nContext: \(context)")
+        return response.content.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// English display name for a BCP-47 code ("fr-FR" → "French") for prompts.

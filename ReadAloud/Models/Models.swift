@@ -158,6 +158,13 @@ final class Annotation {
     var isResolved: Bool = false
     var savedAt: Date
 
+    /// Lifecycle rule (PIVOT_PLAN Phase 4): suspended items keep their SRS
+    /// history but leave the due queue until unsuspended.
+    var isSuspended: Bool = false
+    /// Confusion workflow: the generated explanation attempt (D7 provenance —
+    /// it's model-authored and the user can edit or clear it).
+    var aiExplanation: String?
+
     var srs: SRSState?
     var sentence: Sentence?
 

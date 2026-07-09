@@ -158,6 +158,59 @@ struct MigrationTests {
         #expect(sentence.learningAssets?.userEditedAt != nil)
     }
 
+    /// The V3 store (on-device since the second 2026-07-09 deploy) opens
+    /// through V3 → V4 with new fields defaulted (DECISIONS #35 discipline).
+    @MainActor
+    @Test func v3StoreMigratesToV4() throws {
+        let url = URL.temporaryDirectory
+            .appending(path: "migration-v3-\(UUID().uuidString).store")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        do {
+            let config = ModelConfiguration(url: url)
+            let container = try ModelContainer(
+                for: Schema(versionedSchema: ReadAloudSchemaV3.self),
+                configurations: config)
+            let context = ModelContext(container)
+
+            let sentence = ReadAloudSchemaV3.Sentence(
+                text: "Il faut que tu viennes demain.", orderIndex: 0)
+            sentence.learningAssets = ReadAloudSchemaV3.LearningAssets(
+                grammarPoint: "il faut que + subjunctive",
+                isGenerated: true, userEditedAt: .now)
+            let annotation = ReadAloudSchemaV3.Annotation(
+                typeRaw: "grammar", text: "il faut que",
+                contextSentence: sentence.text, languageCode: "fr-FR")
+            annotation.srs = SRSState()
+            annotation.sentence = sentence
+            context.insert(sentence)
+            context.insert(annotation)
+            try context.save()
+        }
+
+        let config = ModelConfiguration(url: url)
+        let container = try ModelContainer(
+            for: Schema(versionedSchema: ReadAloudSchema.self),
+            migrationPlan: ReadAloudMigrationPlan.self,
+            configurations: config)
+        let context = ModelContext(container)
+
+        let annotations = try context.fetch(FetchDescriptor<Annotation>())
+        let annotation = try #require(annotations.first)
+        #expect(annotation.type == .grammar)
+        #expect(annotation.isSuspended == false)   // V4 additions defaulted
+        #expect(annotation.aiExplanation == nil)
+
+        let sentences = try context.fetch(FetchDescriptor<Sentence>())
+        #expect(sentences.first?.learningAssets?.userEditedAt != nil)
+
+        // V4 writes work: suspend it and it leaves the due queue.
+        annotation.isSuspended = true
+        try context.save()
+        let due = SRSEngine.dueItems(in: context)
+        #expect(!due.contains { $0.id == annotation.persistentModelID })
+    }
+
     /// Raw-string enum bridging survives unknown values (forward compatibility).
     @Test func annotationEnumBridging() {
         let annotation = Annotation(

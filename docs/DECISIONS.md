@@ -306,3 +306,19 @@ entries stand as history).*
     degrades to listen-and-repeat. *Rejected:* per-face SRS schedules (fork explosion, D4 says one);
     shadowing as a graded card (can't be judged offline). (SRSEngine, ClozeBuilder, VoiceRecorder,
     ReviewSessionView, ShadowingPracticeView, project.yml mic usage string)
+
+38. **Phase 4: the Notebook is the annotation surface; one lifecycle rule; Schema V4.** Notes tab
+    became a segmented Notebook (annotations with type/Confused filter chips + search) over the
+    legacy "Item notes" browser. `AnnotationDetailView` implements the PIVOT_PLAN lifecycle rule in
+    one place: the annotation is the parent — edits update its review card in place (cards render
+    from the model), **delete cascades to the card with a confirmation that offers suspend as the
+    history-keeping alternative**, and `isSuspended` removes it from `SRSEngine.dueItems` without
+    touching SRS state. Confusion workflow: `isConfusing`/`isResolved` + a generated
+    `aiExplanation` (D7-marked); example drafting and confusion explanation are two new
+    `LearningAssetsProviding` methods (D10 seam holds — cloud provider would implement the same).
+    The after-session digest is a dismissible Reader bar (counts by type + "Review now" scoped to
+    the session's saves); declining loses nothing since items are already scheduled (PIVOT_PLAN
+    §7.4). New stored fields forced **Schema V4** with V3 frozen (per #35's rule).
+    *Rejected:* a modal digest on Reader exit (interrupts the reading flow; a nav-back interception
+    is fragile in SwiftUI); free-text tags UI (comma-separated field is enough for v1).
+    (NotesView, AnnotationDetailView, ReaderView, LearningAssetsProvider, Schema.swift, SRSEngine)

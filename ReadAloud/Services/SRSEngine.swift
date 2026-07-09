@@ -188,7 +188,8 @@ enum SRSEngine {
       items += words.map(ReviewItem.word)
     }
 
-    let annotationFetch = FetchDescriptor<Annotation>()
+    let annotationFetch = FetchDescriptor<Annotation>(
+      predicate: #Predicate { !$0.isSuspended })
     if let annotations = try? context.fetch(annotationFetch) {
       items += annotations.map(ReviewItem.annotation)
     }

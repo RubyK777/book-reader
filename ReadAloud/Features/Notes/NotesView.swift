@@ -1,9 +1,30 @@
 import SwiftUI
 import SwiftData
 
-/// Every note in one place: notes attached to saved words and bookmarked
-/// sentences, searchable, each tappable through to its detail for editing.
+/// The Notebook (PIVOT_PLAN Phase 4): saved annotations with type/confused
+/// filters, plus the legacy per-item notes browser in a second segment.
 struct NotesView: View {
+    private enum Segment: Hashable { case notebook, legacy }
+
+    /// Notebook type filter — nil = all types.
+    private enum TypeFilter: Hashable, CaseIterable {
+        case all, word, phrase, sentence, grammar, confused
+
+        var label: String {
+            switch self {
+            case .all: "All"
+            case .word: "Words"
+            case .phrase: "Phrases"
+            case .sentence: "Sentences"
+            case .grammar: "Grammar"
+            case .confused: "Confused"
+            }
+        }
+    }
+
+    @Query(sort: \Annotation.savedAt, order: .reverse)
+    private var annotations: [Annotation]
+
     @Query(filter: #Predicate<SavedWord> { $0.userNote != nil },
            sort: \SavedWord.savedAt, order: .reverse)
     private var notedWords: [SavedWord]
@@ -12,6 +33,28 @@ struct NotesView: View {
     private var notedSentences: [Sentence]
 
     @State private var search = ""
+    @State private var segment: Segment = .notebook
+    @State private var typeFilter: TypeFilter = .all
+
+    private var filteredAnnotations: [Annotation] {
+        annotations.filter { annotation in
+            let passesType: Bool = switch typeFilter {
+            case .all: true
+            case .word: annotation.type == .word
+            case .phrase: annotation.type == .phrase
+            case .sentence: annotation.type == .sentence
+            case .grammar: annotation.type == .grammar
+            case .confused: annotation.isConfusing && !annotation.isResolved
+            }
+            guard passesType else { return false }
+            guard !search.isEmpty else { return true }
+            return annotation.text.localizedCaseInsensitiveContains(search)
+                || annotation.contextSentence.localizedCaseInsensitiveContains(search)
+                || annotation.userNote?.localizedCaseInsensitiveContains(search) == true
+                || annotation.userExample?.localizedCaseInsensitiveContains(search) == true
+                || annotation.tags.contains { $0.localizedCaseInsensitiveContains(search) }
+        }
+    }
 
     /// A note plus the item it belongs to, for a unified list.
     fileprivate struct Entry: Identifiable {
@@ -47,21 +90,131 @@ struct NotesView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if entries.isEmpty {
-                    emptyState
-                } else {
-                    List(entries) { entry in
-                        NavigationLink(value: entry) { row(entry) }
-                    }
+                switch segment {
+                case .notebook: notebookList
+                case .legacy: legacyList
                 }
             }
-            .navigationTitle("Notes")
-            .searchable(text: $search, prompt: "Search notes")
+            .navigationTitle("Notebook")
+            .searchable(text: $search, prompt: segment == .notebook ? "Search saved items" : "Search notes")
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Picker("Section", selection: $segment) {
+                        Text("Notebook").tag(Segment.notebook)
+                        Text("Item notes").tag(Segment.legacy)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 260)
+                }
+            }
             .navigationDestination(for: Entry.self) { entry in
                 switch entry.kind {
                 case let .word(word): SavedItemDetailView(word: word)
                 case let .sentence(sentence): SavedItemDetailView(sentence: sentence)
                 }
+            }
+            .navigationDestination(for: PersistentIdentifier.self) { id in
+                if let annotation = annotations.first(where: { $0.persistentModelID == id }) {
+                    AnnotationDetailView(annotation: annotation)
+                }
+            }
+        }
+    }
+
+    // MARK: Notebook segment
+
+    @ViewBuilder
+    private var notebookList: some View {
+        if annotations.isEmpty {
+            ContentUnavailableView(
+                "Nothing saved yet",
+                systemImage: "bookmark",
+                description: Text("Save words, phrases, and sentences from the Learn screen — they collect here."))
+        } else {
+            VStack(spacing: 0) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        ForEach(TypeFilter.allCases, id: \.self) { filter in
+                            Button {
+                                typeFilter = filter
+                                Haptics.select()
+                            } label: {
+                                Text(filter.label)
+                            }
+                            .buttonStyle(ChipButtonStyle(isSelected: typeFilter == filter))
+                        }
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.md)
+                    .padding(.vertical, DesignSystem.Spacing.sm)
+                }
+
+                if filteredAnnotations.isEmpty {
+                    ContentUnavailableView(
+                        "No matches",
+                        systemImage: "line.3.horizontal.decrease.circle",
+                        description: Text("Try a different filter or search."))
+                } else {
+                    List(filteredAnnotations) { annotation in
+                        NavigationLink(value: annotation.persistentModelID) {
+                            annotationRow(annotation)
+                        }
+                    }
+                    .listStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func annotationRow(_ annotation: Annotation) -> some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                Text(annotation.type.rawValue)
+                    .font(.caption2.weight(.semibold))
+                    .textCase(.uppercase)
+                    .foregroundStyle(Theme.accent)
+                if annotation.isConfusing && !annotation.isResolved {
+                    Image(systemName: "questionmark.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .accessibilityLabel("Confused")
+                }
+                if annotation.isSuspended {
+                    Image(systemName: "pause.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("Suspended")
+                }
+                if let intent = annotation.intent {
+                    Text(intent.displayName)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Text(annotation.text)
+                .font(.body)
+                .fontDesign(Theme.sentenceDesign)
+                .lineLimit(2)
+
+            if annotation.contextSentence != annotation.text {
+                Text(annotation.contextSentence)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.vertical, DesignSystem.Spacing.xs)
+    }
+
+    // MARK: Legacy segment
+
+    @ViewBuilder
+    private var legacyList: some View {
+        if entries.isEmpty {
+            emptyState
+        } else {
+            List(entries) { entry in
+                NavigationLink(value: entry) { row(entry) }
             }
         }
     }
