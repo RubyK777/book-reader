@@ -3,7 +3,7 @@ import SwiftData
 
 /// Root tabs.
 enum AppTab: Hashable {
-    case library, saved, review, settings
+    case library, saved, review, notes, settings
 }
 
 /// App-wide navigation state, injected via `.environment`.

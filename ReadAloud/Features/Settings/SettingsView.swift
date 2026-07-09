@@ -7,9 +7,12 @@ import AVFoundation
 struct SettingsView: View {
     @AppStorage("nativeLanguage") private var nativeLanguage = LanguageCatalog.deviceDefaultNative
 
+    @Environment(\.modelContext) private var modelContext
     @Query private var books: [Book]
     @Query private var words: [SavedWord]
     @State private var previewer = VoicePreviewer()
+    @State private var exportFile: ShareableFile?
+    @State private var exportError: String?
 
     /// Distinct source languages the user actually reads (books + saved words).
     private var spokenLanguages: [String] {
@@ -43,8 +46,40 @@ struct SettingsView: View {
                         Text("The voice used when reading each language aloud. Download higher-quality voices in Settings → Accessibility → Spoken Content → Voices.")
                     }
                 }
+
+                Section {
+                    Button {
+                        exportData()
+                    } label: {
+                        Label("Export Data", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(books.isEmpty && words.isEmpty)
+                } header: {
+                    Text("Data")
+                } footer: {
+                    Text("Save a JSON backup of your books, saved words, sentences, notes, and review progress. Page photos are not included.")
+                }
             }
             .navigationTitle("Settings")
+            .sheet(item: $exportFile) { file in
+                ShareSheet(url: file.url)
+            }
+            .alert("Couldn't export", isPresented: Binding(
+                get: { exportError != nil },
+                set: { if !$0 { exportError = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(exportError ?? "")
+            }
+        }
+    }
+
+    private func exportData() {
+        do {
+            let url = try ExportService.writeExport(in: modelContext)
+            exportFile = ShareableFile(url: url)
+        } catch {
+            exportError = error.localizedDescription
         }
     }
 }

@@ -31,6 +31,10 @@ struct RootView: View {
                 .badge(router.dueCount)
                 .tag(AppTab.review)
 
+            NotesView()
+                .tabItem { Label("Notes", systemImage: "note.text") }
+                .tag(AppTab.notes)
+
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
                 .tag(AppTab.settings)
