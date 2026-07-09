@@ -4,9 +4,43 @@
 design docs — full task wording and acceptance criteria live there; tick items in both places as
 they land. Order within a phase is roughly dependency order.*
 
+**⟶ The pivot backlog below ([PIVOT_PLAN.md](PIVOT_PLAN.md)) is the active work; pre-pivot
+phases further down are the shipped foundation plus optional polish.**
+
+## Pivot Phase 0 — spikes & housekeeping (PIVOT_PLAN §7)
+
+- [ ] 0.1 Foundation Models quality spike — harness done (`Tools/LearnSpike`, `Fixtures/french_sentences.txt`) but the quality run is **BLOCKED on this Mac**: Apple Intelligence not enabled + macOS 26.0 beta 2 ABI mismatch vs the Xcode 26.2 SDK (see `docs/SPIKE_RESULTS.md`). Unblock: update to release macOS 26, enable Apple Intelligence, rerun `swift Tools/LearnSpike/main.swift Fixtures/french_sentences.txt`, grade vs the ≥80%-usable bar. **The Phase 2 quality gate stays open until this runs** (running the app on an Apple Intelligence iPhone also works — SentenceLearnView exercises the same path).
+- [ ] 0.2 Scene-text OCR fixtures — **needs ~15 real photos from Ruby** (French signs, menus, kids' books, screenshots) into `Fixtures/`, then `swift Tools/OCRSpike/main.swift fr-FR Fixtures/*.jpg`; fragment rule already specced (UX_SPEC §8)
+- [x] 0.3 Voice audit CLI (`Tools/VoiceAudit`) — ran: 18 fr-* voices installed, **none enhanced/premium** (best default-tier: Thomas fr-FR). Ruby: download enhanced/premium French voices (Settings → Accessibility → Spoken Content), rerun the tool, pick by ear.
+- [x] 0.4 ARCHITECTURE.md un-staled (§4 gaps now match code, dated 2026-07-09)
+
+## Pivot Phase 1 — Schema V2 + restructure (PIVOT_PLAN §6)
+
+- [x] Frozen `ReadAloudSchemaV1` snapshot + `ReadAloudSchemaV2` + `.lightweight` migration stage (DECISIONS #26 honored — Ruby's on-device store migrates; proven by `MigrationTests.v1StoreMigratesToV2`)
+- [x] `Book.kindRaw` + `SourceKind` (book | sign | menu | screenshot | other)
+- [x] `Annotation` @Model (typed word/phrase/sentence/grammar, optional intent, tags, SRS, sentence-parented) — the pivot's save unit (D3)
+- [x] `LearningAssets` Codable on `Sentence` (chunks, key vocab, grammar point, D7 provenance fields)
+- [ ] Quick Scan entry (scan without book assignment → lightweight source) — `ScanFlowView`/`OCRReviewView` "no book" branch
+- [ ] Library renders non-book source kinds (kind icon instead of cover ceremony)
+- [ ] Port Saved tab from `SavedWord` to `Annotation`, then migrate old rows and delete `SavedWord`
+
+## Pivot Phase 2 — Sentence Learning View (PIVOT_PLAN §7)
+
+- [x] `LearningAssetsProviding` protocol + on-device `FoundationModelsAssetsProvider` (D1/D2/D10; availability-gated, structured output via @Generable)
+- [x] `SentenceLearnView` basic screen — original + play/slow, translation, Understand (generated breakdown/vocab/grammar with AI-generated badge + fallback view), one-tap save-as-annotation with optional intent chips, saved-items list
+- [x] Reader drill-down (graduation-cap button + context menu on `SentenceCard` → Learn sheet)
+- [x] `FlowLayout` extracted to `Shared/Components/` (rule of two); `SpeechPlayer.speakOnce` for word/chunk tap-to-hear
+- [ ] Editable Understand fields (accept/edit/delete per D7) — currently display-only
+- [ ] Tap-a-word-in-original to hear it (currently chips in Save section speak on tap)
+- [ ] Fragment handling per UX_SPEC §8 (phrase-type Understand for non-sentences)
+
+## Pivot Phase 3+ — see PIVOT_PLAN §7 (review modes, notes & digest, deferred list)
+
+- [ ] Extend `SRSEngine.ReviewItem` to include `Annotation` items (new saves currently get SRS state but don't appear in Review until this lands)
+
 ## Phase 1 — leftovers
 
-- [ ] OCR spike on 5 real book-page fixtures (`Tools/OCRSpike`, `Fixtures/` is empty) — PROJECT_PLAN §6/§7 risk #1.
+- [ ] OCR spike on 5 real book-page fixtures (`Tools/OCRSpike`, `Fixtures/` is empty) — PROJECT_PLAN §6/§7 risk #1. *(Superseded by pivot task 0.2, which broadens it to scene text.)*
 
 ## Phase 2 — Persistence + Library
 

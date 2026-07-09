@@ -72,7 +72,7 @@ Field evidence (Ruby, 2026-07-08): OCR + sentence splitting work well on **real-
 
 ## 6. Data model changes (Schema V2 — do while still pre-ship)
 
-Persistence is live but **unshipped** (single V1 schema, no released users) — this is the cheapest moment the migration will ever be. Write the V2 schema + migration first, before any feature code.
+~~Persistence is live but **unshipped** (single V1 schema, no released users) — this is the cheapest moment the migration will ever be.~~ *Correction (2026-07-09): a build with a real store is already on Ruby's device (DECISIONS #26), so this landed as a true frozen-V1 → V2 lightweight migration — see DECISIONS #34, proven by `MigrationTests.v1StoreMigratesToV2`.* Write the V2 schema + migration first, before any feature code.
 
 - **`Book` → generalize to a source container.** Add `kind: SourceKind` (`book | sign | menu | screenshot | other`, default `.book` in migration). Books keep title/cover ceremony; a **Quick Scan** path creates a lightweight source (auto-title from first sentence, kind pickable) so scanning a sign doesn't require inventing a "book". Source language stays per-container, auto-detected (DECISIONS #25 unchanged).
 - **`Annotation` (new `@Model`), sentence-parented:** `type` (word/phrase/sentence/grammar), `range` in parent sentence text, optional `intent`, `userNote`, `userExample`, `tags`, embedded `srs: SRSState`, `isConfusing`/`resolved`. Migration mapping: `SavedWord` → Annotation(.word) (carry `srs`, context, note); bookmarked `Sentence` → Annotation(.sentence). Keep `SavedWord` reads working until Saved tab is ported, then delete.

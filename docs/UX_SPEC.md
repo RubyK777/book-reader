@@ -177,6 +177,23 @@ enum CameraAuthorizer {
 4. **First-scan guidance**: capture screen shows a one-time dismissible overlay — "Flatten the page · fill the frame · avoid glare" (the plan's #1 OCR risk, attacked in UX as well as code). `@AppStorage("hasSeenScanTips")`.
 5. **First successful scan** → success haptic + push straight into Reader; a one-time tip anchored to the first card: "Tap a sentence to hear it. Long-press to save words."
 
+## 8. Fragment rule — real-world scans (signs, menus, labels)
+
+*Added for the real-world learning pivot ([PIVOT_PLAN.md](PIVOT_PLAN.md) Phase 0 task 0.2 / risk #3). Governs how OCR lines that are not sentences behave in the Reader, the Sentence Learning View, and save.*
+
+**DECISION: a fragment is a phrase-type learning unit, not a sentence.** Scene text routinely yields lines with no sentence structure — "Salade niçoise — 14€", "Sortie", "Ouvert 7j/7". Treating them as sentences would generate grammar breakdowns and sentence-type review cards for things that have no grammar. Rules:
+
+- **Reader — no visual fork.** Fragments render as ordinary tappable cards: same `SentenceCard`, same tap-to-play, same drill-down into the Sentence Learning View. A scanned menu reads as a list of cards like any page. Rejected: hiding fragments or collapsing them into one "menu items" card — the tap-to-hear-and-save loop is exactly as valuable for "Salade niçoise" as for a full sentence, and a second rendering path would fork `SentenceCard` for zero user benefit.
+- **Understand section** (Sentence Learning View, PIVOT_PLAN Phase 2): the item is treated as a **phrase** — translation, key vocab, and chunk playback as usual, but **no grammar-point generation**. A generated grammar note for "Salade niçoise — 14€" is precisely the machine-authored garbage PIVOT_PLAN D7 guards against; suppressing it is cheaper than flagging it.
+- **Save**: the whole-item save button creates a **phrase-type `Annotation`**, never a sentence-type one (taxonomy per PIVOT_PLAN D3 — type is inferred, never asked). Sub-selections inside a fragment behave as everywhere else (word/phrase inferred from the selection gesture). Downstream, review card faces follow annotation type (PIVOT_PLAN Phase 3), so a fragment never receives a sentence-face card.
+
+**Classification heuristic.** A pure `String → Bool` function beside `SentenceSplitter` in `Services/` (CLAUDE.md library rules: no SwiftUI, no model imports; unit-test against menu/sign fixture lines). After OCR and sentence splitting, a line is a **fragment** when:
+
+- the sentence tokenizer yields **no terminal punctuation** (`.` `!` `?` `…` or CJK equivalents) **and** the line is **under ~6 words**, **or**
+- the line is **mostly numerals/symbols/prices** — a majority of its tokens are digits, currency, or symbol/punctuation tokens (e.g. "14€", "9:00–18:00", "Wi-Fi : gratuit").
+
+Everything else stays a sentence, even without terminal punctuation — the ~6-word threshold exists precisely so longer unterminated lines (headlines, kids'-book lines like "Le petit chat regarde la lune") keep the full sentence treatment. Both thresholds are starting values: tune them against the task 0.2 fixture set and log the final values in DECISIONS.md.
+
 ## Open questions
 
 1. Should Reader offer a "play whole page" continuous mode in v1, or wait for Phase 4 (needs background-audio mode, ARCHITECTURE gap #8)?

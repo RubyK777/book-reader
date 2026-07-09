@@ -1,6 +1,8 @@
 # ReadAloud — Architecture (current state)
 
-*Companion to [PROJECT_PLAN.md](../PROJECT_PLAN.md) §5. This document describes what is actually built as of 2026-07-06, the contracts between components, and known gaps. Update it when structure changes, not for every feature.*
+*Companion to [PROJECT_PLAN.md](../PROJECT_PLAN.md) §5. This document describes what is actually built as of 2026-07-09, the contracts between components, and known gaps. Update it when structure changes, not for every feature.*
+
+> **Pivot note (2026-07-09):** the project has pivoted to real-world language learning — signs, menus, and screenshots become first-class sources alongside book pages. **[PIVOT_PLAN.md](PIVOT_PLAN.md) is the current master plan** (Phases 0–5, decisions D1–D11, reuse map); this document describes the shipped baseline that plan builds on.
 
 ## 1. System overview
 
@@ -30,7 +32,7 @@ VNDocumentCameraViewController / PhotosPicker
    translation under card
 ```
 
-Persistence (SwiftData, `Models.swift`) is **defined but not wired** — `ReadAloudApp` has no `.modelContainer`, nothing reads or writes models yet. That is the first Phase 2 task ([PHASE2_DESIGN.md](PHASE2_DESIGN.md)).
+Persistence (SwiftData, `Models.swift`) is **live**: `ReadAloudApp.swift:24` attaches `.modelContainer` (versioned `ReadAloudSchemaV1` + migration plan, `Models/Schema.swift`), and every feature area reads/writes models through `@Environment(\.modelContext)` (Reader saves/bookmarks, Saved, Review grading, Notes, Settings export).
 
 ## 2. Component contracts
 
@@ -61,7 +63,7 @@ The playback source of truth. `@Observable`; views read, never mutate, playback 
 - Audio session: `.playback` + `.spokenAudio` set once at init, activated on each `play`. **Never deactivated**, and there is **no interruption / route-change handling** (phone call, unplugging headphones) — backlog items.
 
 ### Views (`Features/`)
-- `ScanHomeView` — Phase 1 root: a mandatory source-language picker, camera/photo import, runs OCR+split inline, pushes Reader via `navigationDestination(item:)`. The `extension [String]: @retroactive Identifiable` at the bottom exists only to make that work — it dies when Phase 2 navigation lands. *Superseded:* its mandatory pre-pick is gone (source is auto-detected); what survives is an **optional pre-capture "Page language" hint** over `LanguageCatalog` on the Library scan entry, and the old `@AppStorage("targetLanguage")` is replaced by `@AppStorage("nativeLanguage")` (the native/translation-destination setting — DECISIONS #25).
+- `ScanHomeView` — **deleted in Phase 2.** It was the Phase 1 root: a mandatory source-language picker, camera/photo import, OCR+split inline, Reader pushed via `navigationDestination(item:)`. The `extension [String]: @retroactive Identifiable` hack died with it when the `RootView` TabView + `ScanFlowView` (`Features/Scan/`) landed. *Superseded:* its mandatory pre-pick is gone (source is auto-detected); what survives is an **optional pre-capture "Page language" hint** over `LanguageCatalog` on the Library scan entry, and the old `@AppStorage("targetLanguage")` is replaced by `@AppStorage("nativeLanguage")` (the native/translation-destination setting — DECISIONS #25).
 - `OCRReviewView` (`Features/Scan/OCRReviewView.swift`) — **new; shown after OCR, before persistence.** Full-height editable `TextEditor` prefilled with `OCRResult.text`; a source-language `Picker` prefilled with `detectedLanguageCode` (correcting it here is how a wrong detection is fixed); the optional translate-to `Picker`. "Use" splits the edited text with the confirmed language then persists; "Retake" returns to capture. Nothing is saved until "Use", so free-text editing risks no srs/bookmark. Wiring in [PHASE2_DESIGN.md](PHASE2_DESIGN.md); Reader display of the result in [UX_SPEC.md](UX_SPEC.md).
 
 ```
@@ -82,9 +84,9 @@ The playback source of truth. `@Observable`; views read, never mutate, playback 
 ```
 
 - `ReaderView(sentences:languageCode:)` — sentence cards in a `LazyVStack`, tap-to-play, active card tinted + scaled, word highlight via `AttributedString` background, auto-scroll to active card, playback bar (prev/play/next, repeat, speed 0.5–1.0×). Owns its `SpeechPlayer`; `onDisappear` stops playback. Gains: translated text under each card (`.secondary`, smaller), a toolbar show/hide-translations toggle, and a `[⋯]` per-book translate-to picker; hosts the `.translationTask` (§2 · [UX_SPEC.md](UX_SPEC.md)).
-- `CameraPicker` — `UIImagePickerController` wrapper. VisionKit Live Text stays a Phase 4 stretch.
+- Capture is now `DocumentCameraView` (`VNDocumentCameraViewController`) plus `LiveTextCameraView` (VisionKit Live Text with manual shutter — shipped, no longer a Phase 4 stretch) and the `PhotosPicker` import path, all inside `Features/Scan/ScanFlowView`.
 
-### Models (`Models/Models.swift`) — defined, unused until Phase 2
+### Models (`Models/Models.swift`) — live since Phase 2
 `Book (title, languageCode, translationLanguage?) 1─* ScanPage (imageData, rawText, orderIndex) 1─* Sentence (text, translatedText?, orderIndex, isBookmarked, userNote, srs)`, plus standalone `SavedWord (word, contextSentence snapshot, languageCode, srs)`. `SRSState` is a Codable **value type** (SM-2) embedded in both Sentence and SavedWord.
 
 `Book.languageCode` (the **source** language) is now **auto-set** from the confirmed source language of the first page (detected by OCR, editable later) rather than pre-picked; `BookFormView` no longer forces a language choice at create time, and where a source language *is* chosen (OCRReview, BookForm edit, pre-capture hint) the options are the full `LanguageCatalog` set. `Book.translationLanguage: String?` (BCP-47; nil = translation off) is the **destination**, seeded from the user's `@AppStorage("nativeLanguage")` when translation is on (DECISIONS #25). `Book.translationLanguage` and `Sentence.translatedText: String?` join **ReadAloudSchemaV2** — the single lightweight migration (introduced in PHASE3 for `SavedWord.sourceBookTitle`) that adds all new optional fields at once. Changing `translationLanguage` clears the book's `translatedText` (now stale) → re-translated lazily on next Reader open (DECISIONS #24).
@@ -100,23 +102,20 @@ The playback source of truth. `@Observable`; views read, never mutate, playback 
 - **Source vs. native language** (DECISIONS #25): the *source* language is per-Book, auto-detected, and chosen (when needed) from `LanguageCatalog` (Vision-derived, unrestricted — not a curated nine); the *native* language is `@AppStorage("nativeLanguage")`, the per-user translation destination that replaced `targetLanguage`. Never route a source language through a `targetLanguage` setting.
 - All user-facing strings inline for now; localization is out of scope for v1.
 
-## 4. Known gaps / tech debt (as of 2026-07-06)
+## 4. Known gaps / tech debt (as of 2026-07-09)
 
-Tracked with owners-of-record in [TASKS.md](TASKS.md):
+Tracked with owners-of-record in [TASKS.md](TASKS.md). Resolved since the last audit (Phases 2–3 shipped): SwiftData container wired (`ReadAloudApp.swift:24`, versioned schema + migration plan); `ReadAloudTests` unit target (SRS math + text processing, green); `SpeechPlayer` interruption/route-change handling; background `audio` mode + lock-screen Now Playing controls; the `[String]: @retroactive Identifiable` hack (deleted with `ScanHomeView` when `RootView`/`ScanFlowView` landed); post-capture crop via the document camera's corner-adjust step; and the whole capture-first surface (`ScanFlowView`, `OCRReviewView`, `LiveTextCameraView`, auto-detect, translation persistence). Still open:
 
-1. SwiftData container not wired; `Models.swift` is dead code until Phase 2.
-2. No test target at all (`project.yml` defines only the app target).
-3. `SpeechPlayer`: no interruption/route-change observers; audio session never deactivated; speed changes don't apply mid-utterance.
-4. `[String]: @retroactive Identifiable` navigation hack in `ScanHomeView`.
-5. OCR single-column assumption; hyphenated line breaks not repaired.
-6. No post-capture crop/rotate step (plan §4.2 calls for one).
-7. `Fixtures/` is empty — the OCR spike (the plan's #1 risk mitigation) has not been run against real book photos yet.
-8. TTS stops when the screen locks: no `audio` background mode. Needed before "continuous page playback" is real.
-9. **Translation is the only non-offline path.** First use of a new source→target pair needs a one-time system language-pack download (network + user consent); every pair is offline thereafter. Acceptance: airplane-mode replay of an already-translated page shows its `translatedText` with no network.
-10. **Capture-first surface is designed, not built.** OCRService auto-detect + `OCRResult`, `OCRReviewView`, `Book.translationLanguage`/`Sentence.translatedText`, and ReadAloudSchemaV2 land with the Phase 2 SwiftData wiring (folds into gap #1). Acceptance: a scan with no pre-picked language reaches OCRReview, and a corrected source language flows through split → persist → Book.languageCode.
+1. OCR single-column assumption — two-column pages interleave; mitigation (column clustering by midX) is a backlog item. Hyphenated line breaks are not repaired.
+2. `SavedWord.sourceBookTitle` is planned (`Models/Schema.swift` comment) but not in the model — a saved word doesn't record which book/source it came from.
+3. **Imported photos have no crop step** — only doc-camera pages get the system corner-adjust (DECISIONS #15); the bad-scan quality gate is the backstop, an import-crop UI remains a carry-forward.
+4. `SpeechPlayer`: speed changes apply on the next utterance, not mid-sentence; the audio session is never deactivated (defensible now that background audio is a feature, but unexamined).
+5. `Fixtures/` still holds no photos — the OCR spike has never run against real images. [PIVOT_PLAN.md](PIVOT_PLAN.md) task 0.2 closes this with ~15 real-world French fixtures (signs, menus, kids' books, screenshots).
+6. Multi-page batch capture: the doc camera can return batches, but the pipeline ingests one page per scan — deferred to PIVOT_PLAN Phase 5.
+7. **Translation is the only non-offline path.** First use of a new source→target pair needs a one-time system language-pack download (network + user consent); every pair is offline thereafter. Acceptance: airplane-mode replay of an already-translated page shows its `translatedText` with no network.
 
-## 5. Testing strategy (to establish in Phase 2)
+## 5. Testing strategy (established)
 
-- Add `ReadAloudTests` unit target in `project.yml`.
-- Priority order: `SRSState.review` (pure math, highest logic density) → `SentenceSplitter` (fixture strings per language) → `SpeechPlayer` queue logic (inject a synthesizer protocol if it gets hairy; don't test AVFoundation itself).
-- OCR accuracy is validated by the `Tools/OCRSpike` CLI against `Fixtures/`, not by unit tests.
+- `ReadAloudTests` unit target exists (`project.yml`): `SRSStateTests` (SM-2 math) and `TextProcessingTests` (sentence splitting / tokenization) — the two highest-logic-density targets, green.
+- Still untested by design: `SpeechPlayer` queue logic (inject a synthesizer protocol if it gets hairy; don't test AVFoundation itself).
+- OCR accuracy is validated by the `Tools/OCRSpike` CLI against `Fixtures/`, not by unit tests — blocked on gap #5 (no fixtures yet; PIVOT_PLAN task 0.2).

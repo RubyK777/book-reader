@@ -251,3 +251,18 @@ entries stand as history).*
     the direction doc's strongest idea — is deferred to a future phase until we've observed that
     saved items actually get reviewed. *Why:* friction at the capture moment kills the save habit,
     and routing is an optimization of a loop that must exist first. (PIVOT_PLAN.md D3/D11)
+
+34. **Pivot restructure landed as a real frozen-V1 → V2 lightweight migration, not a fold-into-V1.**
+    PIVOT_PLAN §6 assumed the schema was still pre-ship ("migration nearly free"), but a build with a
+    live store is already on Ruby's device (#26), so the V1 models are frozen as nested copies inside
+    `ReadAloudSchemaV1` and the live classes became `ReadAloudSchemaV2` with a `.lightweight` stage:
+    added `Annotation` entity, added optionals (`Sentence.learningAssets`, annotation relationship),
+    and `Book.kindRaw` (non-optional with default `"book"`). Enums (`SourceKind`, `AnnotationType`,
+    `SaveIntent`) are stored as raw strings with tolerant accessors (unknown → sensible fallback) to
+    keep future migrations lightweight. Proven by `MigrationTests.v1StoreMigratesToV2`, which builds a
+    V1 store, reopens it through the plan, and checks data + defaults + V2 writes. Also in this batch:
+    `FlowLayout` promoted to `Shared/Components/` (rule of two — SaveWordSheet + SentenceLearnView),
+    and `SpeechPlayer.speakOnce(_:slow:)` for one-off word/chunk playback (clears the queue position
+    so didFinish can't auto-advance — preserves the AUDIO_DESIGN state machine). *Rejected:* renaming
+    `Book` to `Source` (heavy migration for a cosmetic win; `kind` carries the semantics).
+    (Schema.swift, Models.swift, MigrationTests.swift, PIVOT_PLAN §6)
