@@ -35,6 +35,8 @@ struct ReaderView: View {
     // The Reader's player owns the lock-screen Now Playing + remote controls.
     @State private var player = SpeechPlayer(managesNowPlaying: true)
     @State private var wordSheetSentence: Sentence?
+    @State private var editingSentence: Sentence?
+    @State private var sentenceToDelete: Sentence?
 
     // Translation
     @AppStorage("nativeLanguage") private var nativeLanguage = LanguageCatalog.deviceDefaultNative
@@ -91,7 +93,9 @@ struct ReaderView: View {
                                 translation: translationLine(for: row.sentence),
                                 onTap: { player.play(at: index) },
                                 onToggleBookmark: row.sentence.map { s in { toggleBookmark(s) } },
-                                onSaveWord: row.sentence.map { s in { wordSheetSentence = s } }
+                                onSaveWord: row.sentence.map { s in { wordSheetSentence = s } },
+                                onEdit: row.sentence.map { s in { editingSentence = s } },
+                                onDelete: row.sentence.map { s in { sentenceToDelete = s } }
                             )
                             .id(index)
                         }
@@ -125,6 +129,37 @@ struct ReaderView: View {
         .sheet(item: $wordSheetSentence) { sentence in
             SaveWordSheet(sentence: sentence, languageCode: languageCode)
         }
+        .sheet(item: $editingSentence) { sentence in
+            EditSentenceSheet(sentence: sentence) { reloadPlayer() }
+        }
+        .confirmationDialog("Delete this sentence?",
+                            isPresented: Binding(get: { sentenceToDelete != nil },
+                                                 set: { if !$0 { sentenceToDelete = nil } }),
+                            presenting: sentenceToDelete) { sentence in
+            Button("Delete", role: .destructive) { deleteSentence(sentence) }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("This removes the sentence from the page, including any bookmark or review history.")
+        }
+    }
+
+    /// Reload the player's queue after the page's sentences change (edit/delete).
+    private func reloadPlayer() {
+        player.load(sentences: rows.map(\.text), languageCode: languageCode, title: playerTitle)
+    }
+
+    private func deleteSentence(_ sentence: Sentence) {
+        guard case let .persisted(page) = source else { return }
+        player.stop()
+        let remaining = page.sentences
+            .filter { $0.persistentModelID != sentence.persistentModelID }
+            .sorted { $0.orderIndex < $1.orderIndex }
+        modelContext.delete(sentence)
+        for (i, s) in remaining.enumerated() { s.orderIndex = i }   // keep indices contiguous
+        try? modelContext.save()
+        router.recomputeDueCount(in: modelContext)   // a bookmarked sentence may be gone
+        reloadPlayer()
+        Haptics.select()
     }
 
     // MARK: Translation
@@ -328,6 +363,9 @@ private struct SentenceCard: View {
     let onToggleBookmark: (() -> Void)?
     /// Nil in ephemeral mode — hides the Save Word context action.
     let onSaveWord: (() -> Void)?
+    /// Nil in ephemeral mode — hides Edit/Delete of the sentence.
+    let onEdit: (() -> Void)?
+    let onDelete: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
@@ -379,6 +417,20 @@ private struct SentenceCard: View {
                     Label("Copy Sentence", systemImage: "doc.on.doc")
                 }
             }
+            if let onEdit {
+                Button {
+                    onEdit()
+                } label: {
+                    Label("Edit Sentence", systemImage: "pencil")
+                }
+            }
+            if let onDelete {
+                Button(role: .destructive) {
+                    onDelete()
+                } label: {
+                    Label("Delete Sentence", systemImage: "trash")
+                }
+            }
         }
     }
 
@@ -407,6 +459,60 @@ private struct SentenceCard: View {
             attributed[range].font = .title3.bold()
         }
         return attributed
+    }
+}
+
+/// Edit a single sentence's text. Clears its stale translation on save; the
+/// Reader reloads the player queue via `onSaved`.
+private struct EditSentenceSheet: View {
+    let sentence: Sentence
+    let onSaved: () -> Void
+
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @State private var text: String
+
+    init(sentence: Sentence, onSaved: @escaping () -> Void) {
+        self.sentence = sentence
+        self.onSaved = onSaved
+        _text = State(initialValue: sentence.text)
+    }
+
+    private var isEmpty: Bool {
+        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Sentence") {
+                    TextEditor(text: $text)
+                        .frame(minHeight: 140)
+                }
+            }
+            .navigationTitle("Edit Sentence")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }.disabled(isEmpty)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func save() {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        sentence.text = trimmed
+        sentence.translatedText = nil   // translation is stale after an edit
+        try? modelContext.save()
+        onSaved()
+        Haptics.select()
+        dismiss()
     }
 }
 

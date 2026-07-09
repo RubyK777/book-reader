@@ -195,23 +195,31 @@ struct ReviewSessionView: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: DesignSystem.Spacing.sm) {
+            HStack(spacing: DesignSystem.Spacing.xs) {
                 ForEach(ReviewGrade.allCases) { grade in
                     Button {
                         submit(grade, item)
                     } label: {
                         VStack(spacing: 2) {
                             Text(grade.label)
-                                .font(.subheadline.weight(.semibold))
+                                .font(.callout.weight(.semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                             Text(grade.hint)
                                 .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                                .opacity(0.9)
                         }
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, DesignSystem.Spacing.sm)
+                        .background(tint(for: grade).opacity(0.15),
+                                    in: RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium))
+                        .overlay(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                            .stroke(tint(for: grade), lineWidth: 1))
+                        .foregroundStyle(tint(for: grade))
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .tint(tint(for: grade))
+                    .buttonStyle(.plain)
                     .accessibilityLabel("\(grade.label), \(grade.hint)")
                 }
             }
