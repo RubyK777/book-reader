@@ -57,6 +57,12 @@ From [TRANSLATION_DESIGN.md](TRANSLATION_DESIGN.md) § Carry-forward (DECISIONS 
 
 ## Phase 3 — Review + polish
 
+> **✅ Phase 3 goals achieved (2026-07-08).** The review flashcard model is complete:
+> recognition flashcards (foreign prompt → reveal meaning/translation + note + context),
+> color-coded grading, practice-any-time, Saved Items with live-translated meanings, plus the
+> quality pass (tests, audio robustness, per-language voices). Items still listed below are
+> **optional polish** (dictionary, merge/split, full accessibility) — not blocking.
+
 **Critical path shipped 2026-07-07 (commit f552672, on device):**
 - [x] `SRSEngine` — due items (in-memory srs filter), overdue-first capped-20 shuffled sessions, SM-2 grading
 - [x] `ReviewView` + `ReviewSessionView` (now a **recognition flashcard**: foreign prompt → reveal meaning/translation + note + context; color-coded grade choices) + Review-tab due-count badge
