@@ -13,6 +13,7 @@ struct SaveWordSheet: View {
 
     @State private var selectedWords: Set<String> = []
     @State private var note = ""
+    @State private var lookupTerm: DictionaryTerm?
 
     private let tokenizer = WordTokenizer()
 
@@ -43,6 +44,17 @@ struct SaveWordSheet: View {
                         }
                     }
 
+                    if orderedSelection.count == 1 {
+                        let word = orderedSelection[0]
+                        Button {
+                            lookupTerm = DictionaryTerm(term: word)
+                        } label: {
+                            Label("Look Up “\(word)”",
+                                  systemImage: DictionaryService.hasDefinition(for: word) ? "book.fill" : "book")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
                     if selectedWords.count <= 1 {
                         TextField("Note (optional)", text: $note, axis: .vertical)
                             .textFieldStyle(.roundedBorder)
@@ -68,6 +80,9 @@ struct SaveWordSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .sheet(item: $lookupTerm) { lookup in
+            DictionaryView(term: lookup.term).ignoresSafeArea()
+        }
     }
 
     private var saveLabel: String {

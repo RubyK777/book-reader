@@ -26,6 +26,12 @@ struct SavedItemDetailView: View {
   @State private var isConfirmingRemoval = false
   @State private var meaning: Meaning = .none
   @State private var translateConfig: TranslationSession.Configuration?
+  @State private var lookupTerm: DictionaryTerm?
+
+  private var isWord: Bool {
+    if case .word = item { return true }
+    return false
+  }
 
   init(word: SavedWord) { item = .word(word) }
   init(sentence: Sentence) { item = .sentence(sentence) }
@@ -46,6 +52,13 @@ struct SavedItemDetailView: View {
           Haptics.select()
         } label: {
           Label("Play", systemImage: "speaker.wave.2.fill")
+        }
+        if isWord {
+          Button {
+            lookupTerm = DictionaryTerm(term: text)
+          } label: {
+            Label("Look Up", systemImage: DictionaryService.hasDefinition(for: text) ? "book.fill" : "book")
+          }
         }
       }
 
@@ -89,6 +102,9 @@ struct SavedItemDetailView: View {
     .task { resolveMeaning() }
     .translationTask(translateConfig) { session in
       await translate(using: session)
+    }
+    .sheet(item: $lookupTerm) { lookup in
+      DictionaryView(term: lookup.term).ignoresSafeArea()
     }
   }
 
