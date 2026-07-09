@@ -195,3 +195,18 @@ entries stand as history).*
     (`utterance.rate = AVSpeechUtteranceDefaultSpeechRate × multiplier`, so 2.0× = the max valid rate).
     Speed stays session-local (resets per Reader open) — persisting it wasn't requested. *Why:* the user
     asked for exactly one speed control, on the reading screen, up to 2×. (ReaderView, SettingsView)
+
+## 2026-07-08 — Live Text capture
+
+29. **Live Text camera (`DataScannerViewController`) is the primary capture; document scanner
+    demoted to a fallback.** The user found `VNDocumentCameraViewController` hard to operate — its
+    auto-shutter + edge detection fights curved/glossy book pages. The new `LiveTextCameraView`
+    shows recognized text highlighted live in the viewfinder (immediate "it's reading the page"
+    feedback) with a **manual shutter** the user taps when ready → `capturePhoto()` → the existing
+    OCR pipeline. This delivers the plan's "Live Text" capability *and* fixes the capture UX in one
+    view. `VNDocumentCameraViewController` remains as a fallback on devices without live scanning
+    (`DataScannerViewController.isSupported == false`); Import Photo stays the simulator / camera-denied
+    path. *Rejected:* keeping the doc scanner primary (the source of the complaint); a plain
+    manual-shutter `AVCapturePhotoOutput` camera (no live-text feedback, less useful). This supersedes
+    OCR_PIPELINE's framing of Live Text as a Phase 4 tap-to-hear mode — it's a capture camera now.
+    (LiveTextCameraView, ScanFlowView, OCR_PIPELINE §7)

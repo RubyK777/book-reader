@@ -16,6 +16,7 @@ struct ScanFlowView: View {
   @State private var errorMessage: String?
   @State private var pickerItem: PhotosPickerItem?
   @State private var showCamera = false
+  @State private var showLiveText = false
   /// Optional pre-capture hint biasing Vision toward a language (Library path
   /// only; Add Page already knows the book's language). `nil` = auto-detect.
   @State private var languageHint: String?
@@ -25,7 +26,9 @@ struct ScanFlowView: View {
     case review(UIImage, OCRResult)
   }
 
-  private var cameraSupported: Bool { VNDocumentCameraViewController.isSupported }
+  private var docScannerSupported: Bool { VNDocumentCameraViewController.isSupported }
+  /// A camera exists if either the Live Text scanner or the document scanner does.
+  private var anyCameraSupported: Bool { LiveTextCameraView.isSupported || docScannerSupported }
 
   var body: some View {
     NavigationStack {
@@ -75,9 +78,9 @@ struct ScanFlowView: View {
         }
 
         VStack(spacing: DesignSystem.Spacing.sm) {
-          if cameraSupported {
+          if anyCameraSupported {
             Button { startCamera() } label: {
-              Label("Scan Pages", systemImage: "camera")
+              Label("Scan Page", systemImage: "text.viewfinder")
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -99,6 +102,9 @@ struct ScanFlowView: View {
         Button("Cancel") { dismiss() }
       }
     }
+    .fullScreenCover(isPresented: $showLiveText) {
+      LiveTextCameraView { image in handle(image) }
+    }
     .fullScreenCover(isPresented: $showCamera) {
       DocumentCameraView { image in handle(image) }
         .ignoresSafeArea()
@@ -110,17 +116,22 @@ struct ScanFlowView: View {
 
   private func startCamera() {
     Task { @MainActor in
+      let granted: Bool
       switch CameraAuthorizer.status() {
-      case .authorized:
-        showCamera = true
-      case .notDetermined:
-        if await CameraAuthorizer.request() {
-          showCamera = true
-        } else {
-          errorMessage = "Camera access is off — import a photo instead."
-        }
-      default:
+      case .authorized: granted = true
+      case .notDetermined: granted = await CameraAuthorizer.request()
+      default: granted = false
+      }
+      guard granted else {
         errorMessage = "Camera access is off — enable it in Settings, or import a photo."
+        return
+      }
+      // Prefer the easy Live Text camera; fall back to the document scanner
+      // on devices without live scanning.
+      if LiveTextCameraView.isSupported {
+        showLiveText = true
+      } else {
+        showCamera = true
       }
     }
   }
