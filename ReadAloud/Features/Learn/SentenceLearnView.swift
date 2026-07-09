@@ -20,6 +20,10 @@ struct SentenceLearnView: View {
     @State private var selectedWords: Set<String> = []
     @State private var selectedIntent: SaveIntent?
     @State private var lookupTerm: DictionaryTerm?
+    @State private var isEditingAssets = false
+    @State private var confirmDeleteAssets = false
+    /// Token lit karaoke-style while its tap-to-hear utterance speaks.
+    @State private var speakingTokenIndex: Int?
 
     private let provider = LearningAssetsProviderFactory.makeDefault()
     private let tokenizer = WordTokenizer()
@@ -33,6 +37,10 @@ struct SentenceLearnView: View {
     }
 
     private var assets: LearningAssets? { sentence.learningAssets }
+
+    /// UX_SPEC §8: signs/menu lines are phrase-type units — no grammar point,
+    /// and whole-item save is a phrase, never a sentence.
+    private var isFragment: Bool { FragmentDetector.isFragment(sentence.text) }
 
     var body: some View {
         NavigationStack {
@@ -66,39 +74,101 @@ struct SentenceLearnView: View {
 
     // MARK: Original + Listen
 
-    private var originalSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-            Text(sentence.text)
-                .font(.title2.weight(.medium))
-                .frame(maxWidth: .infinity, alignment: .leading)
+    /// Display tokens preserving punctuation — each word is tappable to hear it.
+    private var displayTokens: [String] {
+        sentence.text.split(whereSeparator: \.isWhitespace).map(String.init)
+    }
 
-            HStack(spacing: DesignSystem.Spacing.md) {
+    /// Each token's range within the sentence, for mapping the player's live
+    /// word-highlight range onto tokens (karaoke, same as the Reader).
+    private var tokenRanges: [NSRange] {
+        var ranges: [NSRange] = []
+        var cursor = sentence.text.startIndex
+        for token in displayTokens {
+            if let found = sentence.text.range(of: token, range: cursor..<sentence.text.endIndex) {
+                ranges.append(NSRange(found, in: sentence.text))
+                cursor = found.upperBound
+            } else {
+                ranges.append(NSRange(location: NSNotFound, length: 0))
+            }
+        }
+        return ranges
+    }
+
+    /// Karaoke state for token `index`: lit while it's the tapped word, or
+    /// while full-sentence playback is speaking inside it.
+    private func isTokenHighlighted(_ index: Int, ranges: [NSRange]) -> Bool {
+        if speakingTokenIndex == index { return true }
+        guard player.currentSentenceIndex == 0,
+              let highlight = player.highlightRange,
+              ranges.indices.contains(index),
+              ranges[index].location != NSNotFound else { return false }
+        return NSLocationInRange(highlight.location, ranges[index])
+    }
+
+    private var originalSection: some View {
+        let ranges = tokenRanges
+        return VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            FlowLayout(spacing: 6) {
+                ForEach(Array(displayTokens.enumerated()), id: \.offset) { index, token in
+                    let isLit = isTokenHighlighted(index, ranges: ranges)
+                    Button {
+                        speakingTokenIndex = index
+                        player.speakOnce(token) {
+                            if speakingTokenIndex == index { speakingTokenIndex = nil }
+                        }
+                    } label: {
+                        // The hidden bold twin reserves the widest footprint so
+                        // bolding on highlight never reflows the line (wiggle room).
+                        ZStack {
+                            Text(token)
+                                .font(Theme.heroFont.weight(.bold))
+                                .hidden()
+                            Text(token)
+                                .font(isLit ? Theme.heroFont.weight(.bold) : Theme.heroFont)
+                        }
+                        .fontDesign(Theme.sentenceDesign)
+                        .padding(.horizontal, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(isLit ? Theme.karaoke : Color.clear)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .animation(.easeOut(duration: 0.12), value: isLit)
+                    .accessibilityLabel("\(token) — tap to hear")
+                }
+            }
+
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                Text("Tap any word to hear it · \(LanguageCatalog.name(for: languageCode))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: DesignSystem.Spacing.sm)
                 Button {
-                    player.play(at: 0)
+                    speakingTokenIndex = nil
+                    player.speedMultiplier = 1.0
+                    player.play(at: 0)   // karaoke via highlightRange
                 } label: {
                     Label("Play", systemImage: "play.fill")
                 }
                 .buttonStyle(.borderedProminent)
+                .fixedSize()
 
                 Button {
-                    player.speakOnce(sentence.text, slow: true)
+                    speakingTokenIndex = nil
+                    player.speedMultiplier = 0.5
+                    player.play(at: 0)   // slow playback keeps the karaoke too
                 } label: {
                     Label("Slow", systemImage: "tortoise.fill")
                 }
                 .buttonStyle(.bordered)
-
-                Spacer()
-
-                Text(LanguageCatalog.name(for: languageCode))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .fixedSize()
             }
         }
-        .padding(DesignSystem.Spacing.md)
-        .background(
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                .fill(Color(.secondarySystemBackground))
-        )
+        .learningCard()
     }
 
     // MARK: Translation
@@ -140,9 +210,39 @@ struct SentenceLearnView: View {
                     }
                     .buttonStyle(.bordered)
                 }
+            } else if provider?.isAvailable == true {
+                // Assets were deleted (or the auto-run hasn't fired) — offer it.
+                Button {
+                    Task { await generateIfNeeded(force: true) }
+                } label: {
+                    Label("Generate Breakdown", systemImage: "sparkles")
+                }
+                .buttonStyle(.bordered)
             } else {
                 fallbackContent
             }
+        }
+        .sheet(isPresented: $isEditingAssets) {
+            if let assets {
+                EditAssetsSheet(assets: assets) { edited in
+                    var updated = edited
+                    updated.userEditedAt = .now
+                    sentence.learningAssets = updated
+                    try? modelContext.save()
+                    Haptics.select()
+                }
+            }
+        }
+        .confirmationDialog("Delete this breakdown?",
+                            isPresented: $confirmDeleteAssets) {
+            Button("Delete Breakdown", role: .destructive) {
+                sentence.learningAssets = nil
+                try? modelContext.save()
+                Haptics.select()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You can generate a fresh one afterwards.")
         }
     }
 
@@ -161,6 +261,7 @@ struct SentenceLearnView: View {
                                     .foregroundStyle(DesignSystem.accent)
                                 Text(chunk.text)
                                     .fontWeight(.medium)
+                                    .fontDesign(Theme.sentenceDesign)
                                 Text(chunk.gloss)
                                     .foregroundStyle(.secondary)
                                 Spacer(minLength: 0)
@@ -183,7 +284,7 @@ struct SentenceLearnView: View {
                         .textCase(.uppercase)
                     ForEach(assets.keyVocab, id: \.self) { item in
                         HStack(alignment: .firstTextBaseline, spacing: DesignSystem.Spacing.sm) {
-                            Text(item.term).fontWeight(.medium)
+                            Text(item.term).fontWeight(.medium).fontDesign(Theme.sentenceDesign)
                             Text(item.meaning).foregroundStyle(.secondary)
                         }
                         .font(.callout)
@@ -202,11 +303,37 @@ struct SentenceLearnView: View {
                 }
             }
 
-            if assets.isGenerated {
-                // D7 provenance: generated content is always visibly marked.
-                Label("AI-generated — check anything that looks off", systemImage: "sparkles")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+            Divider()
+            HStack(spacing: DesignSystem.Spacing.md) {
+                if assets.isGenerated {
+                    // D7 provenance: generated content is always visibly marked.
+                    Label(assets.userEditedAt == nil
+                          ? "AI-generated — check anything that looks off"
+                          : "AI-generated, edited by you",
+                          systemImage: "sparkles")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                Spacer(minLength: 0)
+                Button("Edit") { isEditingAssets = true }
+                    .font(.caption)
+                Menu {
+                    Button {
+                        Task { await generateIfNeeded(force: true) }
+                    } label: {
+                        Label("Regenerate", systemImage: "arrow.clockwise")
+                    }
+                    Button(role: .destructive) {
+                        confirmDeleteAssets = true
+                    } label: {
+                        Label("Delete Breakdown", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityLabel("Breakdown options")
             }
         }
     }
@@ -266,7 +393,7 @@ struct SentenceLearnView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(selectedWords.isEmpty)
 
-                    Button("Save Sentence") { saveWholeSentence() }
+                    Button(isFragment ? "Save Phrase" : "Save Sentence") { saveWholeSentence() }
                         .buttonStyle(.bordered)
                         .disabled(hasAnnotation(text: sentence.text))
                 }
@@ -290,15 +417,8 @@ struct SentenceLearnView: View {
             Haptics.select()
         } label: {
             Text(word)
-                .font(.callout)
-                .padding(.horizontal, DesignSystem.Spacing.md)
-                .padding(.vertical, DesignSystem.Spacing.sm)
-                .background(
-                    Capsule().fill(isSelected ? DesignSystem.accent : Color(.secondarySystemBackground))
-                )
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ChipButtonStyle(isSelected: isSelected))
     }
 
     private func intentChip(_ intent: SaveIntent) -> some View {
@@ -354,10 +474,12 @@ struct SentenceLearnView: View {
         isGenerating = true
         generationFailed = false
         do {
-            let generated = try await provider.generateAssets(
+            var generated = try await provider.generateAssets(
                 for: sentence.text,
                 sourceLanguage: languageCode,
                 explanationLanguage: nativeLanguage)
+            // UX_SPEC §8: fragments are phrases — never show a grammar point.
+            if isFragment { generated.grammarPoint = nil }
             sentence.learningAssets = generated
             try? modelContext.save()
         } catch {
@@ -376,7 +498,8 @@ struct SentenceLearnView: View {
     }
 
     private func saveWholeSentence() {
-        save(type: .sentence, text: sentence.text)
+        // UX_SPEC §8: a fragment saves as a phrase, never a sentence.
+        save(type: isFragment ? .phrase : .sentence, text: sentence.text)
     }
 
     private func save(type: AnnotationType, text: String) {
@@ -406,16 +529,76 @@ struct SentenceLearnView: View {
     private func sectionCard(_ title: String, systemImage: String,
                              @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-            Label(title, systemImage: systemImage)
-                .font(.headline)
+            SectionHeaderLabel(title: title, systemImage: systemImage)
             content()
         }
-        .padding(DesignSystem.Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                .fill(Color(.secondarySystemBackground))
-        )
+        .learningCard()
+    }
+}
+
+/// D7: generated content is editable and deletable. Edits mark the assets
+/// `userEditedAt` (done by the caller) while keeping `isGenerated` provenance.
+private struct EditAssetsSheet: View {
+    @State private var working: LearningAssets
+    private let onSave: (LearningAssets) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    init(assets: LearningAssets, onSave: @escaping (LearningAssets) -> Void) {
+        _working = State(initialValue: assets)
+        self.onSave = onSave
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Chunks") {
+                    ForEach(working.chunks.indices, id: \.self) { i in
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                            TextField("Chunk", text: $working.chunks[i].text)
+                                .fontWeight(.medium)
+                            TextField("Meaning", text: $working.chunks[i].gloss)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .onDelete { working.chunks.remove(atOffsets: $0) }
+                }
+
+                Section("Key vocabulary") {
+                    ForEach(working.keyVocab.indices, id: \.self) { i in
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                            TextField("Term", text: $working.keyVocab[i].term)
+                                .fontWeight(.medium)
+                            TextField("Meaning", text: $working.keyVocab[i].meaning)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .onDelete { working.keyVocab.remove(atOffsets: $0) }
+                }
+
+                Section("Grammar point") {
+                    TextField("Grammar point (leave empty to remove)",
+                              text: Binding(
+                                get: { working.grammarPoint ?? "" },
+                                set: { working.grammarPoint = $0.isEmpty ? nil : $0 }),
+                              axis: .vertical)
+                        .lineLimit(2...5)
+                }
+            }
+            .navigationTitle("Edit Breakdown")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        onSave(working)
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }
 

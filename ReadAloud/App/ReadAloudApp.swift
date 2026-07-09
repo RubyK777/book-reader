@@ -20,6 +20,7 @@ struct ReadAloudApp: App {
         WindowGroup {
             RootView()
                 .environment(router)
+                .tint(Theme.accent)
         }
         .modelContainer(container)
     }

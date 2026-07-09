@@ -100,15 +100,8 @@ struct SaveWordSheet: View {
             Haptics.select()
         } label: {
             Text(word)
-                .font(.callout)
-                .padding(.horizontal, DesignSystem.Spacing.md)
-                .padding(.vertical, DesignSystem.Spacing.sm)
-                .background(
-                    Capsule().fill(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
-                )
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ChipButtonStyle(isSelected: isSelected))
     }
 
     private func save() {

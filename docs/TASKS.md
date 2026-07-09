@@ -30,9 +30,15 @@ phases further down are the shipped foundation plus optional polish.**
 - [x] `SentenceLearnView` basic screen — original + play/slow, translation, Understand (generated breakdown/vocab/grammar with AI-generated badge + fallback view), one-tap save-as-annotation with optional intent chips, saved-items list
 - [x] Reader drill-down (graduation-cap button + context menu on `SentenceCard` → Learn sheet)
 - [x] `FlowLayout` extracted to `Shared/Components/` (rule of two); `SpeechPlayer.speakOnce` for word/chunk tap-to-hear
-- [ ] Editable Understand fields (accept/edit/delete per D7) — currently display-only
-- [ ] Tap-a-word-in-original to hear it (currently chips in Save section speak on tap)
-- [ ] Fragment handling per UX_SPEC §8 (phrase-type Understand for non-sentences)
+- [x] Editable Understand fields (D7): Edit sheet (chunks/vocab/grammar, row delete), Regenerate, Delete Breakdown; edits stamp `userEditedAt` → "AI-generated, edited by you" (required Schema V3 — DECISIONS #35)
+- [x] Tap-a-word-in-original to hear it (tokens are tappable; layout fix for the squashed Slow button)
+- [x] Fragment handling per UX_SPEC §8 — `FragmentDetector` pure service + 7 tests; fragments get no grammar point and whole-item save is phrase-type
+
+## Design pass — "paper & ink" identity (DECISIONS #36)
+
+- [x] `Shared/Styles/Theme.swift`: serif for source-language content, French ink-blue accent (app-wide tint), warm paper `learningCard`, shared `ChipButtonStyle` + `SectionHeaderLabel` + `Theme.karaoke`
+- [x] Applied to the core loop: Reader sentence cards, Learn view, SaveWordSheet
+- [ ] Adopt Theme tokens in Library / Saved / Review / Notes / Settings as each screen is next touched (don't hardcode system defaults in new work)
 
 ## Pivot Phase 3+ — see PIVOT_PLAN §7 (review modes, notes & digest, deferred list)
 

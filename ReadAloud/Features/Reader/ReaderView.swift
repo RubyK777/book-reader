@@ -378,7 +378,9 @@ private struct SentenceCard: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
                 Text(attributedText)
-                    .font(.title3)
+                    .font(Theme.sentenceFont)
+                    .fontDesign(Theme.sentenceDesign)
+                    .lineSpacing(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                     .onTapGesture { onTap() }
@@ -411,15 +413,7 @@ private struct SentenceCard: View {
                 translationView(translation)
             }
         }
-        .padding(DesignSystem.Spacing.md)
-        .background(
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                .fill(isActive ? Color.accentColor.opacity(0.14) : Color(.secondarySystemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                .strokeBorder(isActive ? Color.accentColor : .clear, lineWidth: 2)
-        )
+        .learningCard(active: isActive)
         .scaleEffect(isActive ? 1.02 : 1.0)
         .animation(.easeOut(duration: 0.15), value: isActive)
         .contextMenu {
@@ -480,8 +474,8 @@ private struct SentenceCard: View {
     private var attributedText: AttributedString {
         var attributed = AttributedString(text)
         if let nsRange = highlightRange, let range = Range(nsRange, in: attributed) {
-            attributed[range].backgroundColor = .yellow.opacity(0.6)
-            attributed[range].font = .title3.bold()
+            attributed[range].backgroundColor = Theme.karaoke
+            attributed[range].font = Theme.sentenceFont.weight(.bold)
         }
         return attributed
     }

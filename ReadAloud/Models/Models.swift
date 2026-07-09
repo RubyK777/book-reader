@@ -206,6 +206,9 @@ struct LearningAssets: Codable {
     var isGenerated: Bool = false
     var modelVersion: String?
     var generatedAt: Date?
+    /// Set when the user edits generated content (D7) — optional so values
+    /// stored before this field decode cleanly.
+    var userEditedAt: Date?
 }
 
 // MARK: - SavedWord (vocabulary item)

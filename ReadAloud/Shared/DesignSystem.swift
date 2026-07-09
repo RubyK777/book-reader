@@ -18,8 +18,8 @@ enum DesignSystem {
         static let large: CGFloat = 20
     }
 
-    /// The app accent — use for primary actions and highlights.
-    static let accent = Color.accentColor
+    /// The app accent — use for primary actions and highlights (Theme.accent).
+    static let accent = Theme.accent
 
     /// Minimum tappable size per Apple HIG.
     static let minTapTarget: CGFloat = 44

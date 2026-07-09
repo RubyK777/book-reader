@@ -266,3 +266,29 @@ entries stand as history).*
     so didFinish can't auto-advance — preserves the AUDIO_DESIGN state machine). *Rejected:* renaming
     `Book` to `Source` (heavy migration for a cosmetic win; `kind` carries the semantics).
     (Schema.swift, Models.swift, MigrationTests.swift, PIVOT_PLAN §6)
+
+35. **Codable value structs are part of the SwiftData schema fingerprint — changing one means a new
+    schema version.** Adding the optional `LearningAssets.userEditedAt` (D7 edited-provenance) changed
+    the V2 checksum; a store created by the V2 build (already on Ruby's iPhone the same day) then
+    failed to open with "Cannot use staged migration with an unknown model version" — caught by the
+    simulator test host before it could ship. Fix: V2 is now a **frozen snapshot carrying its own
+    nested `LearningAssets` copy** (without the new field), live models are `ReadAloudSchemaV3`, and
+    the plan chains two lightweight stages (V1→V2→V3). `MigrationTests.v2StoreMigratesToV3` replays
+    the on-device store shape. *Rule going forward:* treat `SRSState`/`LearningAssets`/any embedded
+    Codable exactly like @Model fields — every change, even adding an optional, freezes the previous
+    version and bumps the schema. (Schema.swift, MigrationTests.swift)
+
+36. **Visual identity: "paper & ink", via the previously-missing `Shared/Styles/` layer.** The app
+    read as plain because every screen composed raw system defaults. `Theme.swift` now defines it:
+    learning content (sentences, words, chunks — anything in the source language) is set in **serif**
+    (`.fontDesign(.serif)`, New York) like a book page, while UI chrome and native-language glosses
+    stay system sans — the type distinction *is* the information (source vs. native). One accent
+    everywhere: **French ink blue** (#2B5B84 light / lifted for dark, from the pivot-plan identity),
+    applied app-wide via `.tint`. Cards are warm paper with a hairline stroke (`learningCard(active:)`
+    modifier), chips share `ChipButtonStyle`, section headers share `SectionHeaderLabel`, and the
+    karaoke color is a single `Theme.karaoke` token used by both Reader and Learn. Applied to the
+    core loop (Reader cards, Learn view, SaveWordSheet) first; remaining screens adopt the same
+    tokens as they're touched. *Why:* Ruby asked for a visual upgrade; CLAUDE.md's Shared/Styles rule
+    already mandated this layer. *Rejected:* an asset-catalog accent (code tokens keep xcodegen
+    simple); theming every screen in one pass (risk of churn before Phase 3 reworks Review anyway).
+    (Shared/Styles/Theme.swift, ReaderView, SentenceLearnView, SaveWordSheet, ReadAloudApp)

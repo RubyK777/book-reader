@@ -199,13 +199,19 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
         play(at: index - 1)
     }
 
+    /// The in-flight one-off utterance (speakOnce) and its completion, so the
+    /// delegate can tell it apart from queue utterances.
+    private var onceUtterance: AVSpeechUtterance?
+    private var onceCompletion: (() -> Void)?
+
     /// One-off playback of a word/phrase/chunk (Learn view tap-to-hear) without
-    /// touching the sentence queue or `currentSentenceIndex`. Interrupting a
-    /// queued utterance goes through `isJumping` so didFinish/didCancel doesn't
-    /// auto-advance (AUDIO_DESIGN state machine — preserve this).
-    func speakOnce(_ text: String, slow: Bool = false) {
+    /// touching the sentence queue. Interrupting a queued utterance goes
+    /// through `isJumping` so didFinish/didCancel doesn't auto-advance
+    /// (AUDIO_DESIGN state machine — preserve this). `completion` fires when
+    /// the utterance finishes or is cancelled (e.g. by the next tap).
+    func speakOnce(_ text: String, slow: Bool = false, completion: (() -> Void)? = nil) {
         isJumping = synthesizer.isSpeaking
-        synthesizer.stopSpeaking(at: .immediate)
+        synthesizer.stopSpeaking(at: .immediate)   // may fire the old completion via didCancel
 
         // Abandon the queue position so didFinish can't auto-advance into the
         // queue after the one-off utterance ends.
@@ -215,8 +221,19 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = VoiceStore.resolvedVoice(for: languageCode)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate * (slow ? 0.5 : speedMultiplier)
+        onceUtterance = utterance
+        onceCompletion = completion
         try? AVAudioSession.sharedInstance().setActive(true)
         synthesizer.speak(utterance)
+    }
+
+    /// Fire-and-clear the once completion when its utterance ends either way.
+    private func finishOnce(_ utterance: AVSpeechUtterance) {
+        guard utterance === onceUtterance else { return }
+        onceUtterance = nil
+        let completion = onceCompletion
+        onceCompletion = nil
+        completion?()
     }
 
     func stop() {
@@ -240,6 +257,7 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
                            didFinish utterance: AVSpeechUtterance) {
+        finishOnce(utterance)
         guard !isJumping else { isJumping = false; return }
         highlightRange = nil
 
@@ -255,6 +273,7 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
                            didCancel utterance: AVSpeechUtterance) {
+        finishOnce(utterance)
         isJumping = false
     }
 }
