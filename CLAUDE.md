@@ -1,12 +1,12 @@
 # ReadAloud (book-reader)
 
-iOS app for language learners: photograph a book page → on-device OCR → listen sentence-by-sentence with word-level highlighting → save words → spaced-repetition review. Fully offline: Apple frameworks only (Vision, NaturalLanguage, AVSpeechSynthesizer, SwiftData), no third-party deps, no networking — ever.
+iOS app for language learners: turn real-world text — book pages, signs, menus, screenshots — into listenable, reviewable learning material. Photograph text → on-device OCR → understand (translation + AI phrase breakdown, on-device Foundation Models, availability-gated) → listen sentence-by-sentence with word-level highlighting → save words/phrases as annotations → spaced-repetition review. Primary pair: French → English (extensible, DECISIONS #32). Fully offline: Apple frameworks only (Vision, NaturalLanguage, AVSpeechSynthesizer, SwiftData, FoundationModels), no third-party deps, no networking — ever (cloud AI is a possible future opt-in, DECISIONS #31).
 
 ## Read first
 
 | Question | Document |
 |---|---|
-| What are we building, in what order? | [PROJECT_PLAN.md](PROJECT_PLAN.md) — master spec (screens, phases, risks, acceptance criteria) |
+| What are we building, in what order? | [docs/PIVOT_PLAN.md](docs/PIVOT_PLAN.md) — **current master plan** (real-world learning pivot, Phases 0–5, reuse map); [PROJECT_PLAN.md](PROJECT_PLAN.md) covers the shipped book-reader foundation |
 | What exists right now, and its contracts? | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | What do I build next? | [docs/TASKS.md](docs/TASKS.md) — **source of truth backlog; check items off as they land** |
 | How is feature X designed? | `docs/PHASE2_DESIGN.md`, `PHASE3_DESIGN.md`, `UX_SPEC.md`, `AUDIO_DESIGN.md`, `OCR_PIPELINE.md`, `TRANSLATION_DESIGN.md`, `TESTING_QUALITY.md` |

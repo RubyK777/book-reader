@@ -210,3 +210,44 @@ entries stand as history).*
     manual-shutter `AVCapturePhotoOutput` camera (no live-text feedback, less useful). This supersedes
     OCR_PIPELINE's framing of Live Text as a Phase 4 tap-to-hear mode — it's a capture camera now.
     (LiveTextCameraView, ScanFlowView, OCR_PIPELINE §7)
+
+## 2026-07-09 — Real-world learning pivot
+
+30. **Product pivot: real-world text becomes the input surface; the goal/vision is updated.** The app
+    generalizes from "photograph a book page" to "turn the language you see — pages, signs, menus,
+    screenshots — into listenable, reviewable learning material," per the reviewed Product Direction
+    Document (ChatGPT-authored; multi-agent strategy review 2026-07-08). The full handover spec is
+    **[PIVOT_PLAN.md](PIVOT_PLAN.md)** — new master plan for Phases 0–5; PROJECT_PLAN.md remains the
+    record of the shipped book-reader foundation. Key framing kept from the review: the Reader stays
+    the home surface (the new Sentence Learning View is a drill-down from its sentence cards, not a
+    replacement); deliberate reading remains the retention anchor with in-the-wild scanning as the
+    wedge; the sentence stays the single parent learning unit with saved words/phrases/grammar as
+    typed annotations. *Rejected:* the doc's Scan/Learn/Review/Notebook IA (it had no home for the
+    Reader — the most complete built surface); its three conflicting save-reason taxonomies; ungraded
+    production/usage review modes in v1. (PIVOT_PLAN.md)
+
+31. **AI intelligence is on-device only (Apple Foundation Models, iOS 26+), behind a
+    `LearningAssetsProvider` protocol; deployment target stays iOS 18.** Phrase breakdowns, grammar
+    notes, and note drafting come from the on-device Foundation Models framework, gated on
+    `#available(iOS 26, *)` + `SystemLanguageModel` availability; non-Apple-Intelligence devices get a
+    fallback learn view (translation + dictionary + user-authored fields). The no-networking charter
+    stands. *Why:* zero per-scan cost (Ruby's explicit constraint), privacy for scanned text, works
+    offline. A **cloud-API provider is an accepted future alternative** for the lower tier — kept open
+    via the provider seam but out of v1 because it would amend the charter, add COGS, and require key
+    management + a privacy story; if added it must be explicit user opt-in with its own DECISIONS
+    entry. Gate: PIVOT_PLAN Phase 0 spike 0.1 must pass (≥80% usable breakdowns) or Phase 2 ships
+    fallback-only. (PIVOT_PLAN.md D1/D2/D10)
+
+32. **Primary language pair is French (source) → English (native).** Ruby is learning French through
+    English and dogfoods this pair; all Phase 0 quality spikes (Foundation Models output, scene-text
+    OCR fixtures, voice audit) are graded against fr-FR → en first. The two-axes language model
+    (#25) is unchanged and the architecture stays language-agnostic; additional Apple
+    Intelligence-supported languages ship only after passing the same spike bar. (PIVOT_PLAN.md D9)
+
+33. **Save-intent is collected but does not route review cards in v1.** Saving is one tap; type
+    (word/phrase/sentence/grammar) is inferred from the selection gesture, intent
+    (remember/pronounce/use/confused) is an optional, skippable, later-editable tag shown in the
+    Notebook. Review card faces are chosen by annotation *type* only; intent→card-mode routing —
+    the direction doc's strongest idea — is deferred to a future phase until we've observed that
+    saved items actually get reviewed. *Why:* friction at the capture moment kills the save habit,
+    and routing is an optimization of a loop that must exist first. (PIVOT_PLAN.md D3/D11)
