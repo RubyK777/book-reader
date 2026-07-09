@@ -1,16 +1,31 @@
 import Foundation
 import SwiftData
 
-/// A single reviewable item — either a bookmarked sentence or a saved word.
-/// Wraps the underlying SwiftData model so grading writes straight back to it.
+/// Which card front a review item gets (PIVOT_PLAN D4: only gradeable modes,
+/// routed by item TYPE — intent does not route in v1, D11).
+enum CardFace {
+  /// Foreign text shown + spoken; recall the meaning. (Words, grammar.)
+  case meaning
+  /// Audio first, text hidden until reveal. (Sentences.)
+  case listening
+  /// The context sentence with the saved term blanked out. (Phrases inside
+  /// a sentence; falls back to meaning when there is nothing to blank.)
+  case cloze
+}
+
+/// A single reviewable item — a bookmarked sentence, a saved word (pre-pivot),
+/// or a pivot Annotation. Wraps the underlying SwiftData model so grading
+/// writes straight back to it.
 enum ReviewItem: Identifiable {
   case sentence(Sentence)
   case word(SavedWord)
+  case annotation(Annotation)
 
   var id: PersistentIdentifier {
     switch self {
     case let .sentence(s): s.persistentModelID
     case let .word(w): w.persistentModelID
+    case let .annotation(a): a.persistentModelID
     }
   }
 
@@ -19,6 +34,7 @@ enum ReviewItem: Identifiable {
     switch self {
     case let .sentence(s): s.text
     case let .word(w): w.word
+    case let .annotation(a): a.text
     }
   }
 
@@ -27,24 +43,29 @@ enum ReviewItem: Identifiable {
     switch self {
     case let .sentence(s): s.text
     case let .word(w): w.word
+    case let .annotation(a): a.text
     }
   }
 
-  /// Extra context shown for words only (the sentence they came from).
+  /// Extra context shown on the answer side (the sentence the item came from).
   var contextText: String? {
     switch self {
     case .sentence: nil
     case let .word(w): w.contextSentence
+    case let .annotation(a):
+      a.contextSentence == a.text ? nil : a.contextSentence
     }
   }
 
-  /// A translation already persisted for this item (bookmarked sentences
-  /// translated in the Reader). Words have none — the session translates them
-  /// live on reveal. Used as the flashcard "answer" (the meaning).
+  /// A translation already persisted for this item (sentences translated in
+  /// the Reader). Others translate live on reveal. Used as the flashcard
+  /// "answer" (the meaning).
   var existingTranslation: String? {
     switch self {
     case let .sentence(s): s.translatedText
     case .word: nil
+    case let .annotation(a):
+      a.type == .sentence ? a.sentence?.translatedText : nil
     }
   }
 
@@ -53,13 +74,17 @@ enum ReviewItem: Identifiable {
     switch self {
     case let .sentence(s): s.userNote
     case let .word(w): w.userNote
+    case let .annotation(a): a.userNote
     }
   }
 
   /// A single word vs. a full sentence — drives front-card typography.
   var isWord: Bool {
-    if case .word = self { return true }
-    return false
+    switch self {
+    case .word: true
+    case let .annotation(a): a.type == .word
+    case .sentence: false
+    }
   }
 
   /// BCP-47 language for TTS.
@@ -67,6 +92,31 @@ enum ReviewItem: Identifiable {
     switch self {
     case let .sentence(s): s.page?.book?.languageCode ?? "en-US"
     case let .word(w): w.languageCode
+    case let .annotation(a): a.languageCode
+    }
+  }
+
+  /// The blanked context sentence for a cloze front (phrase annotations only).
+  var clozeText: String? {
+    guard case let .annotation(a) = self, a.type == .phrase else { return nil }
+    return ClozeBuilder.blank(term: a.text, in: a.contextSentence)
+  }
+
+  /// Card front by item type (D4/D11): words & grammar → meaning; sentences
+  /// (bookmarked or annotation) → listening; phrases → cloze when the term
+  /// can actually be blanked inside its context sentence.
+  var face: CardFace {
+    switch self {
+    case .sentence: .listening
+    case .word: .meaning
+    case let .annotation(a):
+      switch a.type {
+      case .word, .grammar: .meaning
+      case .sentence: .listening
+      case .phrase:
+        ClozeBuilder.blank(term: a.text, in: a.contextSentence) != nil
+          ? .cloze : .meaning
+      }
     }
   }
 
@@ -77,12 +127,14 @@ enum ReviewItem: Identifiable {
       switch self {
       case let .sentence(s): s.srs ?? SRSState()
       case let .word(w): w.srs ?? SRSState()
+      case let .annotation(a): a.srs ?? SRSState()
       }
     }
     nonmutating set {
       switch self {
       case let .sentence(s): s.srs = newValue
       case let .word(w): w.srs = newValue
+      case let .annotation(a): a.srs = newValue
       }
     }
   }
@@ -134,6 +186,11 @@ enum SRSEngine {
     let wordFetch = FetchDescriptor<SavedWord>()
     if let words = try? context.fetch(wordFetch) {
       items += words.map(ReviewItem.word)
+    }
+
+    let annotationFetch = FetchDescriptor<Annotation>()
+    if let annotations = try? context.fetch(annotationFetch) {
+      items += annotations.map(ReviewItem.annotation)
     }
 
     return items.filter { ($0.srs.dueDate) <= now }

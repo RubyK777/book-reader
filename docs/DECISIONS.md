@@ -292,3 +292,17 @@ entries stand as history).*
     already mandated this layer. *Rejected:* an asset-catalog accent (code tokens keep xcodegen
     simple); theming every screen in one pass (risk of churn before Phase 3 reworks Review anyway).
     (Shared/Styles/Theme.swift, ReaderView, SentenceLearnView, SaveWordSheet, ReadAloudApp)
+
+37. **Phase 3 review modes: one queue, three card faces, routed by item type (D4/D11).**
+    `ReviewItem` gained `.annotation` and a `face` property: word/grammar → meaning (the existing
+    flashcard), sentence → **listening** (audio-first, text hidden until reveal — this includes
+    legacy bookmarked sentences, a deliberate behavior change consistent with the pivot; reverting is
+    one line in `ReviewItem.face`), phrase → **cloze** via the pure `ClozeBuilder` (D5: the saved
+    term IS the blank; case/diacritic-insensitive; falls back to meaning when the term isn't
+    blankable). Cloze fronts never auto-speak — the audio contains the answer. One `SRSState` per
+    item regardless of face (D4). **Shadowing is ungraded** and lives behind a "Practice speaking"
+    button on the session summary (never interrupts grading): `VoiceRecorder` service swaps the
+    audio session to `.playAndRecord` only while recording and keeps just the last take; mic denial
+    degrades to listen-and-repeat. *Rejected:* per-face SRS schedules (fork explosion, D4 says one);
+    shadowing as a graded card (can't be judged offline). (SRSEngine, ClozeBuilder, VoiceRecorder,
+    ReviewSessionView, ShadowingPracticeView, project.yml mic usage string)

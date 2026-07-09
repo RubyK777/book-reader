@@ -27,6 +27,7 @@ struct ReviewSessionView: View {
     @State private var player = SpeechPlayer()
     @State private var showEndConfirm = false
     @State private var remainingDue = 0
+    @State private var showShadowing = false
 
     // Meaning resolution for the current card.
     @State private var meaning: Meaning = .none
@@ -38,6 +39,21 @@ struct ReviewSessionView: View {
 
     private var current: ReviewItem? {
         queue.indices.contains(index) ? queue[index] : nil
+    }
+
+    /// Full sentences from this session, deduped — the shadowing material.
+    private var shadowableItems: [ReviewItem] {
+        var seen = Set<PersistentIdentifier>()
+        return queue.filter { item in
+            let isSentence: Bool = switch item {
+            case .sentence: true
+            case let .annotation(a): a.type == .sentence
+            case .word: false
+            }
+            guard isSentence, !seen.contains(item.id) else { return false }
+            seen.insert(item.id)
+            return true
+        }
     }
 
     var body: some View {
@@ -71,6 +87,9 @@ struct ReviewSessionView: View {
             .translationTask(translateConfig) { session in
                 await translateCurrent(using: session)
             }
+            .sheet(isPresented: $showShadowing) {
+                ShadowingPracticeView(items: shadowableItems)
+            }
         }
     }
 
@@ -85,21 +104,9 @@ struct ReviewSessionView: View {
 
             Spacer()
 
-            // FRONT: the foreign word/sentence — read it and hear it, recall the meaning.
-            VStack(spacing: DesignSystem.Spacing.md) {
-                Text(item.promptText)
-                    .font(item.isWord ? .largeTitle.weight(.bold) : .title2.weight(.semibold))
-                    .multilineTextAlignment(.center)
-
-                Button {
-                    speak(item.promptText, item.languageCode)
-                } label: {
-                    Label("Play", systemImage: "speaker.wave.2.fill")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
-            .padding(.horizontal, DesignSystem.Spacing.md)
+            // FRONT — varies by card face (D4: meaning / listening / cloze).
+            frontView(item)
+                .padding(.horizontal, DesignSystem.Spacing.md)
 
             // BACK: the meaning + note + source sentence.
             if phase == .revealed {
@@ -107,7 +114,7 @@ struct ReviewSessionView: View {
                 answerView(item)
                     .padding(.horizontal, DesignSystem.Spacing.md)
             } else {
-                Text("What does this mean?")
+                Text(recallPrompt(item))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -130,7 +137,91 @@ struct ReviewSessionView: View {
         }
         .padding(DesignSystem.Spacing.lg)
         .task(id: index) {
-            speak(item.promptText, item.languageCode)
+            // Cloze must not speak the sentence — it contains the answer.
+            if item.face != .cloze {
+                speak(item.promptText, item.languageCode)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func frontView(_ item: ReviewItem) -> some View {
+        switch item.face {
+        case .meaning:
+            VStack(spacing: DesignSystem.Spacing.md) {
+                Text(item.promptText)
+                    .font(item.isWord ? .largeTitle.weight(.bold) : .title2.weight(.semibold))
+                    .fontDesign(Theme.sentenceDesign)
+                    .multilineTextAlignment(.center)
+
+                Button {
+                    speak(item.promptText, item.languageCode)
+                } label: {
+                    Label("Play", systemImage: "speaker.wave.2.fill")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+
+        case .listening:
+            VStack(spacing: DesignSystem.Spacing.md) {
+                if phase == .revealed {
+                    Text(item.revealText)
+                        .font(.title2.weight(.semibold))
+                        .fontDesign(Theme.sentenceDesign)
+                        .multilineTextAlignment(.center)
+                } else {
+                    Image(systemName: "ear")
+                        .font(.system(size: 44))
+                        .foregroundStyle(DesignSystem.accent)
+                        .accessibilityHidden(true)
+                }
+
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    Button {
+                        speak(item.promptText, item.languageCode)
+                    } label: {
+                        Label("Play", systemImage: "speaker.wave.2.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+
+                    Button {
+                        player.load(sentences: [item.promptText], languageCode: item.languageCode)
+                        player.speakOnce(item.promptText, slow: true)
+                    } label: {
+                        Label("Slow", systemImage: "tortoise.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+
+        case .cloze:
+            VStack(spacing: DesignSystem.Spacing.md) {
+                Text(item.clozeText ?? item.promptText)
+                    .font(.title3.weight(.medium))
+                    .fontDesign(Theme.sentenceDesign)
+                    .multilineTextAlignment(.center)
+
+                if phase == .revealed {
+                    Button {
+                        speak(item.contextText ?? item.promptText, item.languageCode)
+                    } label: {
+                        Label("Play sentence", systemImage: "speaker.wave.2.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+        }
+    }
+
+    private func recallPrompt(_ item: ReviewItem) -> String {
+        switch item.face {
+        case .meaning: "What does this mean?"
+        case .listening: "Listen — what did you hear?"
+        case .cloze: "What fills the blank?"
         }
     }
 
@@ -139,6 +230,15 @@ struct ReviewSessionView: View {
     @ViewBuilder
     private func answerView(_ item: ReviewItem) -> some View {
         VStack(spacing: DesignSystem.Spacing.md) {
+            // Cloze: the blanked term is the answer — show it first.
+            if item.face == .cloze {
+                Text(item.revealText)
+                    .font(.title2.weight(.semibold))
+                    .fontDesign(Theme.sentenceDesign)
+                    .foregroundStyle(DesignSystem.accent)
+                    .multilineTextAlignment(.center)
+            }
+
             switch meaning {
             case .translating:
                 HStack(spacing: DesignSystem.Spacing.sm) {
@@ -272,6 +372,21 @@ struct ReviewSessionView: View {
             Spacer()
 
             VStack(spacing: DesignSystem.Spacing.sm) {
+                // Ungraded shadowing practice on the session's full sentences
+                // (PIVOT_PLAN Phase 3 — never interrupts the graded flow).
+                if !shadowableItems.isEmpty {
+                    Button {
+                        showShadowing = true
+                    } label: {
+                        Label("Practice speaking (\(shadowableItems.count))",
+                              systemImage: "mic")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                }
+
                 if remainingDue > 0 {
                     Button {
                         startMore()
@@ -411,6 +526,10 @@ struct ReviewSessionView: View {
         let wordFetch = FetchDescriptor<SavedWord>()
         if let words = try? modelContext.fetch(wordFetch) {
             dates += words.map { $0.srs?.dueDate ?? .distantPast }
+        }
+        let annotationFetch = FetchDescriptor<Annotation>()
+        if let annotations = try? modelContext.fetch(annotationFetch) {
+            dates += annotations.map { $0.srs?.dueDate ?? .distantPast }
         }
         return dates.min()
     }

@@ -40,9 +40,13 @@ phases further down are the shipped foundation plus optional polish.**
 - [x] Applied to the core loop: Reader sentence cards, Learn view, SaveWordSheet
 - [ ] Adopt Theme tokens in Library / Saved / Review / Notes / Settings as each screen is next touched (don't hardcode system defaults in new work)
 
-## Pivot Phase 3+ — see PIVOT_PLAN §7 (review modes, notes & digest, deferred list)
+## Pivot Phase 3 — review modes (PIVOT_PLAN §7)
 
-- [ ] Extend `SRSEngine.ReviewItem` to include `Annotation` items (new saves currently get SRS state but don't appear in Review until this lands)
+- [x] `SRSEngine.ReviewItem` includes `Annotation` items (due counting, sessions, grading, badge)
+- [x] Card faces by item TYPE (D4/D11): word/grammar → meaning, sentence → listening (audio-first, text hidden until reveal, Play/Slow), phrase → cloze via `ClozeBuilder` (D5 deterministic blank, 5 tests; falls back to meaning when unblankable). Cloze never auto-speaks (audio contains the answer)
+- [x] `VoiceRecorder` service (UI-free: playAndRecord category swap, last-take-only) + `ShadowingPracticeView` — ungraded, offered from the session summary for the session's full sentences; mic denial degrades to listen-and-repeat; NSMicrophoneUsageDescription added
+- [ ] Legacy bookmarked sentences now get listening cards — confirm Ruby likes this (revert to meaning face is one line in `ReviewItem.face`)
+- [ ] Phase 4 next: Notes tab annotation upgrade, after-session digest, confusion state (PIVOT_PLAN §7 Phase 4)
 
 ## Phase 1 — leftovers
 

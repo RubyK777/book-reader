@@ -23,8 +23,11 @@
 		4716D8AE0B2973D332F82F09 /* WordTokenizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADCA3E982DDC9BB8E580CD1F /* WordTokenizer.swift */; };
 		47CCC908ED0B200DF13E1E3C /* VoiceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9351BF59A4835332603EC8 /* VoiceStore.swift */; };
 		4D68F17953EB427025542F55 /* LiveTextCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69D52E7E91C9BCFC0FFBF74A /* LiveTextCameraView.swift */; };
+		595D28DE4F62FEB67C6CDDBB /* VoiceRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC7EBB40679D3855647E07FF /* VoiceRecorder.swift */; };
 		63B3424A5CA8D2716404F578 /* FragmentDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B717D28674FF5282DADDDCF9 /* FragmentDetectorTests.swift */; };
 		694DD50DC40C4CC4B7C791BB /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99064792B2BFA33B9C381863 /* ImageProcessor.swift */; };
+		6C913C2600D5B62A52D3CC0B /* ClozeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F0C3479448E23F34AB2AB9 /* ClozeBuilder.swift */; };
+		6E3FAE1F0B5509FA0F627C4B /* ShadowingPracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ADA921255F08DA069B07ECC /* ShadowingPracticeView.swift */; };
 		6EB339E3D3A9D1D14032E73E /* ScanFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0A60928EF6AC9E9DBCA02A /* ScanFlowView.swift */; };
 		79A530D266412C03E3D8EA82 /* TextProcessingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8BE74B31A842ECD63D6993D /* TextProcessingTests.swift */; };
 		7C9C00AED8E3FD06D132E4AA /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0984307175077E8BECAE83B /* ShareSheet.swift */; };
@@ -37,6 +40,7 @@
 		A9B1AB19A51E409B0D451CBF /* CameraAuthorizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 921F537C0F4FB33AD46DFDF9 /* CameraAuthorizer.swift */; };
 		B08A8D5939042FF96F32E215 /* BookFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D468E8D1096002454579462B /* BookFormView.swift */; };
 		B19CB493153DBAAC5A42F620 /* Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = A472F3E00866672DDC1274A4 /* Schema.swift */; };
+		B23E035BB59F6434703C7584 /* ClozeBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFF281D69EFBF8C5DA3E9571 /* ClozeBuilderTests.swift */; };
 		B5FCECBD6B6004610C6A0D0F /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23278B10C8ACF15C7B57E9B3 /* DictionaryService.swift */; };
 		B6EEAB545124838D4DB8FF2C /* SavedItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781AF4A9B35C9D48B58F1F1F /* SavedItemDetailView.swift */; };
 		B8A0BB996DE2E55601B678A8 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5CE61ED10EBABDE785C5CDD /* LibraryView.swift */; };
@@ -66,6 +70,7 @@
 /* Begin PBXFileReference section */
 		02C1FFB0C472AEB2F0F35E87 /* MigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationTests.swift; sourceTree = "<group>"; };
 		0A38AC87DF4921A1C15348AC /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
+		1ADA921255F08DA069B07ECC /* ShadowingPracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShadowingPracticeView.swift; sourceTree = "<group>"; };
 		1B7894C3B1C69FF6F2DD5221 /* SentenceLearnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentenceLearnView.swift; sourceTree = "<group>"; };
 		23278B10C8ACF15C7B57E9B3 /* DictionaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryService.swift; sourceTree = "<group>"; };
 		2DA4F0C51F04CC2E251D1A7D /* LearningAssetsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LearningAssetsProvider.swift; sourceTree = "<group>"; };
@@ -73,6 +78,7 @@
 		36C0E6637A2D501C2ED788BC /* ReadAloudApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadAloudApp.swift; sourceTree = "<group>"; };
 		3CFC6FA27DFAF000FE142DA9 /* ReviewSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSessionView.swift; sourceTree = "<group>"; };
 		41E7C1CC8B6A9EDC0BCA01EE /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		51F0C3479448E23F34AB2AB9 /* ClozeBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClozeBuilder.swift; sourceTree = "<group>"; };
 		5B8BABAA11445B30F26F7FB8 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		69D52E7E91C9BCFC0FFBF74A /* LiveTextCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTextCameraView.swift; sourceTree = "<group>"; };
 		6F0A60928EF6AC9E9DBCA02A /* ScanFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFlowView.swift; sourceTree = "<group>"; };
@@ -94,9 +100,11 @@
 		B658E25EF1CE476ACB066241 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		B717D28674FF5282DADDDCF9 /* FragmentDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FragmentDetectorTests.swift; sourceTree = "<group>"; };
 		B8BE74B31A842ECD63D6993D /* TextProcessingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextProcessingTests.swift; sourceTree = "<group>"; };
+		BC7EBB40679D3855647E07FF /* VoiceRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceRecorder.swift; sourceTree = "<group>"; };
 		BEA9593268D61452EC45AF75 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		C55B9085397B629A4C14B711 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		CBC4A7CAD65BE19587764F2E /* ReadAloud.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ReadAloud.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CFF281D69EFBF8C5DA3E9571 /* ClozeBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClozeBuilderTests.swift; sourceTree = "<group>"; };
 		D1C34944ABD37C98730814F5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D468E8D1096002454579462B /* BookFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookFormView.swift; sourceTree = "<group>"; };
 		D493A9331B369578A465E395 /* SRSStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRSStateTests.swift; sourceTree = "<group>"; };
@@ -159,6 +167,7 @@
 		3D3D7BE02602777E46C63CF3 /* ReadAloudTests */ = {
 			isa = PBXGroup;
 			children = (
+				CFF281D69EFBF8C5DA3E9571 /* ClozeBuilderTests.swift */,
 				B717D28674FF5282DADDDCF9 /* FragmentDetectorTests.swift */,
 				02C1FFB0C472AEB2F0F35E87 /* MigrationTests.swift */,
 				D493A9331B369578A465E395 /* SRSStateTests.swift */,
@@ -194,6 +203,7 @@
 			children = (
 				3CFC6FA27DFAF000FE142DA9 /* ReviewSessionView.swift */,
 				BEA9593268D61452EC45AF75 /* ReviewView.swift */,
+				1ADA921255F08DA069B07ECC /* ShadowingPracticeView.swift */,
 			);
 			path = Review;
 			sourceTree = "<group>";
@@ -252,6 +262,7 @@
 		D24223C3CBF6D0152C6CF59D /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				51F0C3479448E23F34AB2AB9 /* ClozeBuilder.swift */,
 				23278B10C8ACF15C7B57E9B3 /* DictionaryService.swift */,
 				A193A65A5B7597BF31549F06 /* ExportService.swift */,
 				826ECAA02745873590A2849B /* FragmentDetector.swift */,
@@ -262,6 +273,7 @@
 				FAF3F2DB98C5E0D76F887581 /* SentenceSplitter.swift */,
 				F6311162F1936707A7D7A952 /* SpeechPlayer.swift */,
 				FD2190E582454180E1BEA356 /* SRSEngine.swift */,
+				BC7EBB40679D3855647E07FF /* VoiceRecorder.swift */,
 				DA9351BF59A4835332603EC8 /* VoiceStore.swift */,
 				ADCA3E982DDC9BB8E580CD1F /* WordTokenizer.swift */,
 			);
@@ -387,6 +399,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B23E035BB59F6434703C7584 /* ClozeBuilderTests.swift in Sources */,
 				63B3424A5CA8D2716404F578 /* FragmentDetectorTests.swift in Sources */,
 				1FAD825964E040F0D6C9DDBC /* MigrationTests.swift in Sources */,
 				DB6717A2F2A087D801DF8992 /* SRSStateTests.swift in Sources */,
@@ -402,6 +415,7 @@
 				458722027C19E105E1787019 /* BookDetailView.swift in Sources */,
 				B08A8D5939042FF96F32E215 /* BookFormView.swift in Sources */,
 				A9B1AB19A51E409B0D451CBF /* CameraAuthorizer.swift in Sources */,
+				6C913C2600D5B62A52D3CC0B /* ClozeBuilder.swift in Sources */,
 				18AD0B1D16ED0AAEA14FE65A /* DesignSystem.swift in Sources */,
 				B5FCECBD6B6004610C6A0D0F /* DictionaryService.swift in Sources */,
 				92305B5A23F9B905E5B7209D /* DictionaryView.swift in Sources */,
@@ -433,9 +447,11 @@
 				E53E064006C186A0FA5B370F /* SentenceLearnView.swift in Sources */,
 				14C74E50C82378F057C8649B /* SentenceSplitter.swift in Sources */,
 				E313F0A782D7A455B47A71A7 /* SettingsView.swift in Sources */,
+				6E3FAE1F0B5509FA0F627C4B /* ShadowingPracticeView.swift in Sources */,
 				7C9C00AED8E3FD06D132E4AA /* ShareSheet.swift in Sources */,
 				CE74F19A4FA4D2AB8A449DB1 /* SpeechPlayer.swift in Sources */,
 				E07D9702778FBB042E213E99 /* Theme.swift in Sources */,
+				595D28DE4F62FEB67C6CDDBB /* VoiceRecorder.swift in Sources */,
 				47CCC908ED0B200DF13E1E3C /* VoiceStore.swift in Sources */,
 				4716D8AE0B2973D332F82F09 /* WordTokenizer.swift in Sources */,
 			);
@@ -560,6 +576,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReadAloud/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "ReadAloud uses the camera to photograph book pages so it can read the text aloud.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ReadAloud records your voice during shadowing practice so you can compare it with the original audio.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
@@ -586,6 +603,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReadAloud/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "ReadAloud uses the camera to photograph book pages so it can read the text aloud.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ReadAloud records your voice during shadowing practice so you can compare it with the original audio.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
