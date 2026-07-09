@@ -37,6 +37,7 @@ struct ReaderView: View {
     @State private var wordSheetSentence: Sentence?
     @State private var editingSentence: Sentence?
     @State private var sentenceToDelete: Sentence?
+    @State private var learnSentence: Sentence?
 
     // Translation
     @AppStorage("nativeLanguage") private var nativeLanguage = LanguageCatalog.deviceDefaultNative
@@ -95,7 +96,8 @@ struct ReaderView: View {
                                 onToggleBookmark: row.sentence.map { s in { toggleBookmark(s) } },
                                 onSaveWord: row.sentence.map { s in { wordSheetSentence = s } },
                                 onEdit: row.sentence.map { s in { editingSentence = s } },
-                                onDelete: row.sentence.map { s in { sentenceToDelete = s } }
+                                onDelete: row.sentence.map { s in { sentenceToDelete = s } },
+                                onLearn: row.sentence.map { s in { player.stop(); learnSentence = s } }
                             )
                             .id(index)
                         }
@@ -128,6 +130,9 @@ struct ReaderView: View {
         }
         .sheet(item: $wordSheetSentence) { sentence in
             SaveWordSheet(sentence: sentence, languageCode: languageCode)
+        }
+        .sheet(item: $learnSentence) { sentence in
+            SentenceLearnView(sentence: sentence, languageCode: languageCode)
         }
         .sheet(item: $editingSentence) { sentence in
             EditSentenceSheet(sentence: sentence) { reloadPlayer() }
@@ -366,6 +371,8 @@ private struct SentenceCard: View {
     /// Nil in ephemeral mode — hides Edit/Delete of the sentence.
     let onEdit: (() -> Void)?
     let onDelete: (() -> Void)?
+    /// Nil in ephemeral mode — hides the Learn drill-down (PIVOT_PLAN Phase 2).
+    let onLearn: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
@@ -375,6 +382,17 @@ private struct SentenceCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                     .onTapGesture { onTap() }
+
+                if let onLearn {
+                    Button(action: onLearn) {
+                        Image(systemName: "graduationcap")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                            .frame(width: DesignSystem.minTapTarget, height: DesignSystem.minTapTarget)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Learn this sentence")
+                }
 
                 if let onToggleBookmark {
                     Button(action: onToggleBookmark) {
@@ -405,6 +423,13 @@ private struct SentenceCard: View {
         .scaleEffect(isActive ? 1.02 : 1.0)
         .animation(.easeOut(duration: 0.15), value: isActive)
         .contextMenu {
+            if let onLearn {
+                Button {
+                    onLearn()
+                } label: {
+                    Label("Learn Sentence…", systemImage: "graduationcap")
+                }
+            }
             if let onSaveWord {
                 Button {
                     onSaveWord()

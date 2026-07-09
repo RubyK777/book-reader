@@ -1,7 +1,35 @@
 import Foundation
 import SwiftData
 
-// MARK: - Book (a physical book the user is reading)
+// MARK: - SourceKind (what kind of real-world source a Book container holds)
+
+/// PIVOT_PLAN.md §6: `Book` generalizes into a source container. Books keep
+/// title/cover ceremony; other kinds come from Quick Scan (sign, menu, …).
+enum SourceKind: String, Codable, CaseIterable {
+    case book, sign, menu, screenshot, other
+
+    var displayName: String {
+        switch self {
+        case .book: "Book"
+        case .sign: "Sign"
+        case .menu: "Menu"
+        case .screenshot: "Screenshot"
+        case .other: "Other"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .book: "book.closed"
+        case .sign: "signpost.right"
+        case .menu: "menucard"
+        case .screenshot: "iphone"
+        case .other: "doc.text.image"
+        }
+    }
+}
+
+// MARK: - Book (a source container: physical book, sign, menu, screenshot…)
 @Model
 final class Book {
     var title: String
@@ -9,15 +37,24 @@ final class Book {
     var translationLanguage: String?  // BCP-47 target; nil = translation OFF for this book (TRANSLATION_DESIGN §2)
     var createdAt: Date
 
+    /// Stored raw so SwiftData migrates it as a plain string (PIVOT_PLAN §6).
+    var kindRaw: String = SourceKind.book.rawValue
+
     @Attribute(.externalStorage)
     var coverImageData: Data?
 
     @Relationship(deleteRule: .cascade, inverse: \ScanPage.book)
     var pages: [ScanPage] = []
 
-    init(title: String) {
+    var kind: SourceKind {
+        get { SourceKind(rawValue: kindRaw) ?? .book }
+        set { kindRaw = newValue.rawValue }
+    }
+
+    init(title: String, kind: SourceKind = .book) {
         self.title = title
         self.createdAt = .now
+        self.kindRaw = kind.rawValue
     }
 }
 
@@ -43,7 +80,7 @@ final class ScanPage {
     }
 }
 
-// MARK: - Sentence (unit of listening)
+// MARK: - Sentence (unit of listening; parent of all learning annotations)
 @Model
 final class Sentence {
     var text: String
@@ -56,11 +93,119 @@ final class Sentence {
     // Review / SRS state (nil until bookmarked)
     var srs: SRSState?
 
+    /// AI/user learning assets for this sentence (PIVOT_PLAN §6). Generated
+    /// lazily on first Sentence Learning View visit; never regenerated —
+    /// sentence text is immutable once assets derive from it (D6).
+    var learningAssets: LearningAssets?
+
+    @Relationship(deleteRule: .cascade, inverse: \Annotation.sentence)
+    var annotations: [Annotation] = []
+
     init(text: String, orderIndex: Int) {
         self.text = text
         self.orderIndex = orderIndex
         self.isBookmarked = false
     }
+}
+
+// MARK: - Annotation (a saved learning item, parented to a Sentence)
+
+/// What kind of learning unit the user saved (PIVOT_PLAN D3) — inferred from
+/// the selection gesture, never asked.
+enum AnnotationType: String, Codable, CaseIterable {
+    case word, phrase, sentence, grammar
+}
+
+/// Optional save intent (PIVOT_PLAN D3/D11): collected, shown in the Notebook,
+/// editable later. Does NOT route review cards in v1 (D11).
+enum SaveIntent: String, Codable, CaseIterable {
+    case remember, pronounce, use, confused
+
+    var displayName: String {
+        switch self {
+        case .remember: "Remember"
+        case .pronounce: "Pronounce"
+        case .use: "Use later"
+        case .confused: "Confused"
+        }
+    }
+}
+
+/// The single save unit of the pivot (PIVOT_PLAN §6): saved words, phrases,
+/// whole sentences, and grammar points are typed annotations on a Sentence.
+/// `SavedWord` remains for pre-pivot data until the Saved tab is ported.
+@Model
+final class Annotation {
+    /// Stored raw strings so migration stays lightweight.
+    var typeRaw: String
+    var intentRaw: String?
+
+    /// The saved text itself (word, phrase chunk, or the whole sentence).
+    var text: String
+    /// Location of `text` within the parent sentence, when it is a fragment.
+    var rangeLocation: Int?
+    var rangeLength: Int?
+
+    /// Snapshot of the parent sentence — survives page/sentence deletion.
+    var contextSentence: String
+    var languageCode: String
+
+    var userNote: String?
+    var userExample: String?
+    var tags: [String] = []
+
+    var isConfusing: Bool = false
+    var isResolved: Bool = false
+    var savedAt: Date
+
+    var srs: SRSState?
+    var sentence: Sentence?
+
+    var type: AnnotationType {
+        get { AnnotationType(rawValue: typeRaw) ?? .phrase }
+        set { typeRaw = newValue.rawValue }
+    }
+
+    var intent: SaveIntent? {
+        get { intentRaw.flatMap(SaveIntent.init(rawValue:)) }
+        set { intentRaw = newValue?.rawValue }
+    }
+
+    init(type: AnnotationType, text: String, contextSentence: String,
+         languageCode: String, intent: SaveIntent? = nil) {
+        self.typeRaw = type.rawValue
+        self.text = text
+        self.contextSentence = contextSentence
+        self.languageCode = languageCode
+        self.intentRaw = intent?.rawValue
+        self.savedAt = .now
+    }
+}
+
+// MARK: - LearningAssets (understand-section content, embedded value type)
+
+/// Phrase breakdown + key vocabulary + one grammar point for a sentence
+/// (PIVOT_PLAN §6). Produced by a `LearningAssetsProviding` service (D10) or
+/// authored by the user in the fallback view; provenance is tracked per D7.
+struct LearningAssets: Codable {
+    struct Chunk: Codable, Hashable {
+        var text: String    // the chunk as it appears in the sentence
+        var gloss: String   // its meaning, in the user's native language
+    }
+
+    struct VocabItem: Codable, Hashable {
+        var term: String
+        var meaning: String
+    }
+
+    var chunks: [Chunk] = []
+    var keyVocab: [VocabItem] = []
+    var grammarPoint: String?
+
+    /// D7 provenance: true when a model produced this; user edits stay marked.
+    var isGenerated: Bool = false
+    var modelVersion: String?
+    var generatedAt: Date?
 }
 
 // MARK: - SavedWord (vocabulary item)

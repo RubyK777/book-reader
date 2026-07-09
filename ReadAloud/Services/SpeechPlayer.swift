@@ -199,6 +199,26 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
         play(at: index - 1)
     }
 
+    /// One-off playback of a word/phrase/chunk (Learn view tap-to-hear) without
+    /// touching the sentence queue or `currentSentenceIndex`. Interrupting a
+    /// queued utterance goes through `isJumping` so didFinish/didCancel doesn't
+    /// auto-advance (AUDIO_DESIGN state machine — preserve this).
+    func speakOnce(_ text: String, slow: Bool = false) {
+        isJumping = synthesizer.isSpeaking
+        synthesizer.stopSpeaking(at: .immediate)
+
+        // Abandon the queue position so didFinish can't auto-advance into the
+        // queue after the one-off utterance ends.
+        currentSentenceIndex = nil
+        highlightRange = nil
+
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = VoiceStore.resolvedVoice(for: languageCode)
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * (slow ? 0.5 : speedMultiplier)
+        try? AVAudioSession.sharedInstance().setActive(true)
+        synthesizer.speak(utterance)
+    }
+
     func stop() {
         isJumping = true
         synthesizer.stopSpeaking(at: .immediate)
