@@ -83,7 +83,7 @@ struct ShadowingPracticeView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                    .padding(.horizontal, DesignSystem.Spacing.screenMargin)
             } else {
                 VStack(spacing: DesignSystem.Spacing.md) {
                     Button {
@@ -117,7 +117,7 @@ struct ShadowingPracticeView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
-            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.horizontal, DesignSystem.Spacing.screenMargin)
         }
         .padding(DesignSystem.Spacing.lg)
     }
@@ -134,7 +134,7 @@ struct ShadowingPracticeView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.horizontal, DesignSystem.Spacing.screenMargin)
         }
         .padding(DesignSystem.Spacing.lg)
     }

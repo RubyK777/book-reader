@@ -56,10 +56,13 @@ struct ReviewView: View {
                 Image(systemName: "brain.head.profile")
                     .font(.system(size: 52))
                     .foregroundStyle(DesignSystem.accent)
+                    .symbolEffect(.bounce, value: due.count)
                 if !due.isEmpty {
-                    Text("\(due.count) due")
-                        .font(.largeTitle.bold())
-                        .contentTransition(.numericText())
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        CountUpText(value: due.count)
+                        Text("due")
+                            .font(.largeTitle.bold())
+                    }
                     Text(due.count == 1 ? "1 card ready to review" : "\(due.count) cards ready to review")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -74,8 +77,14 @@ struct ReviewView: View {
             }
             .padding(DesignSystem.Spacing.xl)
             .frame(maxWidth: .infinity)
-            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large))
-            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .background {
+                AnimatedMeshBackground()
+                    .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                            .stroke(Theme.cardStroke, lineWidth: 1))
+            }
+            .padding(.horizontal, DesignSystem.Spacing.screenMargin)
 
             Spacer()
 
@@ -83,35 +92,20 @@ struct ReviewView: View {
                 if !due.isEmpty {
                     Button { startSession(with: due) } label: {
                         Text("Review \(due.count) due")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
+                    .buttonStyle(SpringyProminentButtonStyle())
                 }
 
                 // Always available — practice the whole deck whenever you want.
                 // Prominent when nothing is due (the primary action then), else secondary.
-                if due.isEmpty {
-                    Button { startSession(with: deck) } label: {
-                        Text("Practice all \(deck.count)")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                } else {
-                    Button { startSession(with: deck) } label: {
-                        Text("Practice all \(deck.count)")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
+                Button { startSession(with: deck) } label: {
+                    Text("Practice all \(deck.count)")
                 }
+                .buttonStyle(SpringyProminentButtonStyle(prominent: due.isEmpty))
             }
-            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.horizontal, DesignSystem.Spacing.screenMargin)
             .padding(.bottom, DesignSystem.Spacing.lg)
+            .sensoryFeedback(.impact, trigger: isSessionPresented)
         }
     }
 
@@ -122,10 +116,11 @@ struct ReviewView: View {
     }
 
     private var emptyState: some View {
-        ContentUnavailableView(
-            "No cards yet",
+        AnimatedEmptyState(
+            title: "No cards yet",
+            message: "Bookmark sentences and save words in the Reader to build your deck.",
             systemImage: "brain.head.profile",
-            description: Text("Bookmark sentences and save words in the Reader to build your deck."))
+            tint: Theme.violet)
     }
 
     // MARK: - Helpers

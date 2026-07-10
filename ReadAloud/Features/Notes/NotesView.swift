@@ -36,6 +36,8 @@ struct NotesView: View {
     @State private var segment: Segment = .notebook
     @State private var typeFilter: TypeFilter = .all
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var filteredAnnotations: [Annotation] {
         annotations.filter { annotation in
             let passesType: Bool = switch typeFilter {
@@ -126,22 +128,26 @@ struct NotesView: View {
     @ViewBuilder
     private var notebookList: some View {
         if annotations.isEmpty {
-            ContentUnavailableView(
-                "Nothing saved yet",
+            AnimatedEmptyState(
+                title: "Nothing saved yet",
+                message: "Save words, phrases, and sentences from the Learn screen — they collect here.",
                 systemImage: "bookmark",
-                description: Text("Save words, phrases, and sentences from the Learn screen — they collect here."))
+                tint: Theme.accent)
         } else {
             VStack(spacing: 0) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: DesignSystem.Spacing.sm) {
                         ForEach(TypeFilter.allCases, id: \.self) { filter in
                             Button {
-                                typeFilter = filter
+                                withAnimation(.snappy(duration: 0.3)) {
+                                    typeFilter = filter
+                                }
                                 Haptics.select()
                             } label: {
                                 Text(filter.label)
                             }
-                            .buttonStyle(ChipButtonStyle(isSelected: typeFilter == filter))
+                            .buttonStyle(ChipButtonStyle(isSelected: typeFilter == filter,
+                                                         tint: tint(for: filter)))
                         }
                     }
                     .padding(.horizontal, DesignSystem.Spacing.md)
@@ -149,61 +155,106 @@ struct NotesView: View {
                 }
 
                 if filteredAnnotations.isEmpty {
-                    ContentUnavailableView(
-                        "No matches",
+                    AnimatedEmptyState(
+                        title: "No matches",
+                        message: "Try a different filter or search.",
                         systemImage: "line.3.horizontal.decrease.circle",
-                        description: Text("Try a different filter or search."))
+                        tint: Theme.slate)
                 } else {
-                    List(filteredAnnotations) { annotation in
-                        NavigationLink(value: annotation.persistentModelID) {
-                            annotationRow(annotation)
+                    ScrollView {
+                        LazyVStack(spacing: DesignSystem.Spacing.sm) {
+                            ForEach(filteredAnnotations) { annotation in
+                                NavigationLink(value: annotation.persistentModelID) {
+                                    scrollAnimated(
+                                        annotationRow(annotation)
+                                            .learningCard()
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                        .padding(.vertical, DesignSystem.Spacing.sm)
                     }
-                    .listStyle(.plain)
                 }
             }
         }
     }
 
-    private func annotationRow(_ annotation: Annotation) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-            HStack(spacing: DesignSystem.Spacing.sm) {
-                Text(annotation.type.rawValue)
-                    .font(.caption2.weight(.semibold))
-                    .textCase(.uppercase)
-                    .foregroundStyle(Theme.accent)
-                if annotation.isConfusing && !annotation.isResolved {
-                    Image(systemName: "questionmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                        .accessibilityLabel("Confused")
-                }
-                if annotation.isSuspended {
-                    Image(systemName: "pause.circle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel("Suspended")
-                }
-                if let intent = annotation.intent {
-                    Text(intent.displayName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
+    /// Per-filter chip tint — annotation types own their palette hue; the
+    /// confused state is marigold, "All" is the ink accent.
+    private func tint(for filter: TypeFilter) -> Color {
+        switch filter {
+        case .all: Theme.accent
+        case .word: AnnotationType.word.tint
+        case .phrase: AnnotationType.phrase.tint
+        case .sentence: AnnotationType.sentence.tint
+        case .grammar: AnnotationType.grammar.tint
+        case .confused: Theme.marigold
+        }
+    }
 
-            Text(annotation.text)
-                .font(.body)
-                .fontDesign(Theme.sentenceDesign)
-                .lineLimit(2)
-
-            if annotation.contextSentence != annotation.text {
-                Text(annotation.contextSentence)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+    /// Applies the interactive edge fade/scale to a card — skipped entirely
+    /// under Reduce Motion (`.scrollTransition` also no-ops inside `List`,
+    /// which is why the notebook uses a `ScrollView`).
+    @ViewBuilder
+    private func scrollAnimated<Card: View>(_ card: Card) -> some View {
+        if reduceMotion {
+            card
+        } else {
+            card.scrollTransition(.interactive) { content, phase in
+                content
+                    .opacity(phase.isIdentity ? 1 : 0.5)
+                    .scaleEffect(phase.isIdentity ? 1 : 0.96)
             }
         }
-        .padding(.vertical, DesignSystem.Spacing.xs)
+    }
+
+    private func annotationRow(_ annotation: Annotation) -> some View {
+        HStack(spacing: DesignSystem.Spacing.sm) {
+            Capsule()
+                .fill(annotation.type.tint)
+                .frame(width: DesignSystem.Spacing.xs)
+
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    Text(annotation.type.rawValue)
+                        .font(.caption2.weight(.semibold))
+                        .textCase(.uppercase)
+                        .foregroundStyle(Theme.accent)
+                    if annotation.isConfusing && !annotation.isResolved {
+                        Image(systemName: "questionmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(Theme.marigold)
+                            .accessibilityLabel("Confused")
+                    }
+                    if annotation.isSuspended {
+                        Image(systemName: "pause.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Suspended")
+                    }
+                    if let intent = annotation.intent {
+                        Text(intent.displayName)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Text(annotation.text)
+                    .font(.body)
+                    .fontDesign(Theme.sentenceDesign)
+                    .lineLimit(2)
+
+                if annotation.contextSentence != annotation.text {
+                    Text(annotation.contextSentence)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     // MARK: Legacy segment

@@ -7,13 +7,18 @@ struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
 
+    /// Shared between a Library cover and its `BookDetailView` so tapping a book
+    /// zooms it *open* into its pages (iOS 18 zoom navigation transition).
+    @Namespace private var bookOpen
+
     var body: some View {
         @Bindable var router = router
         TabView(selection: $router.tab) {
             NavigationStack(path: $router.libraryPath) {
-                LibraryView()
+                LibraryView(bookNamespace: bookOpen)
                     .navigationDestination(for: Book.self) { book in
                         BookDetailView(book: book)
+                            .navigationTransition(.zoom(sourceID: book.persistentModelID, in: bookOpen))
                     }
                     .navigationDestination(for: ScanPage.self) { page in
                         ReaderView(page: page)

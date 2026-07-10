@@ -38,7 +38,17 @@ phases further down are the shipped foundation plus optional polish.**
 
 - [x] `Shared/Styles/Theme.swift`: serif for source-language content, French ink-blue accent (app-wide tint), warm paper `learningCard`, shared `ChipButtonStyle` + `SectionHeaderLabel` + `Theme.karaoke`
 - [x] Applied to the core loop: Reader sentence cards, Learn view, SaveWordSheet
-- [ ] Adopt Theme tokens in Library / Saved / Review / Notes / Settings as each screen is next touched (don't hardcode system defaults in new work)
+- [x] Adopt Theme tokens in Library / Saved / Review / Notes (Visual Energy Pass, DECISIONS #39) — *Settings / Scan / Dictionary still on system defaults, adopt when next touched*
+
+## Visual Energy Pass — energetic-not-gamified (DECISIONS #39)
+
+- [x] `Shared/Styles/` reorg: slim `Theme.swift` (base tokens) + new `Palette.swift` (5 semantic hues, dark variants, `soft`/`celebration`/`meshWash`), `SemanticColors.swift` (`SourceKind`/`AnnotationType`/`ReviewGrade` `.tint`), `Interactive.swift` (`ChipButtonStyle`+`tint`/spring, `SpringyProminentButtonStyle`), `Cards.swift`
+- [x] `Shared/Components/`: `ConfettiView`, `AnimatedMeshBackground`, `CountUpText`, `AnimatedEmptyState`; `Haptics.celebrate()` — all Reduce-Motion gated internally
+- [x] ReviewView (hero mesh + count-up + springy buttons) & ReviewSessionView (confetti + celebrate haptic + staggered tally + grade tints)
+- [x] NotesView (semantic filter chips + `List → ScrollView` paper cards with scroll transitions + spines)
+- [x] LibraryView (kind-colored thumbnails/chips/badges + wiggling empty-shelf camera) & SavedItemsView (bouncy `ReplayButton` + spines + animated segment)
+- [x] Zero functional impact — presentation-only, all 30 tests green after every step
+- [ ] Device verification on iPhone 17: walk each tab, dark-mode pass, Reduce-Motion pass (plan §5)
 
 ## Pivot Phase 3 — review modes (PIVOT_PLAN §7)
 

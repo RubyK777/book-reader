@@ -31,10 +31,14 @@ struct SavedItemsView: View {
         .padding(.horizontal, DesignSystem.Spacing.md)
         .padding(.vertical, DesignSystem.Spacing.sm)
 
-        switch tab {
-        case .words: wordsList
-        case .sentences: sentencesList
+        Group {
+          switch tab {
+          case .words: wordsList
+          case .sentences: sentencesList
+          }
         }
+        .animation(.snappy(duration: 0.25), value: tab)
+        .sensoryFeedback(.selection, trigger: tab)
       }
       .navigationTitle("Saved")
       .navigationDestination(for: SavedWord.self) { SavedItemDetailView(word: $0) }
@@ -47,15 +51,16 @@ struct SavedItemsView: View {
   @ViewBuilder
   private var wordsList: some View {
     if words.isEmpty {
-      ContentUnavailableView(
-        "No Saved Words",
+      AnimatedEmptyState(
+        title: "No Saved Words",
+        message: "Long-press a sentence in the Reader, then pick a word",
         systemImage: "textformat.abc",
-        description: Text("Long-press a sentence in the Reader, then pick a word"))
+        tint: Theme.accent)
     } else {
       List {
         ForEach(words) { word in
           NavigationLink(value: word) {
-            row(text: word.word, code: word.languageCode, date: word.savedAt)
+            row(text: word.word, code: word.languageCode, date: word.savedAt, tint: Theme.accent)
           }
           .swipeActions(edge: .trailing) {
             Button(role: .destructive) { delete(word) } label: {
@@ -72,16 +77,17 @@ struct SavedItemsView: View {
   @ViewBuilder
   private var sentencesList: some View {
     if sentences.isEmpty {
-      ContentUnavailableView(
-        "No Saved Sentences",
+      AnimatedEmptyState(
+        title: "No Saved Sentences",
+        message: "Star a sentence in the Reader",
         systemImage: "bookmark",
-        description: Text("Star a sentence in the Reader"))
+        tint: Theme.violet)
     } else {
       List {
         ForEach(sortedSentences) { sentence in
           let code = sentence.page?.book?.languageCode ?? "en-US"
           NavigationLink(value: sentence) {
-            row(text: sentence.text, code: code, date: sentence.page?.scannedAt)
+            row(text: sentence.text, code: code, date: sentence.page?.scannedAt, tint: Theme.violet)
           }
           .swipeActions(edge: .trailing) {
             Button(role: .destructive) { removeFromSaved(sentence) } label: {
@@ -103,18 +109,22 @@ struct SavedItemsView: View {
 
   // MARK: - Row
 
-  private func row(text: String, code: String, date: Date?) -> some View {
+  private func row(text: String, code: String, date: Date?, tint: Color) -> some View {
     HStack(spacing: DesignSystem.Spacing.md) {
+      Capsule()
+        .fill(tint)
+        .frame(width: DesignSystem.Spacing.xs)
       VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
         Text(text)
           .font(.body)
+          .fontDesign(Theme.sentenceDesign)
           .lineLimit(2)
         Text(caption(code: code, date: date))
           .font(.caption)
           .foregroundStyle(.secondary)
       }
       Spacer(minLength: DesignSystem.Spacing.sm)
-      replayButton(text: text, code: code)
+      ReplayButton(player: player, text: text, code: code)
     }
   }
 
@@ -122,21 +132,6 @@ struct SavedItemsView: View {
     let name = LanguageCatalog.name(for: code)
     guard let date else { return name }
     return "\(name) · \(date.formatted(.dateTime.month().day().year()))"
-  }
-
-  private func replayButton(text: String, code: String) -> some View {
-    Button {
-      player.load(sentences: [text], languageCode: code)
-      player.play(at: 0)
-      Haptics.select()
-    } label: {
-      Image(systemName: "speaker.wave.2.fill")
-        .font(.title3)
-        .foregroundStyle(Color.accentColor)
-        .frame(width: DesignSystem.minTapTarget, height: DesignSystem.minTapTarget)
-    }
-    .buttonStyle(.borderless)
-    .accessibilityLabel("Play")
   }
 
   // MARK: - Mutations
@@ -152,5 +147,33 @@ struct SavedItemsView: View {
     sentence.isBookmarked = false
     try? modelContext.save()
     router.recomputeDueCount(in: modelContext)
+  }
+}
+
+/// Replay control for a saved row — the speaker pops with a `.bounce` symbol
+/// effect when audio starts, so a tap feels alive. Behavior is unchanged:
+/// load + play the single line, then a selection haptic.
+private struct ReplayButton: View {
+  let player: SpeechPlayer
+  let text: String
+  let code: String
+
+  @State private var bounce = 0
+
+  var body: some View {
+    Button {
+      bounce += 1
+      player.load(sentences: [text], languageCode: code)
+      player.play(at: 0)
+      Haptics.select()
+    } label: {
+      Image(systemName: "speaker.wave.2.fill")
+        .font(.title3)
+        .foregroundStyle(Theme.accent)
+        .symbolEffect(.bounce, value: bounce)
+        .frame(width: DesignSystem.minTapTarget, height: DesignSystem.minTapTarget)
+    }
+    .buttonStyle(.borderless)
+    .accessibilityLabel("Play")
   }
 }

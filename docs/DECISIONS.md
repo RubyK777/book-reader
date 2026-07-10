@@ -322,3 +322,34 @@ entries stand as history).*
     *Rejected:* a modal digest on Reader exit (interrupts the reading flow; a nav-back interception
     is fragile in SwiftUI); free-text tags UI (comma-separated field is enough for v1).
     (NotesView, AnnotationDetailView, ReaderView, LearningAssetsProvider, Schema.swift, SRSEngine)
+
+## 2026-07-09 — Visual Energy Pass
+
+39. **The content tabs are energized "playful but grown-up" — motion and a semantic palette on top
+    of paper & ink (#36), never gamification.** Library/Saved/Review/Notes read as flat because they
+    composed raw system defaults with zero animation. This pass adds native iOS-18 motion (animatable
+    `MeshGradient`, `.symbolEffect`, `.scrollTransition`, `.contentTransition(.numericText)`, springs,
+    and a hand-rolled `TimelineView`+`Canvas` confetti burst) plus a **five-color semantic palette**
+    (`Palette`: coral/marigold/verdigris/violet/slate, each with a mandatory lifted dark variant)
+    where **source kinds and annotation types each own a hue** (`SourceKind.tint`,
+    `AnnotationType.tint`, `ReviewGrade.tint` — computed vars, no schema impact) while **ink blue
+    stays primary**. Celebration is **confetti + count-up stats on review completion only — no
+    streaks, XP, or currencies** (PIVOT_PLAN forbids heavy gamification). Two hard rules governed the
+    work: **(A) zero functional impact** — presentation-only, no `Services/`/`Models/`/routing/data-
+    flow changes, same `@Query`s and actions, and all 30 tests stay green after every step; **(B)
+    styles live in `Shared/Styles/`, views only compose them** — `Theme.swift` slimmed to base
+    identity tokens; `Palette.swift`, `SemanticColors.swift`, `Interactive.swift` (ChipButtonStyle
+    gains `tint`+spring press; new `SpringyProminentButtonStyle`), and `Cards.swift` split out;
+    reusable animated *views* (`ConfettiView`, `AnimatedMeshBackground`, `CountUpText`,
+    `AnimatedEmptyState`) live in `Shared/Components/`. **Reduce Motion is gated inside each shared
+    component** (confetti renders nothing, mesh goes static, counts jump, springs → opacity) so
+    feature views stay clean. Only the Notebook list converted `List → ScrollView/LazyVStack` (it has
+    no swipe actions) to get `.scrollTransition` paper cards; Library/Saved stay `List`s (scroll
+    transitions silently no-op inside `List`) and get energy from tints + symbol effects instead.
+    *Rejected:* streaks/XP/badges (gamification, out of scope); an asset-catalog palette (code tokens
+    keep xcodegen simple, matching #36); animating `.animation` keyed to `@Query` arrays (SwiftData
+    identity churn glitches whole lists — animate only user-initiated state). *Marigold's light
+    variant is deliberately dark (#A9740E) for 4.5:1 caption contrast on paper; the bright yellow
+    lives only in dark mode + confetti.* (Shared/Styles/{Palette,SemanticColors,Interactive,Cards,
+    Theme}.swift, Shared/Components/{ConfettiView,AnimatedMeshBackground,CountUpText,
+    AnimatedEmptyState}.swift, ReviewView, ReviewSessionView, NotesView, LibraryView, SavedItemsView)

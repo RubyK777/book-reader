@@ -22,7 +22,7 @@ struct BookDetailView: View {
       }
     }
     .navigationTitle(book.title)
-    .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.large)
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
         Menu {

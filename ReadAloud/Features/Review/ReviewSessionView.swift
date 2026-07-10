@@ -33,6 +33,8 @@ struct ReviewSessionView: View {
     @State private var meaning: Meaning = .none
     @State private var translateConfig: TranslationSession.Configuration?
 
+    @State private var confettiTrigger = 0
+
     init(items: [ReviewItem]) {
         _queue = State(initialValue: items)
     }
@@ -58,37 +60,41 @@ struct ReviewSessionView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if phase == .summary || current == nil {
-                    summaryView
-                } else if let item = current {
-                    cardView(item)
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    if phase != .summary {
-                        Button {
-                            showEndConfirm = true
-                        } label: {
-                            Image(systemName: "xmark")
-                        }
-                        .accessibilityLabel("End session")
+            ZStack {
+                Group {
+                    if phase == .summary || current == nil {
+                        summaryView
+                    } else if let item = current {
+                        cardView(item)
                     }
                 }
-            }
-            .confirmationDialog("End session?", isPresented: $showEndConfirm, titleVisibility: .visible) {
-                Button("End session", role: .destructive) { finish() }
-                Button("Keep reviewing", role: .cancel) {}
-            } message: {
-                Text("Cards you've already graded keep their progress.")
-            }
-            .translationTask(translateConfig) { session in
-                await translateCurrent(using: session)
-            }
-            .sheet(isPresented: $showShadowing) {
-                ShadowingPracticeView(items: shadowableItems)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        if phase != .summary {
+                            Button {
+                                showEndConfirm = true
+                            } label: {
+                                Image(systemName: "xmark")
+                            }
+                            .accessibilityLabel("End session")
+                        }
+                    }
+                }
+                .confirmationDialog("End session?", isPresented: $showEndConfirm, titleVisibility: .visible) {
+                    Button("End session", role: .destructive) { finish() }
+                    Button("Keep reviewing", role: .cancel) {}
+                } message: {
+                    Text("Cards you've already graded keep their progress.")
+                }
+                .translationTask(translateConfig) { session in
+                    await translateCurrent(using: session)
+                }
+                .sheet(isPresented: $showShadowing) {
+                    ShadowingPracticeView(items: shadowableItems)
+                }
+
+                ConfettiView(trigger: confettiTrigger)
             }
         }
     }
@@ -313,25 +319,16 @@ struct ReviewSessionView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, DesignSystem.Spacing.sm)
-                        .background(tint(for: grade).opacity(0.15),
+                        .background(grade.tint.opacity(0.15),
                                     in: RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium))
                         .overlay(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                            .stroke(tint(for: grade), lineWidth: 1))
-                        .foregroundStyle(tint(for: grade))
+                            .stroke(grade.tint, lineWidth: 1))
+                        .foregroundStyle(grade.tint)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("\(grade.label), \(grade.hint)")
                 }
             }
-        }
-    }
-
-    private func tint(for grade: ReviewGrade) -> Color {
-        switch grade {
-        case .again: .red
-        case .hard: .orange
-        case .good: .green
-        case .easy: .blue
         }
     }
 
@@ -344,7 +341,8 @@ struct ReviewSessionView: View {
 
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 56))
-                .foregroundStyle(DesignSystem.accent)
+                .foregroundStyle(Theme.verdigris)
+                .symbolEffect(.bounce)
 
             VStack(spacing: DesignSystem.Spacing.xs) {
                 Text("Session complete")
@@ -355,19 +353,22 @@ struct ReviewSessionView: View {
             }
 
             VStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(ReviewGrade.allCases) { grade in
+                ForEach(Array(ReviewGrade.allCases.enumerated()), id: \.element) { index, grade in
                     HStack {
+                        Circle()
+                            .fill(grade.tint)
+                            .frame(width: 8, height: 8)
                         Text(grade.label)
                         Spacer()
-                        Text("\(tally[grade] ?? 0)")
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
+                        CountUpText(value: tally[grade] ?? 0,
+                                    delay: 0.15 * Double(index),
+                                    font: .body.monospacedDigit())
                     }
                 }
             }
             .padding(DesignSystem.Spacing.md)
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium))
-            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.horizontal, DesignSystem.Spacing.screenMargin)
 
             Spacer()
 
@@ -417,7 +418,7 @@ struct ReviewSessionView: View {
                     .controlSize(.large)
                 }
             }
-            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.horizontal, DesignSystem.Spacing.screenMargin)
             .padding(.bottom, DesignSystem.Spacing.lg)
         }
     }
@@ -494,8 +495,9 @@ struct ReviewSessionView: View {
     private func finishToSummary() {
         remainingDue = SRSEngine.dueCount(in: modelContext)
         router.recomputeDueCount(in: modelContext)
-        Haptics.success()
         withAnimation { phase = .summary }
+        confettiTrigger += 1
+        Haptics.celebrate()
     }
 
     /// Rebuild a fresh session from whatever is still due.
