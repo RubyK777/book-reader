@@ -80,9 +80,7 @@ struct SaveWordSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
-        .sheet(item: $lookupTerm) { lookup in
-            DictionaryView(term: lookup.term).ignoresSafeArea()
-        }
+        .dictionaryLookup(term: $lookupTerm)
     }
 
     private var saveLabel: String {

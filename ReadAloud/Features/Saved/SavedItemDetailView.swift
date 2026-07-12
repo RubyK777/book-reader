@@ -13,9 +13,6 @@ struct SavedItemDetailView: View {
     case sentence(Sentence)
   }
 
-  /// Meaning (translation into the native language) for this item.
-  private enum Meaning: Equatable { case none, translating, ready(String), unavailable }
-
   @Environment(\.modelContext) private var modelContext
   @Environment(AppRouter.self) private var router
   @Environment(\.dismiss) private var dismiss
@@ -24,7 +21,7 @@ struct SavedItemDetailView: View {
   private let item: Item
   @State private var player = SpeechPlayer()
   @State private var isConfirmingRemoval = false
-  @State private var meaning: Meaning = .none
+  @State private var meaning: TranslationMeaning = .none
   @State private var translateConfig: TranslationSession.Configuration?
   @State private var lookupTerm: DictionaryTerm?
 
@@ -103,9 +100,7 @@ struct SavedItemDetailView: View {
     .translationTask(translateConfig) { session in
       await translate(using: session)
     }
-    .sheet(item: $lookupTerm) { lookup in
-      DictionaryView(term: lookup.term).ignoresSafeArea()
-    }
+    .dictionaryLookup(term: $lookupTerm)
   }
 
   /// The translated meaning, once resolved. Hidden when the item is already in
@@ -133,36 +128,20 @@ struct SavedItemDetailView: View {
   /// item is already the native language, else translate live into it.
   private func resolveMeaning() {
     guard meaning == .none else { return }
-    if case let .sentence(s) = item, let stored = s.translatedText, !stored.isEmpty {
-      meaning = .ready(stored)
-      return
-    }
-    let sourceBase = String(languageCode.prefix(2)).lowercased()
-    let nativeBase = String(nativeLanguage.prefix(2)).lowercased()
-    guard sourceBase != nativeBase else { meaning = .unavailable; return }
-    meaning = .translating
-    translateConfig = TranslationSession.Configuration(
-      source: Locale.Language(identifier: languageCode),
-      target: Locale.Language(identifier: nativeLanguage))
+    // Sentences carry a stored translation; words translate live only.
+    let existing: String? = if case let .sentence(s) = item { s.translatedText } else { nil }
+    (meaning, translateConfig) = TranslationResolver.begin(
+      existing: existing, source: languageCode, native: nativeLanguage)
   }
 
   @MainActor
   private func translate(using session: TranslationSession) async {
-    do {
-      let responses = try await session.translations(
-        from: [TranslationSession.Request(sourceText: text)])
-      if let translated = responses.first?.targetText, !translated.isEmpty {
-        meaning = .ready(translated)
-        // Persist for sentences (they have a field); words translate live only.
-        if case let .sentence(s) = item, s.translatedText == nil {
-          s.translatedText = translated
-          try? modelContext.save()
-        }
-      } else {
-        meaning = .unavailable
-      }
-    } catch {
-      meaning = .unavailable
+    meaning = await TranslationResolver.resolve(session, text: text)
+    // Persist for sentences (they have a field); words translate live only.
+    if case let .ready(translated) = meaning,
+       case let .sentence(s) = item, s.translatedText == nil {
+      s.translatedText = translated
+      try? modelContext.save()
     }
   }
 

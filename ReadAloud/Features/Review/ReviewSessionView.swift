@@ -17,9 +17,6 @@ struct ReviewSessionView: View {
 
     private enum Phase { case recall, revealed, summary }
 
-    /// The revealed meaning (translation) for the current card.
-    private enum Meaning: Equatable { case none, translating, ready(String), unavailable }
-
     @State private var queue: [ReviewItem]
     @State private var index = 0
     @State private var phase: Phase = .recall
@@ -31,7 +28,7 @@ struct ReviewSessionView: View {
     @State private var showShadowing = false
 
     // Meaning resolution for the current card.
-    @State private var meaning: Meaning = .none
+    @State private var meaning: TranslationMeaning = .none
     @State private var translateConfig: TranslationSession.Configuration?
 
     @State private var confettiTrigger = 0
@@ -464,37 +461,16 @@ struct ReviewSessionView: View {
     /// skip when the source is already the native language, else translate live.
     private func reveal(_ item: ReviewItem) {
         withAnimation { phase = .revealed }
-
-        if let existing = item.existingTranslation, !existing.isEmpty {
-            meaning = .ready(existing)
-            return
-        }
-        let sourceBase = String(item.languageCode.prefix(2)).lowercased()
-        let nativeBase = String(nativeLanguage.prefix(2)).lowercased()
-        guard sourceBase != nativeBase else {
-            meaning = .unavailable   // already in the reader's language — nothing to translate
-            return
-        }
-        meaning = .translating
-        translateConfig = TranslationSession.Configuration(
-            source: Locale.Language(identifier: item.languageCode),
-            target: Locale.Language(identifier: nativeLanguage))
+        (meaning, translateConfig) = TranslationResolver.begin(
+            existing: item.existingTranslation,
+            source: item.languageCode,
+            native: nativeLanguage)
     }
 
     @MainActor
     private func translateCurrent(using session: TranslationSession) async {
         guard let item = current else { return }
-        do {
-            let responses = try await session.translations(
-                from: [TranslationSession.Request(sourceText: item.promptText)])
-            if let text = responses.first?.targetText, !text.isEmpty {
-                meaning = .ready(text)
-            } else {
-                meaning = .unavailable
-            }
-        } catch {
-            meaning = .unavailable
-        }
+        meaning = await TranslationResolver.resolve(session, text: item.promptText)
     }
 
     private func submit(_ grade: ReviewGrade, _ item: ReviewItem) {

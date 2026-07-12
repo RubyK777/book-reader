@@ -15,3 +15,14 @@ struct DictionaryView: UIViewControllerRepresentable {
 
 /// Identifiable term wrapper so a `String` can drive `.sheet(item:)`.
 struct DictionaryTerm: Identifiable { let term: String; var id: String { term } }
+
+extension View {
+    /// Present the system dictionary panel for the bound term. Set the binding
+    /// to a `DictionaryTerm` to look a word up; it clears on dismiss. Replaces
+    /// the copy-pasted `.sheet(item:) { DictionaryView(term:) }` trio.
+    func dictionaryLookup(term: Binding<DictionaryTerm?>) -> some View {
+        sheet(item: term) { lookup in
+            DictionaryView(term: lookup.term).ignoresSafeArea()
+        }
+    }
+}

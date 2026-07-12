@@ -12,6 +12,7 @@
 		0A7CBD54409FE38915533B22 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E150F93B6650D33F75A1B6D0 /* Assets.xcassets */; };
 		0B2C29EA081FF688FD9B1411 /* OCRReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8BEDDF716DB6DCE7A1A620C /* OCRReviewView.swift */; };
 		0E3103361F486FEBBFC20EB5 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B8BABAA11445B30F26F7FB8 /* AppRouter.swift */; };
+		0E837D97F1EB877AB93186AE /* TranslationResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCF95C248426B2E99665E51 /* TranslationResolver.swift */; };
 		0EBC25B89B8B456456174276 /* Interactive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BF178CA8B6AA8A5A0B3C472 /* Interactive.swift */; };
 		14C74E50C82378F057C8649B /* SentenceSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAF3F2DB98C5E0D76F887581 /* SentenceSplitter.swift */; };
 		18AD0B1D16ED0AAEA14FE65A /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B658E25EF1CE476ACB066241 /* DesignSystem.swift */; };
@@ -118,10 +119,11 @@
 		B717D28674FF5282DADDDCF9 /* FragmentDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FragmentDetectorTests.swift; sourceTree = "<group>"; };
 		B8BE74B31A842ECD63D6993D /* TextProcessingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextProcessingTests.swift; sourceTree = "<group>"; };
 		BC7EBB40679D3855647E07FF /* VoiceRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceRecorder.swift; sourceTree = "<group>"; };
+		BDCF95C248426B2E99665E51 /* TranslationResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationResolver.swift; sourceTree = "<group>"; };
 		BEA9593268D61452EC45AF75 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		BECEC1376F072DAD1010DCC3 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
 		C55B9085397B629A4C14B711 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		CBC4A7CAD65BE19587764F2E /* ReadAloud.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReadAloud.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CBC4A7CAD65BE19587764F2E /* ReadAloud.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ReadAloud.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CFF281D69EFBF8C5DA3E9571 /* ClozeBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClozeBuilderTests.swift; sourceTree = "<group>"; };
 		D1C34944ABD37C98730814F5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D468E8D1096002454579462B /* BookFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookFormView.swift; sourceTree = "<group>"; };
@@ -321,6 +323,7 @@
 				FAF3F2DB98C5E0D76F887581 /* SentenceSplitter.swift */,
 				F6311162F1936707A7D7A952 /* SpeechPlayer.swift */,
 				FD2190E582454180E1BEA356 /* SRSEngine.swift */,
+				BDCF95C248426B2E99665E51 /* TranslationResolver.swift */,
 				BC7EBB40679D3855647E07FF /* VoiceRecorder.swift */,
 				DA9351BF59A4835332603EC8 /* VoiceStore.swift */,
 				ADCA3E982DDC9BB8E580CD1F /* WordTokenizer.swift */,
@@ -419,6 +422,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					77C66E34CAA102934E11953D = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -520,6 +524,7 @@
 				7C9C00AED8E3FD06D132E4AA /* ShareSheet.swift in Sources */,
 				CE74F19A4FA4D2AB8A449DB1 /* SpeechPlayer.swift in Sources */,
 				E07D9702778FBB042E213E99 /* Theme.swift in Sources */,
+				0E837D97F1EB877AB93186AE /* TranslationResolver.swift in Sources */,
 				595D28DE4F62FEB67C6CDDBB /* VoiceRecorder.swift in Sources */,
 				47CCC908ED0B200DF13E1E3C /* VoiceStore.swift in Sources */,
 				A2F16B0E276A8ED4996246C0 /* WelcomeView.swift in Sources */,

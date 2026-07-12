@@ -66,9 +66,7 @@ struct SentenceLearnView: View {
             }
             .onDisappear { player.stop() }
             .task { await generateIfNeeded() }
-            .sheet(item: $lookupTerm) { lookup in
-                DictionaryView(term: lookup.term).ignoresSafeArea()
-            }
+            .dictionaryLookup(term: $lookupTerm)
         }
     }
 
