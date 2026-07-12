@@ -1,11 +1,11 @@
 import SwiftUI
 import VisionKit
 
-/// VisionKit document camera — deskewed, flattened page capture.
-/// Replaces the old `CameraPicker`. Single-page this milestone:
-/// `onScan` gets the FIRST captured page; multi-page batch is deferred.
+/// VisionKit document camera — deskewed, flattened page capture. Returns every
+/// page captured in the session (VisionKit lets you shoot several before Save),
+/// so a single shot yields one image and a chapter yields many.
 struct DocumentCameraView: UIViewControllerRepresentable {
-  let onScan: (UIImage) -> Void
+  let onScan: ([UIImage]) -> Void
   @Environment(\.dismiss) private var dismiss
 
   func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
@@ -24,9 +24,8 @@ struct DocumentCameraView: UIViewControllerRepresentable {
 
     func documentCameraViewController(_ controller: VNDocumentCameraViewController,
                                       didFinishWith scan: VNDocumentCameraScan) {
-      if scan.pageCount > 0 {
-        parent.onScan(scan.imageOfPage(at: 0))   // multi-page deferred
-      }
+      let pages = (0..<scan.pageCount).map { scan.imageOfPage(at: $0) }
+      if !pages.isEmpty { parent.onScan(pages) }
       parent.dismiss()
     }
 

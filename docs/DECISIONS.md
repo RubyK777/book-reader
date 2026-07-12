@@ -420,3 +420,16 @@ entries stand as history).*
     most once per item, and carries no counter/streak/score. Confusion semantics were left untouched
     (`isResolved` stays a deliberate manual toggle in `AnnotationDetailView`), so the sibling
     "confusion-resolved delight" idea was deferred rather than auto-flipping resolution on a good grade.
+
+46. **Two reuse-first de-dups + batch page capture (`docs/IMPROVEMENTS`).** (a) **`TranslationResolver`**
+    (Services, no SwiftUI) + shared `TranslationMeaning` replace the two identical single-item translate
+    copies (ReviewSession, SavedDetail); the Reader's page-batch translate is a different shape and stays
+    put. (b) **`.dictionaryLookup(term:)`** View modifier over `DictionaryView` collapses the copy-pasted
+    `.sheet(item:)` trio (SaveWordSheet, SentenceLearnView, SavedDetail). (c) **Batch page capture** —
+    `DocumentCameraView` now returns *every* VisionKit page (was page 0 only); a "Scan Multiple Pages"
+    button routes to a new `BatchReviewView` — a paged editor (one shared source language, per-page text
+    + thumbnail) that ingests all pages into one book in order via `PageIngestor` (looped) and the now-
+    shared `AssignBookView`. Single-page capture is unchanged (`handleScanned` sends 1 page to the old
+    `OCRReviewView` flow, 2+ to batch). No schema change. *Note:* the "subtitle screenshot → listenable
+    line" idea needed **no code** — a screenshot is already a quick scan → Reader with karaoke playback;
+    adding a separate surface would be redundant after the two-bucket `SourceKind` collapse (#44).

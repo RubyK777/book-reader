@@ -117,7 +117,7 @@ struct OCRReviewView: View {
   /// Map a detected BCP-47 code onto a recognizable language option, matching
   /// on the language subtag ("fr" → "fr-FR"). Falls back to the device's
   /// native language, then the first option, when the detection is unmatched.
-  private static func matchLanguage(_ detected: String) -> String {
+  static func matchLanguage(_ detected: String) -> String {
     let options = LanguageCatalog.options
     if let exact = options.first(where: { $0.code == detected }) {
       return exact.code
@@ -133,8 +133,8 @@ struct OCRReviewView: View {
 
 /// Assign step for the Library entry path: Quick Scan (no book — a
 /// lightweight source auto-titled from the text, PIVOT_PLAN Phase 1), pick an
-/// existing book, or quick-create one by title.
-private struct AssignBookView: View {
+/// existing book, or quick-create one by title. Reused by the batch flow.
+struct AssignBookView: View {
   let books: [Book]
   let suggestedTitle: String
   let onAssign: (Book) -> Void

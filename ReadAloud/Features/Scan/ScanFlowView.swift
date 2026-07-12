@@ -16,6 +16,7 @@ struct ScanFlowView: View {
   @State private var errorMessage: String?
   @State private var pickerItem: PhotosPickerItem?
   @State private var showCamera = false
+  @State private var showBatchCamera = false
   @State private var showLiveText = false
   /// Optional pre-capture hint biasing Vision toward a language (Library path
   /// only; Add Page already knows the book's language). `nil` = auto-detect.
@@ -24,6 +25,7 @@ struct ScanFlowView: View {
   private enum Step {
     case capture
     case review(UIImage, OCRResult)
+    case reviewBatch([BatchReviewView.Page], String)
   }
 
   private var docScannerSupported: Bool { VNDocumentCameraViewController.isSupported }
@@ -37,6 +39,10 @@ struct ScanFlowView: View {
         captureView
       case let .review(image, result):
         OCRReviewView(image: image, result: result, book: book) {
+          step = .capture
+        }
+      case let .reviewBatch(pages, language):
+        BatchReviewView(pages: pages, languageCode: language, book: book) {
           step = .capture
         }
       }
@@ -85,6 +91,13 @@ struct ScanFlowView: View {
             }
             .buttonStyle(.borderedProminent)
           }
+          if docScannerSupported {
+            Button { showBatchCamera = true } label: {
+              Label("Scan Multiple Pages", systemImage: "doc.on.doc")
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+          }
           PhotosPicker(selection: $pickerItem, matching: .images) {
             Label("Import Photo", systemImage: "photo")
               .frame(maxWidth: .infinity)
@@ -106,7 +119,11 @@ struct ScanFlowView: View {
       LiveTextCameraView { image in handle(image) }
     }
     .fullScreenCover(isPresented: $showCamera) {
-      DocumentCameraView { image in handle(image) }
+      DocumentCameraView { images in handleScanned(images) }
+        .ignoresSafeArea()
+    }
+    .fullScreenCover(isPresented: $showBatchCamera) {
+      DocumentCameraView { images in handleScanned(images) }
         .ignoresSafeArea()
     }
     .onChange(of: pickerItem) { _, item in loadPicked(item) }
@@ -166,5 +183,40 @@ struct ScanFlowView: View {
         errorMessage = "Couldn't read this page — retake it with more light."
       }
     }
+  }
+
+  /// Route a camera result: one page uses the single-page review; several go to
+  /// the batch review (OCR'd together, saved into one book).
+  private func handleScanned(_ images: [UIImage]) {
+    guard !images.isEmpty else { return }
+    if images.count == 1 {
+      handle(images[0])
+    } else {
+      Task { @MainActor in await ocrBatch(images) }
+    }
+  }
+
+  @MainActor
+  private func ocrBatch(_ images: [UIImage]) async {
+    errorMessage = nil
+    isReading = true
+    let ingestor = PageIngestor()
+    let hint = languageHint ?? book?.languageCode
+    var built: [BatchReviewView.Page] = []
+    var detected: String?
+    for image in images {
+      let result = try? await ingestor.recognize(image, languageHint: hint)
+      let text = result?.text ?? ""
+      built.append(.init(image: image, text: text))
+      if detected == nil, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        detected = result?.detectedLanguageCode
+      }
+    }
+    isReading = false
+    guard built.contains(where: { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+      errorMessage = "No text found — flatten the pages, add light, and retake."
+      return
+    }
+    step = .reviewBatch(built, OCRReviewView.matchLanguage(detected ?? ""))
   }
 }
