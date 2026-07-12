@@ -12,6 +12,7 @@ struct ReviewSessionView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppRouter.self) private var router
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("nativeLanguage") private var nativeLanguage = LanguageCatalog.deviceDefaultNative
 
     private enum Phase { case recall, revealed, summary }
@@ -34,6 +35,7 @@ struct ReviewSessionView: View {
     @State private var translateConfig: TranslationSession.Configuration?
 
     @State private var confettiTrigger = 0
+    @State private var masteryShown = false
 
     init(items: [ReviewItem]) {
         _queue = State(initialValue: items)
@@ -96,7 +98,35 @@ struct ReviewSessionView: View {
 
                 ConfettiView(trigger: confettiTrigger)
             }
+            .overlay(alignment: .top) {
+                if masteryShown { masteryBanner }
+            }
         }
+    }
+
+    /// The "taking root" moment banner — a leaf, a warm line, gone in a beat.
+    private var masteryBanner: some View {
+        HStack(spacing: DesignSystem.Spacing.sm) {
+            Image(systemName: "leaf.fill")
+                .foregroundStyle(Theme.verdigris)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Taking root")
+                    .font(.subheadline.weight(.semibold))
+                Text("You've really learned this.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, DesignSystem.Spacing.md)
+        .padding(.vertical, DesignSystem.Spacing.sm)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().stroke(Theme.verdigris.opacity(0.35), lineWidth: 1))
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+        .padding(.top, DesignSystem.Spacing.sm)
+        .transition(reduceMotion ? .opacity
+                    : .move(edge: .top).combined(with: .opacity))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Taking root. You've really learned this.")
     }
 
     // MARK: - Card
@@ -468,7 +498,7 @@ struct ReviewSessionView: View {
     }
 
     private func submit(_ grade: ReviewGrade, _ item: ReviewItem) {
-        SRSEngine.grade(item, grade, in: modelContext)
+        let outcome = SRSEngine.grade(item, grade, in: modelContext)
         tally[grade, default: 0] += 1
         Haptics.select()
 
@@ -477,7 +507,22 @@ struct ReviewSessionView: View {
             requeuedIDs.insert(item.id)
             queue.append(item)
         }
+        // One-shot "taking root" moment the first time an item matures.
+        if outcome.justMatured { markTakingRoot() }
         advance()
+    }
+
+    /// A tasteful, one-time growth marker when a card first reaches memory
+    /// maturity — not a streak or score (DECISIONS #39). Auto-dismisses.
+    private func markTakingRoot() {
+        Haptics.success()
+        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(duration: 0.4)) {
+            masteryShown = true
+        }
+        Task {
+            try? await Task.sleep(for: .seconds(2.2))
+            withAnimation(.easeOut(duration: 0.4)) { masteryShown = false }
+        }
     }
 
     private func advance() {

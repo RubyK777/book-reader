@@ -212,13 +212,28 @@ enum SRSEngine {
       .shuffled()
   }
 
+  /// Interval (days) at which an item counts as consolidated in memory — the
+  /// "taking root" threshold. Not a level or score; just a maturity marker.
+  static let matureIntervalDays = 21
+
+  /// What a grade produced beyond the schedule update — drives one-shot
+  /// celebratory moments in a session (never a running score).
+  struct GradeOutcome {
+    /// The item's interval first crossed into "mature" on this grade.
+    var justMatured: Bool
+  }
+
   /// Apply a grade to an item and persist. Writes the new SRS state back to
-  /// the underlying model via `ReviewItem.srs`.
+  /// the underlying model via `ReviewItem.srs`, and reports whether the item
+  /// just reached memory maturity so the session can mark the moment.
   @MainActor
-  static func grade(_ item: ReviewItem, _ grade: ReviewGrade, in context: ModelContext) {
+  @discardableResult
+  static func grade(_ item: ReviewItem, _ grade: ReviewGrade, in context: ModelContext) -> GradeOutcome {
     var s = item.srs
+    let wasMature = s.intervalDays >= matureIntervalDays
     s.review(quality: grade.rawValue)
     item.srs = s
     try? context.save()
+    return GradeOutcome(justMatured: !wasMature && s.intervalDays >= matureIntervalDays)
   }
 }

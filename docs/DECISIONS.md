@@ -409,3 +409,14 @@ entries stand as history).*
     scan-assign "Quick scan — no book" section became one button; `BookFormView`'s type picker now shows
     two options. *Rejected:* dropping categories entirely — one non-book bucket still earns its keep as
     honest labeling + shelf differentiation (verdigris wash + viewfinder badge) so a mixed shelf reads clearly.
+
+45. **Two engagement quick wins from `docs/IMPROVEMENTS`, both pure reuse, both anti-gamified (#39).**
+    (a) **"Use later" phrasebook filter** — a `useLater` chip in the Notebook's existing `TypeFilter`,
+    matching `Annotation.intent == .use`; verdigris tint. Turns saved items into a usable phrasebook with
+    zero new machinery. (b) **"Taking root" mastery moment** — `SRSEngine.grade` now returns a
+    `GradeOutcome` reporting when an item's interval *first* crosses `matureIntervalDays` (21); the review
+    session shows a one-shot, auto-dismissing "Taking root — you've really learned this" leaf banner
+    (`Haptics.success`, Reduce-Motion-gated transition). It marks genuine memory consolidation, fires at
+    most once per item, and carries no counter/streak/score. Confusion semantics were left untouched
+    (`isResolved` stays a deliberate manual toggle in `AnnotationDetailView`), so the sibling
+    "confusion-resolved delight" idea was deferred rather than auto-flipping resolution on a good grade.

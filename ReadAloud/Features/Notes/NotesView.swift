@@ -8,7 +8,7 @@ struct NotesView: View {
 
     /// Notebook type filter — nil = all types.
     private enum TypeFilter: Hashable, CaseIterable {
-        case all, word, phrase, sentence, grammar, confused
+        case all, word, phrase, sentence, grammar, confused, useLater
 
         var label: String {
             switch self {
@@ -18,6 +18,7 @@ struct NotesView: View {
             case .sentence: "Sentences"
             case .grammar: "Grammar"
             case .confused: "Confused"
+            case .useLater: "Use later"
             }
         }
     }
@@ -47,6 +48,7 @@ struct NotesView: View {
             case .sentence: annotation.type == .sentence
             case .grammar: annotation.type == .grammar
             case .confused: annotation.isConfusing && !annotation.isResolved
+            case .useLater: annotation.intent == .use
             }
             guard passesType else { return false }
             guard !search.isEmpty else { return true }
@@ -191,6 +193,7 @@ struct NotesView: View {
         case .sentence: AnnotationType.sentence.tint
         case .grammar: AnnotationType.grammar.tint
         case .confused: Theme.marigold
+        case .useLater: Palette.verdigris
         }
     }
 
