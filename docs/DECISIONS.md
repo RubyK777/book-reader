@@ -451,3 +451,11 @@ entries stand as history).*
     authorization, reverts if denied); `RootView` reschedules on every `scenePhase.active` so the nudge
     tracks the real schedule. Local notifications need no entitlement/Info.plist string. Anti-gamification
     (#39): a single "ready when you are" nudge, never daily/streak reminders.
+
+49. **The "speaking" production face shipped as a standalone ungraded mode, not a graded `CardFace`.**
+    Chosen shape (Ruby): the front shows the **source text** for a *cold* read-aloud, then the model TTS
+    is the answer to self-check against; offered as a separate **"Speaking practice"** button on the
+    Review deck screen (sibling to Shadowing), never mixed into the graded flow. So `CardFace`/`ReviewItem.face`
+    are untouched — new `SpeakingPracticeView` (text-first, `SpeechPlayer.speakOnce`, "Hear it"/"Slow"/Next,
+    no recording, no SRS writes) runs over `SRSEngine.buildSession(from: deck)`. Distinct from Shadowing
+    (model-first + record/compare); here the text leads and the audio is the reveal.

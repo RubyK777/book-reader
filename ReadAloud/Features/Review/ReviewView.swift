@@ -17,6 +17,7 @@ struct ReviewView: View {
     @State private var due: [ReviewItem] = []
     @State private var isSessionPresented = false
     @State private var sessionItems: [ReviewItem] = []
+    @State private var isSpeakingPresented = false
 
     private var deck: [ReviewItem] {
         bookmarkedSentences.map(ReviewItem.sentence) + savedWords.map(ReviewItem.word)
@@ -41,6 +42,9 @@ struct ReviewView: View {
         .task { refresh() }
         .fullScreenCover(isPresented: $isSessionPresented, onDismiss: refresh) {
             ReviewSessionView(items: sessionItems)
+        }
+        .sheet(isPresented: $isSpeakingPresented) {
+            SpeakingPracticeView(items: SRSEngine.buildSession(from: deck))
         }
     }
 
@@ -102,6 +106,13 @@ struct ReviewView: View {
                     Text("Practice all \(deck.count)")
                 }
                 .buttonStyle(SpringyProminentButtonStyle(prominent: due.isEmpty))
+
+                // Ungraded speaking practice — read the whole deck aloud, hear the model.
+                Button { isSpeakingPresented = true } label: {
+                    Label("Speaking practice", systemImage: "waveform")
+                        .frame(minHeight: DesignSystem.minTapTarget)
+                }
+                .buttonStyle(.bordered)
             }
             .padding(.horizontal, DesignSystem.Spacing.screenMargin)
             .padding(.bottom, DesignSystem.Spacing.lg)
