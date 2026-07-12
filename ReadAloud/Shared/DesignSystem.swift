@@ -34,6 +34,8 @@ enum DesignSystem {
         static let lg: CGFloat = 28
         /// Large decorative/empty-state symbol.
         static let hero: CGFloat = 48
+        /// Extra-large hero glyph (summary seal, viewfinder).
+        static let xl: CGFloat = 56
     }
 
     /// The app accent — use for primary actions and highlights (Theme.accent).

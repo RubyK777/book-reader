@@ -21,6 +21,10 @@ struct ReadAloudApp: App {
             RootView()
                 .environment(router)
                 .tint(Theme.accent)
+                // Cap how large text can scale: honor smaller Dynamic Type
+                // settings, but ceiling the upper end so large text sizes
+                // don't blow up the layout.
+                .dynamicTypeSize(...DynamicTypeSize.xLarge)
         }
         .modelContainer(container)
     }

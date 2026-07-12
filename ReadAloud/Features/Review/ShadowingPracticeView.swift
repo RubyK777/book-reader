@@ -127,7 +127,7 @@ struct ShadowingPracticeView: View {
             Image(systemName: "mic.badge.plus")
                 .font(.system(size: 48))
                 .foregroundStyle(DesignSystem.accent)
-            Text("Nice practice!")
+            Text("Well practiced")
                 .font(.title3.bold())
             Button { close() } label: {
                 Text("Done").font(.headline).frame(maxWidth: .infinity)

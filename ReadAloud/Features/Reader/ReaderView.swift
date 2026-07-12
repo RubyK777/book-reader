@@ -289,11 +289,11 @@ struct ReaderView: View {
                 Text(issue.message).font(.footnote)
                 Spacer()
             }
-            .foregroundStyle(.orange)
+            .foregroundStyle(Theme.marigold)
             .padding(.horizontal, DesignSystem.Spacing.lg)
             .padding(.vertical, DesignSystem.Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.orange.opacity(0.12))
+            .background(Palette.soft(Theme.marigold))
         }
         .buttonStyle(.plain)
     }
@@ -326,11 +326,11 @@ struct ReaderView: View {
             Image(systemName: "bookmark.fill")
                 .font(.caption)
                 .foregroundStyle(Theme.accent)
-            Text("Saved this session: \(digestSummary)")
+            Text("Kept this session: \(digestSummary)")
                 .font(.footnote)
                 .lineLimit(1)
             Spacer()
-            Button("Review now") { reviewingDigest = true }
+            Button("Review these") { reviewingDigest = true }
                 .font(.footnote.weight(.semibold))
                 .buttonStyle(.borderless)
             Button {
@@ -362,21 +362,26 @@ struct ReaderView: View {
 
     private func playbackBar(sentenceCount: Int) -> some View {
         VStack(spacing: DesignSystem.Spacing.sm) {
-            HStack(spacing: DesignSystem.minTapTarget) {
+            HStack(spacing: DesignSystem.Spacing.xl) {
                 Button { player.previous() } label: {
                     Image(systemName: "backward.fill")
+                        .frame(width: DesignSystem.minTapTarget, height: DesignSystem.minTapTarget)
                 }
                 .disabled((player.currentSentenceIndex ?? 0) == 0)
+                .accessibilityLabel("Previous sentence")
 
                 Button { player.togglePlayPause() } label: {
                     Image(systemName: player.isSpeaking ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 52))
+                        .font(.system(size: DesignSystem.IconSize.xl))
                 }
+                .accessibilityLabel(player.isSpeaking ? "Pause" : "Play")
 
                 Button { player.next() } label: {
                     Image(systemName: "forward.fill")
+                        .frame(width: DesignSystem.minTapTarget, height: DesignSystem.minTapTarget)
                 }
                 .disabled(player.currentSentenceIndex.map { $0 + 1 >= sentenceCount } ?? false)
+                .accessibilityLabel("Next sentence")
             }
             .font(.title2)
 
@@ -414,8 +419,8 @@ private enum TranslationIssue: Equatable {
 
     var message: String {
         switch self {
-        case .failed: "Couldn't translate this page — tap to retry."
-        case .unsupportedPair: "Translation isn't available for this language pair."
+        case .failed: "Couldn't translate this page — tap to try again."
+        case .unsupportedPair: "Translation isn't offered for this language pair yet."
         }
     }
 }
@@ -436,6 +441,8 @@ private struct SentenceCard: View {
     let onDelete: (() -> Void)?
     /// Nil in ephemeral mode — hides the Learn drill-down (PIVOT_PLAN Phase 2).
     let onLearn: (() -> Void)?
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
@@ -477,8 +484,8 @@ private struct SentenceCard: View {
             }
         }
         .learningCard(active: isActive)
-        .scaleEffect(isActive ? 1.02 : 1.0)
-        .animation(.easeOut(duration: 0.15), value: isActive)
+        .scaleEffect(reduceMotion ? 1.0 : (isActive ? 1.02 : 1.0))
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: isActive)
         .contextMenu {
             if let onLearn {
                 Button {

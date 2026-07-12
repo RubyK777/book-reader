@@ -278,14 +278,36 @@ struct SentenceLearnView: View {
             if !assets.keyVocab.isEmpty {
                 Divider()
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text("Key vocabulary")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
+                    HStack {
+                        Text("Key vocabulary")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
+                        Spacer(minLength: DesignSystem.Spacing.sm)
+                        let unsaved = assets.keyVocab.filter { !hasAnnotation(text: $0.term) }
+                        if !unsaved.isEmpty {
+                            Button {
+                                saveKeyVocab(unsaved)
+                            } label: {
+                                Label(unsaved.count == assets.keyVocab.count
+                                      ? "Save all" : "Save \(unsaved.count) more",
+                                      systemImage: "square.and.arrow.down")
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                    }
                     ForEach(assets.keyVocab, id: \.self) { item in
                         HStack(alignment: .firstTextBaseline, spacing: DesignSystem.Spacing.sm) {
                             Text(item.term).fontWeight(.medium).fontDesign(Theme.sentenceDesign)
                             Text(item.meaning).foregroundStyle(.secondary)
+                            Spacer(minLength: 0)
+                            if hasAnnotation(text: item.term) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(Theme.verdigris)
+                                    .accessibilityLabel("Saved")
+                            }
                         }
                         .font(.callout)
                     }
@@ -500,6 +522,28 @@ struct SentenceLearnView: View {
     private func saveWholeSentence() {
         // UX_SPEC §8: a fragment saves as a phrase, never a sentence.
         save(type: isFragment ? .phrase : .sentence, text: sentence.text)
+    }
+
+    /// One-tap save of the generated key vocabulary: each item becomes a word
+    /// annotation with its gloss kept as the note. Skips any already saved and
+    /// never consumes the optional selection intent (reuse: save path + keyVocab).
+    private func saveKeyVocab(_ items: [LearningAssets.VocabItem]) {
+        var savedAny = false
+        for item in items where !hasAnnotation(text: item.term) {
+            let annotation = Annotation(
+                type: .word,
+                text: item.term,
+                contextSentence: sentence.text,
+                languageCode: languageCode)
+            annotation.userNote = item.meaning
+            annotation.srs = SRSState()
+            annotation.sentence = sentence
+            modelContext.insert(annotation)
+            savedAny = true
+        }
+        guard savedAny else { return }
+        try? modelContext.save()
+        Haptics.success()
     }
 
     private func save(type: AnnotationType, text: String) {

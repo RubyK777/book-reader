@@ -12,10 +12,7 @@ extension SourceKind {
     var tint: Color {
         switch self {
         case .book: Theme.accent
-        case .sign: Palette.verdigris
-        case .menu: Palette.coral
-        case .screenshot: Palette.violet
-        case .other: Palette.slate
+        case .quickScan: Palette.verdigris
         }
     }
 }

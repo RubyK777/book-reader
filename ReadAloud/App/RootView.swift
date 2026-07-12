@@ -37,7 +37,7 @@ struct RootView: View {
                 .tag(AppTab.review)
 
             NotesView()
-                .tabItem { Label("Notes", systemImage: "note.text") }
+                .tabItem { Label("Notebook", systemImage: "note.text") }
                 .tag(AppTab.notes)
 
             SettingsView()

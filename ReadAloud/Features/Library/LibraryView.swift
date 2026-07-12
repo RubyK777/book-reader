@@ -16,9 +16,13 @@ struct LibraryView: View {
   var bookNamespace: Namespace.ID
 
   @State private var isScanPresented = false
-  @State private var isNewBookPresented = false
   @State private var bookToEdit: Book?
   @State private var bookPendingDeletion: Book?
+
+  /// First-run onboarding — shown once when the shelf is empty (UX §7).
+  @AppStorage("hasSeenIntro") private var hasSeenIntro = false
+  @State private var showWelcome = false
+  @State private var startScanAfterWelcome = false
 
   /// Books per shelf row.
   private let columns = 3
@@ -39,17 +43,24 @@ struct LibraryView: View {
         }
         .symbolEffect(.wiggle, options: .repeat(.periodic(delay: 4)), isActive: books.isEmpty)
       }
-      ToolbarItem(placement: .topBarTrailing) {
-        Button { isNewBookPresented = true } label: {
-          Label("New Book", systemImage: "plus")
-        }
+    }
+    .onAppear {
+      if !hasSeenIntro && books.isEmpty { showWelcome = true }
+    }
+    .fullScreenCover(isPresented: $showWelcome, onDismiss: {
+      if startScanAfterWelcome {
+        startScanAfterWelcome = false
+        isScanPresented = true
+      }
+    }) {
+      WelcomeView { startScan in
+        hasSeenIntro = true
+        startScanAfterWelcome = startScan
+        showWelcome = false
       }
     }
     .sheet(isPresented: $isScanPresented) {
       ScanFlowView(book: nil)
-    }
-    .sheet(isPresented: $isNewBookPresented) {
-      BookFormView(mode: .create)
     }
     .sheet(item: $bookToEdit) { book in
       BookFormView(mode: .edit(book))
@@ -134,7 +145,7 @@ struct LibraryView: View {
   private var emptyState: some View {
     AnimatedEmptyState(
       title: "Scan your first page",
-      message: "Photograph a book page to hear it read aloud.",
+      message: "Photograph a page, sign, or menu — then hear it read aloud, word by word.",
       systemImage: "book.pages",
       tint: Theme.coral
     ) {

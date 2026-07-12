@@ -52,8 +52,8 @@ struct SavedItemsView: View {
   private var wordsList: some View {
     if words.isEmpty {
       AnimatedEmptyState(
-        title: "No Saved Words",
-        message: "Long-press a sentence in the Reader, then pick a word",
+        title: "No saved words yet",
+        message: "In the Reader, touch and hold a sentence, then choose the words worth keeping.",
         systemImage: "textformat.abc",
         tint: Theme.accent)
     } else {
@@ -78,8 +78,8 @@ struct SavedItemsView: View {
   private var sentencesList: some View {
     if sentences.isEmpty {
       AnimatedEmptyState(
-        title: "No Saved Sentences",
-        message: "Star a sentence in the Reader",
+        title: "No bookmarked sentences yet",
+        message: "Tap the star on any sentence in the Reader to keep it here.",
         systemImage: "bookmark",
         tint: Theme.violet)
     } else {
@@ -159,6 +159,7 @@ private struct ReplayButton: View {
   let code: String
 
   @State private var bounce = 0
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     Button {
@@ -170,7 +171,7 @@ private struct ReplayButton: View {
       Image(systemName: "speaker.wave.2.fill")
         .font(.title3)
         .foregroundStyle(Theme.accent)
-        .symbolEffect(.bounce, value: bounce)
+        .symbolEffect(.bounce, value: reduceMotion ? 0 : bounce)
         .frame(width: DesignSystem.minTapTarget, height: DesignSystem.minTapTarget)
     }
     .buttonStyle(.borderless)

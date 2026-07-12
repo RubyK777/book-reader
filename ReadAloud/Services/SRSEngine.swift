@@ -155,13 +155,14 @@ enum ReviewGrade: Int, CaseIterable, Identifiable {
     }
   }
 
-  /// Plain-language hint under each grade, so the choice is self-explanatory.
+  /// Coaching hint under each grade — describes the card's fate, not a verdict
+  /// on the learner (anti-gamification, DECISIONS #39). The SM-2 grade is unchanged.
   var hint: String {
     switch self {
-    case .again: "Forgot"
-    case .hard: "Tough"
-    case .good: "Knew it"
-    case .easy: "Too easy"
+    case .again: "Show again"
+    case .hard: "Barely"
+    case .good: "Got it"
+    case .easy: "Easy"
     }
   }
 }

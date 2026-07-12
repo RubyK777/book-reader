@@ -18,6 +18,7 @@ struct BookFormView: View {
   @Environment(\.dismiss) private var dismiss
 
   @State private var title: String
+  @State private var kind: SourceKind
   @State private var languageCode: String
   @State private var coverData: Data?
   @State private var pickerItem: PhotosPickerItem?
@@ -27,10 +28,12 @@ struct BookFormView: View {
     switch mode {
     case .create:
       _title = State(initialValue: "")
+      _kind = State(initialValue: .book)
       _languageCode = State(initialValue: LanguageCatalog.options.first?.code ?? "en-US")
       _coverData = State(initialValue: nil)
     case .edit(let book):
       _title = State(initialValue: book.title)
+      _kind = State(initialValue: book.kind)
       _languageCode = State(initialValue: book.languageCode ?? LanguageCatalog.options.first?.code ?? "en-US")
       _coverData = State(initialValue: book.coverImageData)
     }
@@ -39,8 +42,18 @@ struct BookFormView: View {
   var body: some View {
     NavigationStack {
       Form {
+        Section {
+          Picker("Type", selection: $kind) {
+            ForEach(SourceKind.allCases, id: \.self) { kind in
+              Label(kind.displayName, systemImage: kind.systemImage).tag(kind)
+            }
+          }
+        } footer: {
+          Text("A book holds many pages; a quick scan is a single capture — a sign, menu, or screenshot.")
+        }
+
         Section("Title") {
-          TextField("Book title", text: $title)
+          TextField("Title", text: $title)
         }
 
         Section {
@@ -62,7 +75,7 @@ struct BookFormView: View {
 
         languageSection
       }
-      .navigationTitle(editingBook == nil ? "New Book" : "Edit Book")
+      .navigationTitle("\(editingBook == nil ? "New" : "Edit") \(kind.displayName)")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -116,11 +129,12 @@ struct BookFormView: View {
     guard !name.isEmpty else { return }
     switch mode {
     case .create:
-      let book = Book(title: name)
+      let book = Book(title: name, kind: kind)
       book.coverImageData = coverData
       modelContext.insert(book)
     case .edit(let book):
       book.title = name
+      book.kind = kind
       book.coverImageData = coverData
       if book.pages.isEmpty {
         book.languageCode = languageCode

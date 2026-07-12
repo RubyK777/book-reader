@@ -157,13 +157,13 @@ struct ScanFlowView: View {
         let result = try await PageIngestor().recognize(image, languageHint: languageHint ?? book?.languageCode)
         isReading = false
         if result.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-          errorMessage = "No text found — try a flatter page with more light."
+          errorMessage = "No text found — flatten the page, add light, and retake."
         } else {
           step = .review(image, result)
         }
       } catch {
         isReading = false
-        errorMessage = "Couldn't read this page. Try again with more light."
+        errorMessage = "Couldn't read this page — retake it with more light."
       }
     }
   }

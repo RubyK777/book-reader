@@ -3,28 +3,32 @@ import SwiftData
 
 // MARK: - SourceKind (what kind of real-world source a Book container holds)
 
-/// PIVOT_PLAN.md §6: `Book` generalizes into a source container. Books keep
-/// title/cover ceremony; other kinds come from Quick Scan (sign, menu, …).
+/// PIVOT_PLAN.md §6: `Book` generalizes into a source container. Two buckets:
+/// a `book` keeps title/cover ceremony and holds many pages; everything else is
+/// a `quickScan` — a single real-world capture (sign, menu, screenshot, …).
+/// The finer sign/menu/screenshot split was cosmetic-only and was dropped.
 enum SourceKind: String, Codable, CaseIterable {
-    case book, sign, menu, screenshot, other
+    case book, quickScan
+
+    /// Decode a stored raw value, folding the legacy kinds
+    /// (`sign`/`menu`/`screenshot`/`other`) into `.quickScan` so older captures
+    /// keep working without a migration.
+    static func normalized(_ raw: String) -> SourceKind {
+        if let known = SourceKind(rawValue: raw) { return known }
+        return raw == book.rawValue ? .book : .quickScan
+    }
 
     var displayName: String {
         switch self {
         case .book: "Book"
-        case .sign: "Sign"
-        case .menu: "Menu"
-        case .screenshot: "Screenshot"
-        case .other: "Other"
+        case .quickScan: "Quick scan"
         }
     }
 
     var systemImage: String {
         switch self {
         case .book: "book.closed"
-        case .sign: "signpost.right"
-        case .menu: "menucard"
-        case .screenshot: "iphone"
-        case .other: "doc.text.image"
+        case .quickScan: "doc.text.viewfinder"
         }
     }
 }
@@ -47,7 +51,7 @@ final class Book {
     var pages: [ScanPage] = []
 
     var kind: SourceKind {
-        get { SourceKind(rawValue: kindRaw) ?? .book }
+        get { SourceKind.normalized(kindRaw) }
         set { kindRaw = newValue.rawValue }
     }
 

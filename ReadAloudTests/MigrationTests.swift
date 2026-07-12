@@ -136,7 +136,8 @@ struct MigrationTests {
         let context = ModelContext(container)
 
         let books = try context.fetch(FetchDescriptor<Book>())
-        #expect(books.first?.kind == .sign)
+        // Legacy "sign" raw value folds into the two-bucket model (DECISIONS #44).
+        #expect(books.first?.kind == .quickScan)
 
         let sentences = try context.fetch(FetchDescriptor<Sentence>())
         let sentence = try #require(sentences.first)

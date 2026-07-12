@@ -105,6 +105,7 @@ private struct VoicePickerRow: View {
                 previewer.play(languageCode: languageCode, voiceID: voiceID)
             } label: {
                 Image(systemName: "play.circle")
+                    .frame(width: DesignSystem.minTapTarget, height: DesignSystem.minTapTarget)
             }
             .buttonStyle(.borderless)
             .accessibilityLabel("Preview voice")

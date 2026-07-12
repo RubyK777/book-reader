@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 /// Post-OCR, pre-persist review: edit the recognized text and confirm the
 /// source language before anything is saved. On "Use" the (edited) text is
@@ -141,6 +142,8 @@ private struct AssignBookView: View {
   @Environment(\.modelContext) private var modelContext
   @Environment(\.dismiss) private var dismiss
   @State private var newTitle = ""
+  @State private var coverItem: PhotosPickerItem?
+  @State private var coverData: Data?
 
   private var trimmedTitle: String {
     newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -150,22 +153,36 @@ private struct AssignBookView: View {
     NavigationStack {
       Form {
         Section {
-          ForEach([SourceKind.sign, .menu, .screenshot, .other], id: \.self) { kind in
-            Button {
-              createQuick(kind)
-            } label: {
-              Label(kind.displayName, systemImage: kind.systemImage)
-                .foregroundStyle(.primary)
-            }
+          Button {
+            createQuick()
+          } label: {
+            Label("Save as quick scan", systemImage: SourceKind.quickScan.systemImage)
+              .foregroundStyle(.primary)
           }
         } header: {
           Text("Quick scan — no book")
         } footer: {
-          Text("Saves as “\(suggestedTitle)”.")
+          Text("A single capture — a sign, menu, or screenshot. Saved as “\(suggestedTitle)”.")
         }
 
-        Section("New book") {
+        Section {
           TextField("Title", text: $newTitle)
+          PhotosPicker(selection: $coverItem, matching: .images) {
+            HStack(spacing: DesignSystem.Spacing.md) {
+              CoverThumbnail(data: coverData, placeholder: "photo")
+              Text(coverData == nil ? "Choose cover (optional)" : "Change cover")
+            }
+          }
+          if coverData != nil {
+            Button("Remove cover", role: .destructive) {
+              coverData = nil
+              coverItem = nil
+            }
+          }
+        } header: {
+          Text("New book")
+        } footer: {
+          Text("If you don't choose a cover, this scanned page is used.")
         }
         if !books.isEmpty {
           Section("Or add to an existing book") {
@@ -194,18 +211,29 @@ private struct AssignBookView: View {
             .disabled(trimmedTitle.isEmpty)
         }
       }
+      .onChange(of: coverItem) { _, item in loadCover(item) }
     }
   }
 
   private func createNew() {
     let book = Book(title: trimmedTitle)
+    book.coverImageData = coverData
     modelContext.insert(book)
     onAssign(book)
   }
 
-  private func createQuick(_ kind: SourceKind) {
-    let source = Book(title: suggestedTitle.isEmpty ? kind.displayName : suggestedTitle,
-                      kind: kind)
+  private func loadCover(_ item: PhotosPickerItem?) {
+    guard let item else { return }
+    Task {
+      guard let data = try? await item.loadTransferable(type: Data.self),
+            let image = UIImage(data: data) else { return }
+      coverData = ImageProcessor.coverJPEG(image)
+    }
+  }
+
+  private func createQuick() {
+    let source = Book(title: suggestedTitle.isEmpty ? SourceKind.quickScan.displayName : suggestedTitle,
+                      kind: .quickScan)
     modelContext.insert(source)
     onAssign(source)
   }

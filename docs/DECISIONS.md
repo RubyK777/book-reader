@@ -353,3 +353,59 @@ entries stand as history).*
     lives only in dark mode + confetti.* (Shared/Styles/{Palette,SemanticColors,Interactive,Cards,
     Theme}.swift, Shared/Components/{ConfettiView,AnimatedMeshBackground,CountUpText,
     AnimatedEmptyState}.swift, ReviewView, ReviewSessionView, NotesView, LibraryView, SavedItemsView)
+
+## 2026-07-12 — App icon + accessibility/voice polish pass + first-run onboarding
+
+40. **App icon shipped as a real asset catalog; icon source never floats loose.** Added
+    `ReadAloud/Resources/Assets.xcassets` with a single-size **1024×1024 RGB (alpha stripped)**
+    `AppIcon` (iOS 18 single-size app-icon slot; Xcode down-samples the home-screen rungs), wired via
+    `ASSETCATALOG_COMPILER_APPICON_NAME` in `project.yml`. The loose `ReadALoud_icon.PNG` in the repo
+    root was deleted after import — the catalog is the one home for it.
+
+41. **First implementation pass over `docs/IMPROVEMENTS/` — the a11y hard-rules, copy/voice, and
+    onboarding quick wins, all reuse-first, zero new services.** (a) *Accessibility* (§1/§4): Reader
+    transport (prev/play/next) and Review-session Play/Slow/grade buttons and the Settings voice
+    preview now meet the **44 pt** target (reusing `minTapTarget`); Reader transport gains VoiceOver
+    labels; the Reader active-card scale and Saved `ReplayButton` bounce are **Reduce-Motion-gated**.
+    (b) *Tokens*: new `IconSize.xl` (56) rung replaces off-ladder hero literals (52/56/44); the Reader
+    transport spacing stops misusing `minTapTarget` as spacing (→ `Spacing.xl`); the translation-issue
+    row uses the **semantic marigold** hue instead of raw `.orange`. (c) *Voice* (§5/§6, DECISIONS
+    #39): grade hints became **coaching, not verdicts** ("Show again/Barely/Got it/Easy" — SM-2 grade
+    unchanged); empty states (Library/Review/Notebook/Saved/no-matches) and the legacy Item-notes state
+    (now `AnimatedEmptyState`) rewritten warm and factual; digest bar "Kept this session… Review these";
+    session/​shadowing summaries use adult praise; OCR + translation-unavailable copy end on the real
+    next action; the tab reads **"Notebook"** to match its screen. (d) *Feature*: **one-tap "Save all"
+    key vocabulary** in Learn — each generated `keyVocab` item saves as a `.word` `Annotation` with its
+    gloss kept as `userNote`, skipping already-saved terms (saved rows show a check). (e) *Onboarding*:
+    new `Features/Onboarding/WelcomeView.swift` — a skippable **≤3-panel** first-run intro built
+    entirely from `AnimatedEmptyState` in a paged `TabView`, gated on `@AppStorage("hasSeenIntro")`,
+    shown only when the shelf is empty; its final panel fires the existing scan flow and carries a
+    bilingual-aware native-language nudge. *Deferred:* the generated-cover title reflow at AX sizes and
+    the shelf-ledge/cover shadow-token extraction (both need layout judgment, not string/flag changes).
+
+42. **Empty-state icon breathing is custom, not `.symbolEffect(.breathe)`; global Dynamic Type ceiling.**
+    The built-in breathe effect's scale pulse read as too strong and its amplitude isn't tunable, so
+    `AnimatedEmptyState` uses a hand-rolled breath — a slow (2.5s) ±3% `scaleEffect` + soft opacity fade,
+    still Reduce-Motion-gated. Separately, text is capped app-wide at `.dynamicTypeSize(...DynamicTypeSize.xLarge)`
+    on `RootView` so the largest accessibility sizes don't break layouts (smaller settings still honored).
+
+43. **One Library creation entry: capture-first via the camera; the manual "New Book" (+) button is gone.**
+    The `+`/`BookFormView(.create)` path duplicated the camera Scan — both create a source — and violated
+    the capture-first model (#21–#22, #25). Removed the toolbar `+`, its sheet, and `isNewBookPresented`;
+    the camera is the sole entry. Source **type** (book vs sign/menu/screenshot/other) is chosen in the
+    post-OCR **"Save Page To"** step (`AssignBookView`), which now also lets a new *book* take a **title**
+    (already) and an **optional cover** (new `PhotosPicker` → `ImageProcessor.coverJPEG`; default cover is
+    the scanned page). `BookFormView` stays for **edit** (it keeps the type picker added in this pass so a
+    source can be re-classified). *Rejected:* keeping `+` for empty books — capture-first means a source is
+    born from a scan; add more pages later via a book's "Add Page".
+
+44. **`SourceKind` collapsed from five kinds to two: `book` vs `quickScan`.** The sign/menu/screenshot/
+    other split drove nothing but a shelf tint/icon/badge and the VoiceOver label — it never touched OCR,
+    translation, audio, or learning (fragment-vs-sentence is decided per-line by `FragmentDetector` on the
+    text, not by kind). The finer split just cost the user a decision on every save. Now: a **book** (multi-
+    page, title/cover ceremony) or a **quick scan** (a single capture — sign, menu, screenshot). No
+    migration: `kindRaw` stays a plain string and `SourceKind.normalized(_:)` folds legacy raw values
+    (`sign`/`menu`/`screenshot`/`other`) into `.quickScan` on read (covered by `MigrationTests`). The
+    scan-assign "Quick scan — no book" section became one button; `BookFormView`'s type picker now shows
+    two options. *Rejected:* dropping categories entirely — one non-book bucket still earns its keep as
+    honest labeling + shelf differentiation (verdigris wash + viewfinder badge) so a mixed shelf reads clearly.

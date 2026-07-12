@@ -164,9 +164,9 @@ struct ReviewSessionView: View {
                     speak(item.promptText, item.languageCode)
                 } label: {
                     Label("Play", systemImage: "speaker.wave.2.fill")
+                        .frame(minHeight: DesignSystem.minTapTarget)
                 }
                 .buttonStyle(.bordered)
-                .controlSize(.small)
             }
 
         case .listening:
@@ -178,7 +178,7 @@ struct ReviewSessionView: View {
                         .multilineTextAlignment(.center)
                 } else {
                     Image(systemName: "ear")
-                        .font(.system(size: 44))
+                        .font(.system(size: DesignSystem.IconSize.hero))
                         .foregroundStyle(DesignSystem.accent)
                         .accessibilityHidden(true)
                 }
@@ -188,18 +188,18 @@ struct ReviewSessionView: View {
                         speak(item.promptText, item.languageCode)
                     } label: {
                         Label("Play", systemImage: "speaker.wave.2.fill")
+                            .frame(minHeight: DesignSystem.minTapTarget)
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
 
                     Button {
                         player.load(sentences: [item.promptText], languageCode: item.languageCode)
                         player.speakOnce(item.promptText, slow: true)
                     } label: {
                         Label("Slow", systemImage: "tortoise.fill")
+                            .frame(minHeight: DesignSystem.minTapTarget)
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
                 }
             }
 
@@ -215,9 +215,9 @@ struct ReviewSessionView: View {
                         speak(item.contextText ?? item.promptText, item.languageCode)
                     } label: {
                         Label("Play sentence", systemImage: "speaker.wave.2.fill")
+                            .frame(minHeight: DesignSystem.minTapTarget)
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
                 }
             }
         }
@@ -287,9 +287,9 @@ struct ReviewSessionView: View {
                         speak(context, item.languageCode)
                     } label: {
                         Label("Play sentence", systemImage: "speaker.wave.2")
+                            .frame(minHeight: DesignSystem.minTapTarget)
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
                 }
             }
         }
@@ -317,7 +317,7 @@ struct ReviewSessionView: View {
                                 .minimumScaleFactor(0.7)
                                 .opacity(0.9)
                         }
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, minHeight: DesignSystem.minTapTarget)
                         .padding(.vertical, DesignSystem.Spacing.sm)
                         .background(grade.tint.opacity(0.15),
                                     in: RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium))
@@ -340,14 +340,14 @@ struct ReviewSessionView: View {
             Spacer()
 
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 56))
+                .font(.system(size: DesignSystem.IconSize.xl))
                 .foregroundStyle(Theme.verdigris)
                 .symbolEffect(.bounce)
 
             VStack(spacing: DesignSystem.Spacing.xs) {
                 Text("Session complete")
                     .font(.title2.bold())
-                Text(total == 1 ? "1 card reviewed" : "\(total) cards reviewed")
+                Text(total == 1 ? "You reviewed 1 card" : "You reviewed \(total) cards")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

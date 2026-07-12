@@ -129,8 +129,8 @@ struct NotesView: View {
     private var notebookList: some View {
         if annotations.isEmpty {
             AnimatedEmptyState(
-                title: "Nothing saved yet",
-                message: "Save words, phrases, and sentences from the Learn screen — they collect here.",
+                title: "Your notebook is empty",
+                message: "Words, phrases, and sentences you save while reading gather here — with your notes and examples.",
                 systemImage: "bookmark",
                 tint: Theme.accent)
         } else {
@@ -156,8 +156,8 @@ struct NotesView: View {
 
                 if filteredAnnotations.isEmpty {
                     AnimatedEmptyState(
-                        title: "No matches",
-                        message: "Try a different filter or search.",
+                        title: "Nothing here yet",
+                        message: "No saved items match this filter — try another, or clear your search.",
                         systemImage: "line.3.horizontal.decrease.circle",
                         tint: Theme.slate)
                 } else {
@@ -284,12 +284,13 @@ struct NotesView: View {
     }
 
     private var emptyState: some View {
-        ContentUnavailableView(
-            search.isEmpty ? "No notes yet" : "No matching notes",
-            systemImage: "note.text",
-            description: Text(search.isEmpty
+        AnimatedEmptyState(
+            title: search.isEmpty ? "No notes yet" : "No matching notes",
+            message: search.isEmpty
                 ? "Add a note when you save a word, or on any saved item's detail — they all collect here."
-                : "Try a different search."))
+                : "Try a different search.",
+            systemImage: "note.text",
+            tint: Theme.slate)
     }
 
     private func nonEmpty(_ string: String?) -> String? {

@@ -13,6 +13,7 @@ struct AnimatedEmptyState<Actions: View>: View {
     @ViewBuilder var actions: () -> Actions
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var breathing = false
 
     init(title: String,
          message: String,
@@ -67,10 +68,18 @@ struct AnimatedEmptyState<Actions: View>: View {
                 .font(.system(size: DesignSystem.IconSize.hero))
                 .foregroundStyle(tint)
         } else {
+            // Custom breathing instead of `.symbolEffect(.breathe)` — that effect's
+            // scale pulse reads as too strong and its amplitude isn't adjustable.
+            // A small, slow scale (±3%) with a soft opacity fade is a gentle,
+            // still-visible breath.
             Image(systemName: systemImage)
                 .font(.system(size: DesignSystem.IconSize.hero))
                 .foregroundStyle(tint)
-                .symbolEffect(.breathe, options: .repeat(.periodic(delay: 2)))
+                .scaleEffect(breathing ? 1.03 : 0.97)
+                .opacity(breathing ? 1.0 : 0.85)
+                .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true),
+                           value: breathing)
+                .onAppear { breathing = true }
         }
     }
 }

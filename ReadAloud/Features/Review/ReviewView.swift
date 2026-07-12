@@ -54,7 +54,7 @@ struct ReviewView: View {
             Spacer()
             VStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: "brain.head.profile")
-                    .font(.system(size: 52))
+                    .font(.system(size: DesignSystem.IconSize.xl))
                     .foregroundStyle(DesignSystem.accent)
                     .symbolEffect(.bounce, value: due.count)
                 if !due.isEmpty {
@@ -117,8 +117,8 @@ struct ReviewView: View {
 
     private var emptyState: some View {
         AnimatedEmptyState(
-            title: "No cards yet",
-            message: "Bookmark sentences and save words in the Reader to build your deck.",
+            title: "Your review deck is empty",
+            message: "Save a word or bookmark a sentence while you read — it comes back here to review, spaced out over time.",
             systemImage: "brain.head.profile",
             tint: Theme.violet)
     }
