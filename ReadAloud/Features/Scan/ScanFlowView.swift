@@ -18,6 +18,7 @@ struct ScanFlowView: View {
   @State private var showCamera = false
   @State private var showBatchCamera = false
   @State private var showLiveText = false
+  @State private var showLiveTextBatch = false
   /// Optional pre-capture hint biasing Vision toward a language (Library path
   /// only; Add Page already knows the book's language). `nil` = auto-detect.
   @State private var languageHint: String?
@@ -91,8 +92,8 @@ struct ScanFlowView: View {
             }
             .buttonStyle(.borderedProminent)
           }
-          if docScannerSupported {
-            Button { showBatchCamera = true } label: {
+          if anyCameraSupported {
+            Button { startBatchCamera() } label: {
               Label("Scan Multiple Pages", systemImage: "doc.on.doc")
                 .frame(maxWidth: .infinity)
             }
@@ -116,7 +117,10 @@ struct ScanFlowView: View {
       }
     }
     .fullScreenCover(isPresented: $showLiveText) {
-      LiveTextCameraView { image in handle(image) }
+      LiveTextCameraView { images in handleScanned(images) }
+    }
+    .fullScreenCover(isPresented: $showLiveTextBatch) {
+      LiveTextCameraView(allowsMultiple: true) { images in handleScanned(images) }
     }
     .fullScreenCover(isPresented: $showCamera) {
       DocumentCameraView { images in handleScanned(images) }
@@ -149,6 +153,29 @@ struct ScanFlowView: View {
         showLiveText = true
       } else {
         showCamera = true
+      }
+    }
+  }
+
+  /// Multi-page capture. Same Live Text tap-to-shoot camera (no crop box to
+  /// adjust), collecting several pages before Done; the document scanner is a
+  /// fallback only where Live Text isn't available.
+  private func startBatchCamera() {
+    Task { @MainActor in
+      let granted: Bool
+      switch CameraAuthorizer.status() {
+      case .authorized: granted = true
+      case .notDetermined: granted = await CameraAuthorizer.request()
+      default: granted = false
+      }
+      guard granted else {
+        errorMessage = "Camera access is off — enable it in Settings, or import a photo."
+        return
+      }
+      if LiveTextCameraView.isSupported {
+        showLiveTextBatch = true
+      } else {
+        showBatchCamera = true
       }
     }
   }

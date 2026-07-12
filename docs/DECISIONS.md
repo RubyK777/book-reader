@@ -433,3 +433,12 @@ entries stand as history).*
     `OCRReviewView` flow, 2+ to batch). No schema change. *Note:* the "subtitle screenshot → listenable
     line" idea needed **no code** — a screenshot is already a quick scan → Reader with karaoke playback;
     adding a separate surface would be redundant after the two-bucket `SourceKind` collapse (#44).
+
+47. **Batch capture uses the Live Text camera, not the document scanner.** First cut routed "Scan
+    Multiple Pages" through `VNDocumentCameraViewController`, whose per-page edge/crop-box adjustment felt
+    awkward next to the single-page `LiveTextCameraView` (a `DataScanner` with a plain tap-to-shoot shutter,
+    no crop box). Fix: `LiveTextCameraView` gained an `allowsMultiple` mode — the shutter appends pages
+    (with a thumbnail strip + tap-to-remove-last and a "Done (N)" button) instead of dismissing — and
+    `startBatchCamera()` prefers it, keeping `VNDocumentCameraViewController` only as the fallback where
+    Live Text is unavailable. Same tap-to-capture feel for one page or a chapter; single-page flow
+    unchanged (`onFinish` returns `[UIImage]`; `handleScanned` still splits 1 vs 2+).
