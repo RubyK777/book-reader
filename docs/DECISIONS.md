@@ -442,3 +442,12 @@ entries stand as history).*
     `startBatchCamera()` prefers it, keeping `VNDocumentCameraViewController` only as the fallback where
     Live Text is unavailable. Same tap-to-capture feel for one page or a chapter; single-page flow
     unchanged (`onFinish` returns `[UIImage]`; `handleScanned` still splits 1 vs 2+).
+
+48. **Gentle review reminder: one local notification, never streak pings.** New `ReviewReminderService`
+    (Services, pure `UNUserNotificationCenter` wrapper — no SwiftUI/models/stored prefs) keeps exactly one
+    pending nudge scheduled at the deck's soonest *future* due date (`SRSEngine.nextDue(in:)` — items due
+    now are excluded; nothing to wait for). Copy is warm and count-free ("A few cards from {book} are
+    ready"). Off by default behind `@AppStorage("reviewRemindersEnabled")` (Settings toggle → requests
+    authorization, reverts if denied); `RootView` reschedules on every `scenePhase.active` so the nudge
+    tracks the real schedule. Local notifications need no entitlement/Info.plist string. Anti-gamification
+    (#39): a single "ready when you are" nudge, never daily/streak reminders.

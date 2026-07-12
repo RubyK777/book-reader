@@ -49,6 +49,7 @@
 		A4C4A44471198E7F13D32198 /* SRSEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD2190E582454180E1BEA356 /* SRSEngine.swift */; };
 		A7A7AE67016A3CC26185BA8D /* AnnotationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEC7440E6ACE7DD03DF1A94E /* AnnotationDetailView.swift */; };
 		A9B1AB19A51E409B0D451CBF /* CameraAuthorizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 921F537C0F4FB33AD46DFDF9 /* CameraAuthorizer.swift */; };
+		AE7328E76AA525902F714096 /* ReviewReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BE4CDA0B26AFB6A3D0C1988 /* ReviewReminderService.swift */; };
 		B08A8D5939042FF96F32E215 /* BookFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D468E8D1096002454579462B /* BookFormView.swift */; };
 		B19CB493153DBAAC5A42F620 /* Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = A472F3E00866672DDC1274A4 /* Schema.swift */; };
 		B23E035BB59F6434703C7584 /* ClozeBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFF281D69EFBF8C5DA3E9571 /* ClozeBuilderTests.swift */; };
@@ -87,6 +88,7 @@
 		1B7894C3B1C69FF6F2DD5221 /* SentenceLearnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentenceLearnView.swift; sourceTree = "<group>"; };
 		23278B10C8ACF15C7B57E9B3 /* DictionaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryService.swift; sourceTree = "<group>"; };
 		2974A505A9F296158208AD02 /* Cards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cards.swift; sourceTree = "<group>"; };
+		2BE4CDA0B26AFB6A3D0C1988 /* ReviewReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewReminderService.swift; sourceTree = "<group>"; };
 		2DA4F0C51F04CC2E251D1A7D /* LearningAssetsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LearningAssetsProvider.swift; sourceTree = "<group>"; };
 		2EFF62D5C22D3BB4F689CACE /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		3262026191CD0864D087631A /* CountUpText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountUpText.swift; sourceTree = "<group>"; };
@@ -323,6 +325,7 @@
 				2DA4F0C51F04CC2E251D1A7D /* LearningAssetsProvider.swift */,
 				0A38AC87DF4921A1C15348AC /* OCRService.swift */,
 				967112DE8BF44C16C2B32018 /* PageIngestor.swift */,
+				2BE4CDA0B26AFB6A3D0C1988 /* ReviewReminderService.swift */,
 				FAF3F2DB98C5E0D76F887581 /* SentenceSplitter.swift */,
 				F6311162F1936707A7D7A952 /* SpeechPlayer.swift */,
 				FD2190E582454180E1BEA356 /* SRSEngine.swift */,
@@ -511,6 +514,7 @@
 				60BC30EB0F4797FB6B0E8D6F /* Palette.swift in Sources */,
 				FE7518DFE5F53EE5CC8C1E8A /* ReadAloudApp.swift in Sources */,
 				3028F5D064E57CDAA61339BF /* ReaderView.swift in Sources */,
+				AE7328E76AA525902F714096 /* ReviewReminderService.swift in Sources */,
 				429A765D5E28AF1C1B8E8D75 /* ReviewSessionView.swift in Sources */,
 				9208BA5D51517B653F2F08C7 /* ReviewView.swift in Sources */,
 				EC4E3CCE423E6092349671CF /* RootView.swift in Sources */,

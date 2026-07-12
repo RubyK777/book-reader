@@ -198,6 +198,33 @@ enum SRSEngine {
     return items.filter { ($0.srs.dueDate) <= now }
   }
 
+  /// The soonest *future* due date across the deck, with the source title of
+  /// that item when it has one — drives the gentle review reminder. Items due
+  /// now are excluded (nothing to wait for; the badge already shows them).
+  @MainActor
+  static func nextDue(in context: ModelContext, now: Date = .now) -> (date: Date, sourceTitle: String?)? {
+    var candidates: [(date: Date, sourceTitle: String?)] = []
+
+    if let sentences = try? context.fetch(
+      FetchDescriptor<Sentence>(predicate: #Predicate { $0.isBookmarked })) {
+      for s in sentences where (s.srs?.dueDate ?? now) > now {
+        candidates.append((s.srs!.dueDate, s.page?.book?.title))
+      }
+    }
+    if let words = try? context.fetch(FetchDescriptor<SavedWord>()) {
+      for w in words where (w.srs?.dueDate ?? now) > now {
+        candidates.append((w.srs!.dueDate, nil))
+      }
+    }
+    if let annotations = try? context.fetch(
+      FetchDescriptor<Annotation>(predicate: #Predicate { !$0.isSuspended })) {
+      for a in annotations where (a.srs?.dueDate ?? now) > now {
+        candidates.append((a.srs!.dueDate, a.sentence?.page?.book?.title))
+      }
+    }
+    return candidates.min { $0.date < $1.date }
+  }
+
   /// Number of items due at `now`.
   @MainActor
   static func dueCount(in context: ModelContext, now: Date = .now) -> Int {

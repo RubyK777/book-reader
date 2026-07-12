@@ -6,6 +6,7 @@ import AVFoundation
 /// reads. Playback speed lives only on the Reader (0.5–2.0×).
 struct SettingsView: View {
     @AppStorage("nativeLanguage") private var nativeLanguage = LanguageCatalog.deviceDefaultNative
+    @AppStorage("reviewRemindersEnabled") private var remindersEnabled = false
 
     @Environment(\.modelContext) private var modelContext
     @Query private var books: [Book]
@@ -48,6 +49,14 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("Review reminders", isOn: $remindersEnabled)
+                } header: {
+                    Text("Reminders")
+                } footer: {
+                    Text("One gentle nudge when your next cards come due — never daily pings.")
+                }
+
+                Section {
                     Button {
                         exportData()
                     } label: {
@@ -61,6 +70,20 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .onChange(of: remindersEnabled) { _, on in
+                Task { @MainActor in
+                    if on {
+                        if await ReviewReminderService.requestAuthorization() {
+                            let next = SRSEngine.nextDue(in: modelContext)
+                            ReviewReminderService.reschedule(at: next?.date, sourceTitle: next?.sourceTitle)
+                        } else {
+                            remindersEnabled = false   // permission denied — revert the toggle
+                        }
+                    } else {
+                        ReviewReminderService.cancel()
+                    }
+                }
+            }
             .sheet(item: $exportFile) { file in
                 ShareSheet(url: file.url)
             }
