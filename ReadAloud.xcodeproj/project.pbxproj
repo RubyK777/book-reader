@@ -21,6 +21,7 @@
 		18AD0B1D16ED0AAEA14FE65A /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B658E25EF1CE476ACB066241 /* DesignSystem.swift */; };
 		1DF4347D7B0519D490D26D01 /* LearningAssetsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DA4F0C51F04CC2E251D1A7D /* LearningAssetsProvider.swift */; };
 		1FAD825964E040F0D6C9DDBC /* MigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02C1FFB0C472AEB2F0F35E87 /* MigrationTests.swift */; };
+		276F0CB0325D0A2BF5326B2B /* CardFaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B470DAD5166C46ED4AB3012B /* CardFaceTests.swift */; };
 		2CA1C31381DAE23DC0657F35 /* Date+Format.swift in Sources */ = {isa = PBXBuildFile; fileRef = B812B4587B8389CE23542FE4 /* Date+Format.swift */; };
 		2F45DE9D8840A99E8759C285 /* SpeechAnalyzerTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E7962DAE8478117B0CEA07 /* SpeechAnalyzerTranscriber.swift */; };
 		3028F5D064E57CDAA61339BF /* ReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FE07A0C952191918BEC544E /* ReaderView.swift */; };
@@ -184,6 +185,7 @@
 		A9370824EDAEBA5827052705 /* SaveWordSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveWordSheet.swift; sourceTree = "<group>"; };
 		AC714DE425A3C4C7E8CEC355 /* Transcriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transcriber.swift; sourceTree = "<group>"; };
 		ADCA3E982DDC9BB8E580CD1F /* WordTokenizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordTokenizer.swift; sourceTree = "<group>"; };
+		B470DAD5166C46ED4AB3012B /* CardFaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFaceTests.swift; sourceTree = "<group>"; };
 		B5648D31621069934A561940 /* DictionaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryView.swift; sourceTree = "<group>"; };
 		B658E25EF1CE476ACB066241 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		B717D28674FF5282DADDDCF9 /* FragmentDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FragmentDetectorTests.swift; sourceTree = "<group>"; };
@@ -277,6 +279,7 @@
 			isa = PBXGroup;
 			children = (
 				37A98EBF64FB666EB039E853 /* AudioIngestorTests.swift */,
+				B470DAD5166C46ED4AB3012B /* CardFaceTests.swift */,
 				CFF281D69EFBF8C5DA3E9571 /* ClozeBuilderTests.swift */,
 				B717D28674FF5282DADDDCF9 /* FragmentDetectorTests.swift */,
 				02C1FFB0C472AEB2F0F35E87 /* MigrationTests.swift */,
@@ -621,6 +624,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6E843446A3A751ED68347512 /* AudioIngestorTests.swift in Sources */,
+				276F0CB0325D0A2BF5326B2B /* CardFaceTests.swift in Sources */,
 				B23E035BB59F6434703C7584 /* ClozeBuilderTests.swift in Sources */,
 				63B3424A5CA8D2716404F578 /* FragmentDetectorTests.swift in Sources */,
 				1FAD825964E040F0D6C9DDBC /* MigrationTests.swift in Sources */,
