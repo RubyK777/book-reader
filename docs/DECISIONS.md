@@ -640,3 +640,15 @@ entries stand as history).*
     reveal: it shows **"Download model" (language named) → progress bar → Say it**, checked per card via
     `.task(id:)`. Speaking practice got the same, replacing a stale "download it from Record audio" hint.
     Consent + offline guarantees unchanged (only the model downloads; audio never leaves the device).
+
+65. **Shared `AudioSessionCoordinator` (dedup the lock-screen/session code).** #62 left the Now Playing +
+    remote-command + interruption/route logic duplicated across `SpeechPlayer` and `RecordingPlayer` (rule of
+    two). Extracted it into `AudioSessionCoordinator`, which drives the player back through the existing
+    `SentencePlaying` transport (weak ref → no retain cycle; no closures needed since the protocol already
+    exposes `isSpeaking`/`currentSentenceIndex`/`play(at:)`/`togglePlayPause()`/`next()`/`previous()`/`stop()`)
+    and owns the interrupted-sentence bookkeeping. Each player, when `managesNowPlaying`, holds one and pushes a
+    small `NowPlaying` snapshot on each state change. **Two deliberate behavior changes:** (a) the coordinator
+    now `removeTarget`s its remote commands on deinit — the hand-rolled versions never did, leaking a target per
+    Reader open; (b) it bundles interruption/route handling, so a *non-managing* throwaway `SpeechPlayer` (the
+    one-line replay players in Saved/Review) no longer auto-pauses/resumes on a call — fine for a ~1-2 s
+    utterance, and `reconcile()` still clears stale state. Route-loss unified to `stop()` for both engines.

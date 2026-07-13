@@ -31,6 +31,7 @@
 		37FE197E86C0B3FC01CD98E9 /* CountUpText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3262026191CD0864D087631A /* CountUpText.swift */; };
 		3CE48DE4E5054CF9C62DBBCF /* ReadAloudWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2E045583FF8BC274ECF7B955 /* ReadAloudWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3D63CAAEA51D32EA86A7BD8B /* SemanticColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39F2F2D89C7D0D082BF9C8F2 /* SemanticColors.swift */; };
+		428F775FFD469F7BE967F07F /* AudioSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F79359DEB2BEEA2C0C8CCE /* AudioSessionCoordinator.swift */; };
 		429A765D5E28AF1C1B8E8D75 /* ReviewSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFC6FA27DFAF000FE142DA9 /* ReviewSessionView.swift */; };
 		44AEF317F0CF52326352830C /* FragmentDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 826ECAA02745873590A2849B /* FragmentDetector.swift */; };
 		458722027C19E105E1787019 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9BD38CB316ACEB701246F2C /* BookDetailView.swift */; };
@@ -213,6 +214,7 @@
 		E1FAD3AE14FFF95207FAEE14 /* ReadAloudWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadAloudWidget.swift; sourceTree = "<group>"; };
 		E49ADB589E2CDDD87B845643 /* SpeakingPracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakingPracticeView.swift; sourceTree = "<group>"; };
 		E7D6F6BDDFA7606AA4F5D6E7 /* BatchReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchReviewView.swift; sourceTree = "<group>"; };
+		E7F79359DEB2BEEA2C0C8CCE /* AudioSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionCoordinator.swift; sourceTree = "<group>"; };
 		E8BEDDF716DB6DCE7A1A620C /* OCRReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRReviewView.swift; sourceTree = "<group>"; };
 		E9B1BD29A9586737CA6F50FC /* Languages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Languages.swift; sourceTree = "<group>"; };
 		EB1DCF38F37736A77E40C074 /* DocumentCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentCameraView.swift; sourceTree = "<group>"; };
@@ -421,6 +423,7 @@
 			children = (
 				D9B40FBD711D60F5AA3E54F7 /* AudioFileStore.swift */,
 				852DB25CE5978C4D9EFF0E4C /* AudioIngestor.swift */,
+				E7F79359DEB2BEEA2C0C8CCE /* AudioSessionCoordinator.swift */,
 				51F0C3479448E23F34AB2AB9 /* ClozeBuilder.swift */,
 				23278B10C8ACF15C7B57E9B3 /* DictionaryService.swift */,
 				A193A65A5B7597BF31549F06 /* ExportService.swift */,
@@ -650,6 +653,7 @@
 				0EC1D1D1CE25AA459D3CA9F9 /* AudioCaptureRecorder.swift in Sources */,
 				7C0203CA725C7404F1F39E1C /* AudioFileStore.swift in Sources */,
 				BDD22C697BF67A8C4B941BD1 /* AudioIngestor.swift in Sources */,
+				428F775FFD469F7BE967F07F /* AudioSessionCoordinator.swift in Sources */,
 				8F19A872A222245B52FD4221 /* BatchReviewView.swift in Sources */,
 				458722027C19E105E1787019 /* BookDetailView.swift in Sources */,
 				B08A8D5939042FF96F32E215 /* BookFormView.swift in Sources */,
