@@ -652,3 +652,15 @@ entries stand as history).*
     Reader open; (b) it bundles interruption/route handling, so a *non-managing* throwaway `SpeechPlayer` (the
     one-line replay players in Saved/Review) no longer auto-pauses/resumes on a call — fine for a ~1-2 s
     utterance, and `reconcile()` still clears stale state. Route-loss unified to `stop()` for both engines.
+
+66. **Configurable widget for real per-instance independence (supersedes #61's seed approach).** #61 tried to
+    make multiple widgets independent with a per-timeline random seed, but that can't work for a
+    `StaticConfiguration` widget: WidgetKit keeps **one shared timeline per widget kind**, so every instance
+    renders from it and reloads together — tapping shuffle on one refreshed them all, and they often showed the
+    same card. This is by design. Fix: switch to **`AppIntentConfiguration`** with a `ReviewCardConfiguration`
+    intent (a "Show" picker: Everything / Words / Phrases / Sentences). Now each placed widget has its own
+    configuration + timeline, so instances are independent (shuffle reloads only the tapped one, via
+    `Button(intent:)`), each rolls its own seed, and each can draw from a different slice. Provider moved
+    `TimelineProvider` → `AppIntentTimelineProvider`. *Migration:* changing the config type for the same kind
+    means existing placed widgets must be removed and re-added once. (Two widgets set to the same "Show" value
+    are as independent as WidgetKit allows; picking different slices guarantees distinct content.)

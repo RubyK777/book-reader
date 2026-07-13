@@ -36,6 +36,7 @@
 		44AEF317F0CF52326352830C /* FragmentDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 826ECAA02745873590A2849B /* FragmentDetector.swift */; };
 		458722027C19E105E1787019 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9BD38CB316ACEB701246F2C /* BookDetailView.swift */; };
 		4716D8AE0B2973D332F82F09 /* WordTokenizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADCA3E982DDC9BB8E580CD1F /* WordTokenizer.swift */; };
+		47AA47B9D73824CEDC5DB364 /* ReviewCardConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F16457957DD25A5878802B30 /* ReviewCardConfiguration.swift */; };
 		47CCC908ED0B200DF13E1E3C /* VoiceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9351BF59A4835332603EC8 /* VoiceStore.swift */; };
 		4D68F17953EB427025542F55 /* LiveTextCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69D52E7E91C9BCFC0FFBF74A /* LiveTextCameraView.swift */; };
 		4F69DA2002BB46F03CC5D049 /* Cards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2974A505A9F296158208AD02 /* Cards.swift */; };
@@ -219,6 +220,7 @@
 		E9B1BD29A9586737CA6F50FC /* Languages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Languages.swift; sourceTree = "<group>"; };
 		EB1DCF38F37736A77E40C074 /* DocumentCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentCameraView.swift; sourceTree = "<group>"; };
 		EFC19E69947D7AA02E1F2594 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
+		F16457957DD25A5878802B30 /* ReviewCardConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCardConfiguration.swift; sourceTree = "<group>"; };
 		F6311162F1936707A7D7A952 /* SpeechPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechPlayer.swift; sourceTree = "<group>"; };
 		F9BD38CB316ACEB701246F2C /* BookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookDetailView.swift; sourceTree = "<group>"; };
 		FAD53C24308EBAC09CBFB205 /* SharedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStore.swift; sourceTree = "<group>"; };
@@ -311,6 +313,7 @@
 				26F4219877CD663FBB50672E /* Info.plist */,
 				470A81FF7ED627B6179921B1 /* ReadAloudWidget.entitlements */,
 				E1FAD3AE14FFF95207FAEE14 /* ReadAloudWidget.swift */,
+				F16457957DD25A5878802B30 /* ReviewCardConfiguration.swift */,
 				9836D98F84BB3E27CB18823D /* ShuffleCardIntent.swift */,
 			);
 			path = ReadAloudWidget;
@@ -730,6 +733,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C39B8AF1FFDA35CFA2B68C90 /* ReadAloudWidget.swift in Sources */,
+				47AA47B9D73824CEDC5DB364 /* ReviewCardConfiguration.swift in Sources */,
 				8F1D60A728E4053DC274299F /* SharedStore.swift in Sources */,
 				D0A7AE8DBC4F716ED6EB1372 /* ShuffleCardIntent.swift in Sources */,
 			);

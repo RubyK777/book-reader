@@ -4,35 +4,40 @@ import AppIntents
 
 /// Home-screen review-card widget: a random saved word/phrase/sentence with its
 /// meaning. Tap shuffle for another. Reads the App Group snapshot (`SharedStore`)
-/// — no SwiftData in the widget. Each timeline picks a *random seed*, so multiple
-/// widget instances are independent: they show different cards, and tapping
-/// shuffle on one reloads only that instance (its intent doesn't reload the rest).
+/// — no SwiftData in the widget. It's an **`AppIntentConfiguration`** widget, so
+/// each placed instance has its own configuration (`ReviewCardConfiguration`) +
+/// timeline: instances are independent (shuffling one leaves the others alone),
+/// each picks its own random seed, and each can draw from a different slice
+/// (DECISIONS #66).
 struct CardEntry: TimelineEntry {
     let date: Date
     let cards: [WidgetCard]
     let seed: Int
+    let category: WidgetCategory
 }
 
-struct ReadAloudProvider: TimelineProvider {
+struct ReadAloudProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> CardEntry {
         CardEntry(date: Date(), cards: [WidgetCard(
             text: "à tout à l'heure", meaning: "see you soon",
-            note: "À tout à l'heure ! On se voit ce soir.", type: "phrase", languageName: "French")], seed: 0)
+            note: "À tout à l'heure ! On se voit ce soir.", type: "phrase", languageName: "French")],
+            seed: 0, category: .all)
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (CardEntry) -> Void) {
-        completion(current())
+    func snapshot(for configuration: ReviewCardConfiguration, in context: Context) async -> CardEntry {
+        current(configuration.category)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<CardEntry>) -> Void) {
+    func timeline(for configuration: ReviewCardConfiguration, in context: Context) async -> Timeline<CardEntry> {
         // One entry; a fresh random card comes on each reload (shuffle tap, or
         // when the app refreshes the deck). `.never` keeps the card steady until
         // then rather than auto-rotating.
-        completion(Timeline(entries: [current()], policy: .never))
+        Timeline(entries: [current(configuration.category)], policy: .never)
     }
 
-    private func current() -> CardEntry {
-        CardEntry(date: Date(), cards: SharedStore.cards(), seed: Int.random(in: 0 ..< 1_000_000))
+    private func current(_ category: WidgetCategory) -> CardEntry {
+        CardEntry(date: Date(), cards: SharedStore.cards(),
+                  seed: Int.random(in: 0 ..< 1_000_000), category: category)
     }
 }
 
@@ -43,13 +48,17 @@ struct ReadAloudWidgetEntryView: View {
     /// Approximate the app's ink-blue accent (the widget can't see app tokens).
     private let ink = Color(red: 0.17, green: 0.23, blue: 0.44)
 
-    /// Small stays short (words/phrases); medium & large may show a full
-    /// starred sentence. Falls back to the whole deck if the pool is empty.
+    /// Honor the widget's chosen slice first, then keep Small short (no full
+    /// sentences). Each filter falls back to the wider pool if it would empty out.
     private var card: WidgetCard? {
         let all = entry.cards
         guard !all.isEmpty else { return nil }
-        let pool = family == .systemSmall ? all.filter { $0.type != "sentence" } : all
-        let deck = pool.isEmpty ? all : pool
+        let chosen = all.filter { entry.category.matches($0) }
+        var deck = chosen.isEmpty ? all : chosen
+        if family == .systemSmall {
+            let short = deck.filter { $0.type != "sentence" }
+            if !short.isEmpty { deck = short }
+        }
         return deck[abs(entry.seed) % deck.count]
     }
 
@@ -134,7 +143,9 @@ struct ReadAloudWidgetEntryView: View {
 
 struct ReadAloudWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "ReadAloudReviewWidget", provider: ReadAloudProvider()) { entry in
+        AppIntentConfiguration(kind: "ReadAloudReviewWidget",
+                               intent: ReviewCardConfiguration.self,
+                               provider: ReadAloudProvider()) { entry in
             ReadAloudWidgetEntryView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
