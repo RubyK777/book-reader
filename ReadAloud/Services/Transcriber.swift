@@ -34,7 +34,9 @@ protocol Transcribing {
     /// The on-device model is already present (transcription can run immediately).
     func isModelInstalled(_ localeIdentifier: String) async -> Bool
     /// Download + install the on-device model for a supported language.
-    func installModel(_ localeIdentifier: String) async throws
+    /// `onProgress` reports 0…1 download completion (best-effort).
+    func installModel(_ localeIdentifier: String,
+                      onProgress: @escaping @Sendable (Double) -> Void) async throws
     /// Transcribe a local audio file into timestamped text. Never leaves the
     /// device. `onProgress` reports 0…1 completion (best-effort).
     func transcribe(fileURL: URL, localeIdentifier: String,
@@ -44,6 +46,10 @@ protocol Transcribing {
 extension Transcribing {
     func transcribe(fileURL: URL, localeIdentifier: String) async throws -> Transcript {
         try await transcribe(fileURL: fileURL, localeIdentifier: localeIdentifier, onProgress: { _ in })
+    }
+
+    func installModel(_ localeIdentifier: String) async throws {
+        try await installModel(localeIdentifier, onProgress: { _ in })
     }
 }
 
@@ -72,7 +78,8 @@ struct OnDeviceTranscriber: Transcribing {
 
     /// Pre-iOS 26 there's no programmatic model download — the OS installs it when
     /// the language is enabled for dictation. Surface that as a failure to install.
-    func installModel(_ localeIdentifier: String) async throws {
+    func installModel(_ localeIdentifier: String,
+                      onProgress: @escaping @Sendable (Double) -> Void) async throws {
         if await !isModelInstalled(localeIdentifier) { throw TranscriptionError.modelNotInstalled }
     }
 

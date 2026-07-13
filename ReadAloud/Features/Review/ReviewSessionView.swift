@@ -41,6 +41,10 @@ struct ReviewSessionView: View {
     @State private var pronunciation: PronunciationResult?
     @State private var micDenied = false
     @State private var suggestedGrade: ReviewGrade?
+    // Speech model for the current card: nil = unknown/checking, true = ready,
+    // false = supported but not downloaded. `modelProgress` drives the download bar.
+    @State private var modelReady: Bool?
+    @State private var modelProgress: Double?
     private let transcriber: any Transcribing = TranscriberFactory.make()
 
     init(items: [ReviewItem]) {
@@ -73,6 +77,7 @@ struct ReviewSessionView: View {
                         summaryView
                     } else if let item = current {
                         cardView(item)
+                            .task(id: item.id) { await refreshModelState(item) }
                     }
                 }
                 .navigationBarTitleDisplayMode(.inline)
@@ -267,7 +272,36 @@ struct ReviewSessionView: View {
     private func recallActions(_ item: ReviewItem) -> some View {
         if canSpeechCheck(item) {
             VStack(spacing: DesignSystem.Spacing.sm) {
-                if speechPhase == .checking {
+                if let progress = modelProgress {
+                    // The voice model is downloading — show a real progress bar.
+                    VStack(spacing: DesignSystem.Spacing.xs) {
+                        ProgressView(value: progress) {
+                            Text("Downloading \(LanguageCatalog.name(for: item.languageCode)) model…")
+                                .font(.subheadline)
+                        }
+                        .progressViewStyle(.linear)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: DesignSystem.minTapTarget)
+                } else if modelReady == false {
+                    // Supported but not installed — offer a one-time download so
+                    // "Say it" works, instead of silently falling back to reveal.
+                    VStack(spacing: DesignSystem.Spacing.xs) {
+                        Text("Saying your answer needs the \(LanguageCatalog.name(for: item.languageCode)) voice model.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                        Button {
+                            downloadModel(item)
+                        } label: {
+                            Label("Download model", systemImage: "arrow.down.circle")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .tint(Theme.accent)
+                    }
+                } else if speechPhase == .checking {
                     HStack(spacing: DesignSystem.Spacing.sm) {
                         ProgressView().controlSize(.small)
                         Text("Checking…").foregroundStyle(.secondary)
@@ -297,6 +331,31 @@ struct ReviewSessionView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+        }
+    }
+
+    /// Is the on-device model for this card ready? Only speech-check faces care;
+    /// others are always "ready" (they never record).
+    private func refreshModelState(_ item: ReviewItem) async {
+        modelProgress = nil
+        guard canSpeechCheck(item) else { modelReady = true; return }
+        modelReady = nil                                   // checking
+        modelReady = await transcriber.isModelInstalled(item.languageCode)
+    }
+
+    private func downloadModel(_ item: ReviewItem) {
+        modelProgress = 0
+        Task { @MainActor in
+            do {
+                try await transcriber.installModel(
+                    item.languageCode,
+                    onProgress: { value in Task { @MainActor in modelProgress = value } })
+                modelProgress = nil
+                modelReady = true
+            } catch {
+                modelProgress = nil
+                modelReady = false      // leave the offer up; the user can retry or reveal
+            }
         }
     }
 
@@ -622,6 +681,8 @@ struct ReviewSessionView: View {
         speechPhase = .idle
         pronunciation = nil
         suggestedGrade = nil
+        modelProgress = nil
+        modelReady = nil
         if index + 1 < queue.count {
             phase = .recall
             index += 1

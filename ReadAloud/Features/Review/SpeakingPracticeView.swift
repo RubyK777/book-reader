@@ -14,6 +14,7 @@ struct SpeakingPracticeView: View {
     @State private var result: PronunciationResult?
     @State private var micDenied = false
     @State private var checkUnavailable = false
+    @State private var modelProgress: Double?    // non-nil while the model downloads
 
     private let transcriber: any Transcribing = TranscriberFactory.make()
 
@@ -57,8 +58,8 @@ struct SpeakingPracticeView: View {
                         }
                     }
                 }
-            } else if checkUnavailable {
-                Text("Pronunciation check needs the \(LanguageCatalog.name(for: item.languageCode)) voice model — download it once from Record audio.")
+            } else if modelProgress == nil && checkUnavailable {
+                Text("Pronunciation check needs the \(LanguageCatalog.name(for: item.languageCode)) voice model — a one-time download.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -81,7 +82,24 @@ struct SpeakingPracticeView: View {
 
     @ViewBuilder
     private func controls(_ item: ReviewItem) -> some View {
-        if phase == .checking {
+        if let progress = modelProgress {
+            ProgressView(value: progress) {
+                Text("Downloading \(LanguageCatalog.name(for: item.languageCode)) model…")
+                    .font(.subheadline)
+            }
+            .progressViewStyle(.linear)
+            .padding(.horizontal, DesignSystem.Spacing.screenMargin)
+            .frame(minHeight: DesignSystem.minTapTarget)
+        } else if checkUnavailable {
+            Button {
+                downloadModel(item)
+            } label: {
+                Label("Download model", systemImage: "arrow.down.circle")
+                    .frame(minHeight: DesignSystem.minTapTarget)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.accent)
+        } else if phase == .checking {
             HStack(spacing: DesignSystem.Spacing.sm) {
                 ProgressView().controlSize(.small)
                 Text("Checking…").foregroundStyle(.secondary)
@@ -159,11 +177,27 @@ struct SpeakingPracticeView: View {
         }
     }
 
+    private func downloadModel(_ item: ReviewItem) {
+        modelProgress = 0
+        Task { @MainActor in
+            do {
+                try await transcriber.installModel(
+                    item.languageCode,
+                    onProgress: { value in Task { @MainActor in modelProgress = value } })
+                modelProgress = nil
+                checkUnavailable = false     // model's here now — "Say it" works
+            } catch {
+                modelProgress = nil          // leave the offer up to retry
+            }
+        }
+    }
+
     private func resetAttempt() {
         player.stop()
         recorder.reset()
         phase = .idle
         result = nil
         checkUnavailable = false
+        modelProgress = nil
     }
 }

@@ -240,9 +240,12 @@ struct AudioCaptureFlowView: View {
         pendingURL = nil
         isWorking = true
         workingLabel = "Downloading \(LanguageCatalog.name(for: languageHint)) voice model…"
+        progress = 0
         Task { @MainActor in
             do {
-                try await transcriber.installModel(languageHint)
+                try await transcriber.installModel(
+                    languageHint,
+                    onProgress: { value in Task { @MainActor in progress = value } })
                 await runTranscription(url)
             } catch {
                 isWorking = false

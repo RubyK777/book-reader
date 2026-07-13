@@ -20,14 +20,28 @@ struct SpeechAnalyzerTranscriber: Transcribing {
         return installed.contains { $0.identifier(.bcp47) == matched.identifier(.bcp47) }
     }
 
-    func installModel(_ localeIdentifier: String) async throws {
+    func installModel(_ localeIdentifier: String,
+                      onProgress: @escaping @Sendable (Double) -> Void) async throws {
         guard let matched = await matchedLocale(localeIdentifier) else {
             throw TranscriptionError.unavailableForLanguage
         }
         let transcriber = makeTranscriber(locale: matched)
-        if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
-            try await request.downloadAndInstall()
+        guard let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) else {
+            onProgress(1)   // nothing to fetch — already satisfied
+            return
         }
+        // Report the system download's fractionCompleted while it installs; the
+        // poller is torn down as soon as downloadAndInstall() returns.
+        let progress = request.progress
+        let poller = Task {
+            while !Task.isCancelled {
+                onProgress(progress.fractionCompleted)
+                try? await Task.sleep(for: .milliseconds(200))
+            }
+        }
+        defer { poller.cancel() }
+        try await request.downloadAndInstall()
+        onProgress(1)
     }
 
     func transcribe(fileURL: URL, localeIdentifier: String,
