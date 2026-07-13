@@ -34,7 +34,7 @@ final class AppRouter {
         descriptor.fetchLimit = 40
         let annotations = (try? context.fetch(descriptor)) ?? []
 
-        let cards: [WidgetCard] = annotations.map { annotation in
+        var cards: [WidgetCard] = annotations.map { annotation in
             let contextLine = annotation.contextSentence == annotation.text ? nil : annotation.contextSentence
             return WidgetCard(
                 text: annotation.text,
@@ -42,6 +42,20 @@ final class AppRouter {
                 note: nonEmpty(annotation.userExample) ?? contextLine,
                 type: annotation.type.rawValue,
                 languageName: LanguageCatalog.name(for: annotation.languageCode))
+        }
+
+        // Starred (bookmarked) sentences from the Reader — shown on medium/large.
+        var seen = Set(cards.map(\.text))
+        let bookmarked = (try? context.fetch(
+            FetchDescriptor<Sentence>(predicate: #Predicate { $0.isBookmarked }))) ?? []
+        for sentence in bookmarked where !seen.contains(sentence.text) {
+            seen.insert(sentence.text)
+            cards.append(WidgetCard(
+                text: sentence.text,
+                meaning: nonEmpty(sentence.translatedText),
+                note: nil,
+                type: AnnotationType.sentence.rawValue,
+                languageName: LanguageCatalog.name(for: sentence.page?.book?.languageCode ?? "en-US")))
         }
         SharedStore.writeCards(cards)
 

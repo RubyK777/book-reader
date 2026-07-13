@@ -7,14 +7,15 @@ import AppIntents
 /// Group snapshot the app writes (`SharedStore`) — no SwiftData in the widget.
 struct CardEntry: TimelineEntry {
     let date: Date
-    let card: WidgetCard?
+    let cards: [WidgetCard]
+    let index: Int
 }
 
 struct ReadAloudProvider: TimelineProvider {
     func placeholder(in context: Context) -> CardEntry {
-        CardEntry(date: Date(), card: WidgetCard(
+        CardEntry(date: Date(), cards: [WidgetCard(
             text: "à tout à l'heure", meaning: "see you soon",
-            note: "À tout à l'heure ! On se voit ce soir.", type: "phrase", languageName: "French"))
+            note: "À tout à l'heure ! On se voit ce soir.", type: "phrase", languageName: "French")], index: 0)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (CardEntry) -> Void) {
@@ -30,7 +31,7 @@ struct ReadAloudProvider: TimelineProvider {
     }
 
     private func current() -> CardEntry {
-        CardEntry(date: Date(), card: SharedStore.currentCard())
+        CardEntry(date: Date(), cards: SharedStore.cards(), index: SharedStore.cardIndex())
     }
 }
 
@@ -41,8 +42,18 @@ struct ReadAloudWidgetEntryView: View {
     /// Approximate the app's ink-blue accent (the widget can't see app tokens).
     private let ink = Color(red: 0.17, green: 0.23, blue: 0.44)
 
+    /// Small stays short (words/phrases); medium & large may show a full
+    /// starred sentence. Falls back to the whole deck if the pool is empty.
+    private var card: WidgetCard? {
+        let all = entry.cards
+        guard !all.isEmpty else { return nil }
+        let pool = family == .systemSmall ? all.filter { $0.type != "sentence" } : all
+        let deck = pool.isEmpty ? all : pool
+        return deck[((entry.index % deck.count) + deck.count) % deck.count]
+    }
+
     var body: some View {
-        if let card = entry.card {
+        if let card {
             cardView(card)
         } else {
             emptyView
