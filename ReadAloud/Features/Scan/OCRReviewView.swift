@@ -20,7 +20,18 @@ struct OCRReviewView: View {
   @State private var text: String
   @State private var languageCode: String
   @State private var showingAssign = false
+  @State private var showingDigest = false
   @State private var errorMessage: String?
+
+  /// One line per detected item for the quick-translate digest — newlines match
+  /// a menu/sign's layout; fall back to sentence splitting for prose.
+  private var digestLines: [String] {
+    let byLine = text.split(separator: "\n")
+      .map { $0.trimmingCharacters(in: .whitespaces) }
+      .filter { !$0.isEmpty }
+    if byLine.count >= 2 { return byLine }
+    return SentenceSplitter().split(text, languageCode: languageCode)
+  }
 
   init(image: UIImage, result: OCRResult, book: Book?, onRetake: @escaping () -> Void) {
     self.image = image
@@ -52,6 +63,16 @@ struct OCRReviewView: View {
         TextEditor(text: $text)
           .frame(minHeight: 240)
       }
+      Section {
+        Button {
+          showingDigest = true
+        } label: {
+          Label("Translate & Listen", systemImage: "translate")
+        }
+        .disabled(isEmpty)
+      } footer: {
+        Text("See each line translated and hear it — without saving. Handy for a sign or menu.")
+      }
     }
     .navigationTitle("Review Page")
     .navigationBarTitleDisplayMode(.inline)
@@ -69,6 +90,9 @@ struct OCRReviewView: View {
         showingAssign = false
         performIngest(into: chosen)
       }
+    }
+    .sheet(isPresented: $showingDigest) {
+      ScanDigestView(lines: digestLines, languageCode: languageCode)
     }
     .alert("Couldn't save page",
            isPresented: Binding(get: { errorMessage != nil },

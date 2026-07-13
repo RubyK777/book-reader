@@ -468,3 +468,11 @@ entries stand as history).*
     `AnimatedMeshBackground`, `AnimatedEmptyState`. It queries annotations too (Review's `deck` doesn't),
     so the button isn't gated on `deck` — the view shows its own "nothing planted yet" empty state.
     Absorbs the deferred Phase-5 stats view.
+
+51. **Quick-Scan digest — a translate-and-listen glance, no saving.** New `ScanDigestView` (sheet from a
+    "Translate & Listen" row in `OCRReviewView`): splits the OCR'd page by newlines (matching a menu/sign's
+    layout; falls back to `SentenceSplitter` for prose) and batch-translates every line at once via
+    `.translationTask` (clientIdentifier correlation, same pattern as the Reader), showing source + inline
+    translation + a per-line speaker (`SpeechPlayer.speakOnce`, source only). Nothing is persisted — the
+    traveler gets an answer, not a study object. Offline after the first translate; degrades cleanly when
+    the pair isn't offered or source == native. Closes the Phase-4 "Quick Scan digest" TODO.

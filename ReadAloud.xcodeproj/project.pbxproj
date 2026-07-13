@@ -68,6 +68,7 @@
 		E53E064006C186A0FA5B370F /* SentenceLearnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7894C3B1C69FF6F2DD5221 /* SentenceLearnView.swift */; };
 		E851093BF46C92CBE455053D /* SpeakingPracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E49ADB589E2CDDD87B845643 /* SpeakingPracticeView.swift */; };
 		EC4E3CCE423E6092349671CF /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41E7C1CC8B6A9EDC0BCA01EE /* RootView.swift */; };
+		F2261F11E257B79A0A715E9B /* ScanDigestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D43EEB71FD4C3739F94BE305 /* ScanDigestView.swift */; };
 		F5DBF18181E1B3F3CC9594ED /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A193A65A5B7597BF31549F06 /* ExportService.swift */; };
 		FC7321FC6A3A8401248B24F2 /* NotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B605E962B7275F251C747CE /* NotesView.swift */; };
 		FE7518DFE5F53EE5CC8C1E8A /* ReadAloudApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C0E6637A2D501C2ED788BC /* ReadAloudApp.swift */; };
@@ -132,6 +133,7 @@
 		CBC4A7CAD65BE19587764F2E /* ReadAloud.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ReadAloud.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CFF281D69EFBF8C5DA3E9571 /* ClozeBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClozeBuilderTests.swift; sourceTree = "<group>"; };
 		D1C34944ABD37C98730814F5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		D43EEB71FD4C3739F94BE305 /* ScanDigestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanDigestView.swift; sourceTree = "<group>"; };
 		D468E8D1096002454579462B /* BookFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookFormView.swift; sourceTree = "<group>"; };
 		D493A9331B369578A465E395 /* SRSStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRSStateTests.swift; sourceTree = "<group>"; };
 		DA9351BF59A4835332603EC8 /* VoiceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceStore.swift; sourceTree = "<group>"; };
@@ -231,6 +233,7 @@
 				EB1DCF38F37736A77E40C074 /* DocumentCameraView.swift */,
 				69D52E7E91C9BCFC0FFBF74A /* LiveTextCameraView.swift */,
 				E8BEDDF716DB6DCE7A1A620C /* OCRReviewView.swift */,
+				D43EEB71FD4C3739F94BE305 /* ScanDigestView.swift */,
 				6F0A60928EF6AC9E9DBCA02A /* ScanFlowView.swift */,
 			);
 			path = Scan;
@@ -529,6 +532,7 @@
 				02000B869506C245555116C5 /* SaveWordSheet.swift in Sources */,
 				B6EEAB545124838D4DB8FF2C /* SavedItemDetailView.swift in Sources */,
 				955F285689DE5904DC2D4CA6 /* SavedItemsView.swift in Sources */,
+				F2261F11E257B79A0A715E9B /* ScanDigestView.swift in Sources */,
 				6EB339E3D3A9D1D14032E73E /* ScanFlowView.swift in Sources */,
 				B19CB493153DBAAC5A42F620 /* Schema.swift in Sources */,
 				3D63CAAEA51D32EA86A7BD8B /* SemanticColors.swift in Sources */,
