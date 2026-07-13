@@ -35,8 +35,16 @@ protocol Transcribing {
     func isModelInstalled(_ localeIdentifier: String) async -> Bool
     /// Download + install the on-device model for a supported language.
     func installModel(_ localeIdentifier: String) async throws
-    /// Transcribe a local audio file into timestamped text. Never leaves the device.
-    func transcribe(fileURL: URL, localeIdentifier: String) async throws -> Transcript
+    /// Transcribe a local audio file into timestamped text. Never leaves the
+    /// device. `onProgress` reports 0…1 completion (best-effort).
+    func transcribe(fileURL: URL, localeIdentifier: String,
+                    onProgress: @escaping @Sendable (Double) -> Void) async throws -> Transcript
+}
+
+extension Transcribing {
+    func transcribe(fileURL: URL, localeIdentifier: String) async throws -> Transcript {
+        try await transcribe(fileURL: fileURL, localeIdentifier: localeIdentifier, onProgress: { _ in })
+    }
 }
 
 /// Picks the best available engine: iOS 26 `SpeechAnalyzer` (on-demand model
@@ -68,7 +76,8 @@ struct OnDeviceTranscriber: Transcribing {
         if await !isModelInstalled(localeIdentifier) { throw TranscriptionError.modelNotInstalled }
     }
 
-    func transcribe(fileURL: URL, localeIdentifier: String) async throws -> Transcript {
+    func transcribe(fileURL: URL, localeIdentifier: String,
+                    onProgress: @escaping @Sendable (Double) -> Void) async throws -> Transcript {
         guard await Self.requestAuthorization() == .authorized else {
             throw TranscriptionError.notAuthorized
         }

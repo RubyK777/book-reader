@@ -30,15 +30,18 @@ struct SpeechAnalyzerTranscriber: Transcribing {
         }
     }
 
-    func transcribe(fileURL: URL, localeIdentifier: String) async throws -> Transcript {
+    func transcribe(fileURL: URL, localeIdentifier: String,
+                    onProgress: @escaping @Sendable (Double) -> Void) async throws -> Transcript {
         guard let matched = await matchedLocale(localeIdentifier) else {
             throw TranscriptionError.unavailableForLanguage
         }
         let transcriber = makeTranscriber(locale: matched)
         let analyzer = SpeechAnalyzer(modules: [transcriber])
         let audioFile = try AVAudioFile(forReading: fileURL)
+        let totalSeconds = Double(audioFile.length) / audioFile.processingFormat.sampleRate
 
-        // Collect results concurrently while the analyzer consumes the file.
+        // Collect results concurrently while the analyzer consumes the file,
+        // reporting progress from how far into the clip we've transcribed.
         let collector = Task { () throws -> (String, [TranscriptSegment]) in
             var full = AttributedString()
             var segments: [TranscriptSegment] = []
@@ -51,6 +54,9 @@ struct SpeechAnalyzerTranscriber: Transcribing {
                         text: word,
                         start: range.start.seconds,
                         duration: range.duration.seconds))
+                    if totalSeconds > 0 {
+                        onProgress(min(1, range.end.seconds / totalSeconds))
+                    }
                 }
             }
             return (String(full.characters), segments)
@@ -63,6 +69,7 @@ struct SpeechAnalyzerTranscriber: Transcribing {
         }
 
         let (text, segments) = try await collector.value
+        onProgress(1)
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw TranscriptionError.noSpeechFound
         }

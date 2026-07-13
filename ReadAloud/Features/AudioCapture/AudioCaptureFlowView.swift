@@ -15,6 +15,7 @@ struct AudioCaptureFlowView: View {
     @State private var isImporting = false
     @State private var isWorking = false
     @State private var workingLabel = "Transcribing…"
+    @State private var progress: Double?
     @State private var errorMessage: String?
     @State private var showDownloadPrompt = false
     @State private var pendingURL: URL?
@@ -44,7 +45,13 @@ struct AudioCaptureFlowView: View {
     private var captureView: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
             if isWorking {
-                ProgressView(workingLabel)
+                if let progress {
+                    ProgressView(value: progress) { Text(workingLabel) }
+                        .progressViewStyle(.linear)
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
+                } else {
+                    ProgressView(workingLabel)
+                }
             } else {
                 Spacer()
 
@@ -247,12 +254,17 @@ struct AudioCaptureFlowView: View {
     private func runTranscription(_ url: URL) async {
         isWorking = true
         workingLabel = "Transcribing…"
+        progress = 0
         do {
-            let transcript = try await transcriber.transcribe(fileURL: url, localeIdentifier: languageHint)
+            let transcript = try await transcriber.transcribe(
+                fileURL: url, localeIdentifier: languageHint,
+                onProgress: { value in Task { @MainActor in progress = value } })
             isWorking = false
+            progress = nil
             step = .review(url: url, transcript: transcript, language: languageHint)
         } catch {
             isWorking = false
+            progress = nil
             errorMessage = message(for: error)
         }
     }
