@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 /// A calm, non-numeric reflection on how your saved words are settling in
-/// (docs/IMPROVEMENTS §reflection; absorbs the deferred Phase-5 "stats view").
+/// (UX review §reflection; absorbs the deferred Phase-5 "stats view").
 /// Deck maturity as a growth story — Learning → Taking root → Known — from SRS
 /// interval length, plus how many you've saved and when the next cards return.
 /// Reflection, never a score: no levels, XP, or percentages (DECISIONS #39).

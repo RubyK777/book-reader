@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Design tokens — spacing, corner radii, icon sizes, accent (docs/DESIGN_GUIDELINES.md).
+/// Design tokens — spacing, corner radii, icon sizes, accent (design system).
 /// Screens compose these instead of hardcoding paddings/radii/sizes. Every value
 /// is a multiple of 8 (4 is the only half-step).
 enum DesignSystem {

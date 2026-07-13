@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// The system dictionary panel for a term (PHASE3_DESIGN §5). Presented as a
+/// The system dictionary panel for a term (review design §5). Presented as a
 /// sheet; when no definition exists it shows a Manage Dictionaries download flow.
 struct DictionaryView: UIViewControllerRepresentable {
     let term: String

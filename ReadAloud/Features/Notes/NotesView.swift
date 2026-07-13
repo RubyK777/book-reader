@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// The Notebook (PIVOT_PLAN Phase 4): saved annotations with type/confused
+/// The Notebook (product design Phase 4): saved annotations with type/confused
 /// filters, plus the legacy per-item notes browser in a second segment.
 struct NotesView: View {
     private enum Segment: Hashable { case notebook, legacy }

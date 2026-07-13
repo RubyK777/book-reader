@@ -1,7 +1,7 @@
 import SwiftUI
 import Translation
 
-/// Quick-Scan digest (docs/IMPROVEMENTS §engagement): after a scan, glance at
+/// Quick-Scan digest (UX review §engagement): after a scan, glance at
 /// each detected line with its inline translation and hear it read aloud — a
 /// utility answer, not a study object. Nothing is saved. Rides the batch
 /// `.translationTask` pattern (same as the Reader's page translate). Offline

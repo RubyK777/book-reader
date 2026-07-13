@@ -1,7 +1,7 @@
 import AVFoundation
 import Observation
 
-/// TTS engine + word-highlight source of truth (PROJECT_PLAN.md §5.4).
+/// TTS engine + word-highlight source of truth (product design §5.4).
 /// Owns the sentence queue; views observe currentSentenceIndex / highlightRange.
 ///
 /// The Reader's player sets `managesNowPlaying` so it drives the lock-screen

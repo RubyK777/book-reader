@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 import Translation
 
-/// Core screen (PROJECT_PLAN.md §4.3): tappable sentence cards,
+/// Core screen (product design §4.3): tappable sentence cards,
 /// active card tinted with word-level highlight, playback bar below.
 /// Two sources: `.persisted` (a saved ScanPage, with bookmark + save-word +
 /// translation) and `.ephemeral` (raw strings, e.g. #Preview) which hides them.
@@ -59,7 +59,7 @@ struct ReaderView: View {
     @State private var sentenceToDelete: Sentence?
     @State private var learnSentence: Sentence?
 
-    // After-session digest (PIVOT_PLAN Phase 4): what got saved while this
+    // After-session digest (product design Phase 4): what got saved while this
     // Reader was open, with a one-tap path into reviewing it.
     @State private var sessionStart = Date.distantFuture
     @State private var digestDismissed = false

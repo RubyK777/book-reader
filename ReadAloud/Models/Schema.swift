@@ -4,7 +4,7 @@ import SwiftData
 /// Versioned schema so model changes migrate cleanly.
 ///
 /// V1 (below) is the **frozen snapshot** of the models as they shipped to
-/// Ruby's device before the real-world-learning pivot (PIVOT_PLAN.md §6) —
+/// Ruby's device before the real-world-learning pivot (product design §6) —
 /// nested copies that must never change again. The live classes in
 /// `Models.swift` are V2: `Book.kindRaw` (source kinds), the new `Annotation`
 /// model, and `Sentence.learningAssets` / `Sentence.annotations`. V1→V2 is a

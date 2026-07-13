@@ -1,6 +1,6 @@
 import Foundation
 
-/// Deterministic cloze construction (PIVOT_PLAN D5): the saved word/phrase IS
+/// Deterministic cloze construction (product design D5): the saved word/phrase IS
 /// the blank in its context sentence — no model involved. Pure input → output.
 public enum ClozeBuilder {
   /// The mask shown in place of the blanked term.

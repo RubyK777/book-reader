@@ -1,45 +1,59 @@
-# ReadAloud (book-reader)
+# ReadAloud
 
-Read your book like a parent does! An iOS app for language learners: photograph a book page → on-device OCR → listen sentence by sentence with word-level highlighting → save words → spaced-repetition review.
+ReadAloud is a native iOS language-learning app. Capture text from books, signs,
+menus, or photos; review the recognized text; listen sentence by sentence; save
+useful words and phrases; and revisit them with spaced repetition.
 
-Fully on-device (Vision, NaturalLanguage, AVSpeechSynthesizer, SwiftData) — no accounts, no servers, works on a plane. See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the full spec.
-
-**Status:** Phase 1 — scan → tap-to-hear loop works; persistence and review come in Phases 2–3.
+The app is built with SwiftUI and Apple frameworks. OCR, speech, persistence,
+and learning features run on device. Translation can require a one-time Apple
+language-model download for a new language pair.
 
 ## Requirements
 
-- Xcode 16+ (built with Xcode 26.2)
-- iOS 17.4+ device or simulator
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`) — only when project files change
+- Xcode 26 or newer
+- iOS 18 or newer
+- An Apple silicon or Intel Mac supported by Xcode
 
-## Build & run on your device
+## Run the app
 
-```sh
-xcodegen generate        # regenerates ReadAloud.xcodeproj from project.yml
-open ReadAloud.xcodeproj
+1. Open `ReadAloud.xcodeproj` in Xcode.
+2. Select the **ReadAloud** scheme.
+3. In **Signing & Capabilities**, choose your development team.
+4. Select an iPhone, iPad, or simulator and press **Run**.
+
+Camera capture requires a physical device. The simulator supports photo import.
+
+## Project structure
+
+```text
+ReadAloud.xcodeproj/       Xcode project and shared scheme
+ReadAloud/                 Main iOS application
+  App/                     App entry point and navigation
+  Features/                Feature-oriented SwiftUI screens
+  Models/                  SwiftData models and migrations
+  Resources/               Asset catalogs and app resources
+  Services/                OCR, audio, translation, and persistence services
+  Shared/                  Reusable components, styles, and utilities
+ReadAloudWidget/           Widget extension
+ReadAloudTests/            Application unit tests
+Packages/LearningKit/      Reusable Swift package and package tests
+Documentation/             Architecture and development notes
 ```
 
-In Xcode: select the **ReadAloud** target → *Signing & Capabilities* → choose your **Team** (signing is set to Automatic), then pick your iPhone/iPad and hit **Run**. First install on a free account requires trusting the developer profile on the device (Settings → General → VPN & Device Management).
+The checked-in Xcode project is the source of truth. Add targets, files, build
+settings, and package dependencies through Xcode.
 
-Camera capture needs a real device; on the simulator use **Import Photo** instead.
+## Tests
 
-## Project layout
+Run the **ReadAloud** test action in Xcode for application tests. The reusable
+text-processing package can also be tested independently:
 
-```
-ReadAloud/            app source (SwiftUI, iOS 17.4+)
-├── App/              entry point
-├── Models/           SwiftData schema + SM-2 SRSState (Phase 2)
-├── Services/         OCRService, SentenceSplitter, SpeechPlayer
-└── Features/         Scan, Reader (Library/Saved/Review/Settings to come)
-Tools/OCRSpike/       macOS CLI to test OCR accuracy on real page photos
-Fixtures/             drop 5 real book-page photos here (see its README)
-project.yml           XcodeGen spec — edit this, not the .xcodeproj
+```bash
+cd Packages/LearningKit
+swift test
 ```
 
-## OCR spike (runs on your Mac)
-
-```sh
-swift Tools/OCRSpike/main.swift fr-FR Fixtures/*.jpg
-```
-
-Validates the riskiest part of the plan (OCR on curved/glossy pages) using the exact Vision + NLTokenizer pipeline the app uses.
+See [Architecture](Documentation/ARCHITECTURE.md) for component boundaries and
+[Development](Documentation/DEVELOPMENT.md) for coding and project conventions.
+Historical implementation rationale is retained in the
+[decision log](Documentation/DECISIONS.md).

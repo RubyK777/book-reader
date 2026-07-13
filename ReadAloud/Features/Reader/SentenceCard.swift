@@ -37,7 +37,7 @@ struct SentenceCard: View {
     /// Nil in ephemeral mode — hides Edit/Delete of the sentence.
     let onEdit: (() -> Void)?
     let onDelete: (() -> Void)?
-    /// Nil in ephemeral mode — hides the Learn drill-down (PIVOT_PLAN Phase 2).
+    /// Nil in ephemeral mode — hides the Learn drill-down (product design Phase 2).
     let onLearn: (() -> Void)?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

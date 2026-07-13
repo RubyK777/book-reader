@@ -1,7 +1,7 @@
 import UserNotifications
 
 /// A single, gentle local notification for when the next review cards come due
-/// (docs/IMPROVEMENTS §engagement). Exactly one pending nudge at a time — never
+/// (UX review §engagement). Exactly one pending nudge at a time — never
 /// daily streak pings (anti-gamification, DECISIONS #39). Pure wrapper over
 /// `UNUserNotificationCenter`: no SwiftUI, no app models, no stored preference
 /// (the enabled flag lives in the view layer and is passed in as behaviour).

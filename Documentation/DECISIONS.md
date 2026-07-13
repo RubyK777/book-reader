@@ -1,8 +1,8 @@
 # ReadAloud — Decision Log
 
-*Append-only. One entry per nontrivial decision: what was decided, why, what was rejected.
-Referenced from CLAUDE.md, ARCHITECTURE.md, and the phase/spec docs — when a doc says
-"logged in DECISIONS.md", the entry lives here.*
+*Historical record of nontrivial implementation decisions. Earlier entries may
+reference planning documents that were removed during the app-only repository
+cleanup; those documents remain available in Git history.*
 
 ## 2026-07-06 — Foundation
 

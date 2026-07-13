@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Ungraded shadowing practice (PIVOT_PLAN Phase 3, D4): play the original,
+/// Ungraded shadowing practice (product design Phase 3, D4): play the original,
 /// record yourself, replay both, move on. No SRS writes — this is rehearsal,
 /// not testing. Mic denial hides recording but never blocks listening. Built on
 /// the shared `PracticeSession` scaffold; the record controls are its distinct part.

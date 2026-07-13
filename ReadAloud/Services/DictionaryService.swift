@@ -1,6 +1,6 @@
 import UIKit
 
-/// Thin wrapper over the system dictionary (PHASE3_DESIGN §5).
+/// Thin wrapper over the system dictionary (review design §5).
 enum DictionaryService {
     /// Whether an installed dictionary has an entry for `term`. Used to decorate
     /// the Look Up affordance; we still present the reference view either way,

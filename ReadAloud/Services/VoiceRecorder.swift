@@ -1,7 +1,7 @@
 import AVFoundation
 import Observation
 
-/// Record-and-compare for shadowing practice (PIVOT_PLAN Phase 3). Keeps only
+/// Record-and-compare for shadowing practice (product design Phase 3). Keeps only
 /// the last take (a single temp file, D: no retention UI in v1). UI-free and
 /// injectable; views observe `state` / `hasTake`.
 ///

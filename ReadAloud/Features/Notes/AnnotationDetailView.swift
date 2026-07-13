@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// One saved annotation: the notebook's editing surface (PIVOT_PLAN Phase 4).
+/// One saved annotation: the notebook's editing surface (product design Phase 4).
 /// Lifecycle rule: the annotation is the parent — edits update its review card
 /// in place, delete cascades to the card (with confirmation), suspend keeps
 /// history but leaves the due queue.

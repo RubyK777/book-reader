@@ -3,7 +3,7 @@ import SwiftData
 
 // MARK: - SourceKind (what kind of real-world source a Book container holds)
 
-/// PIVOT_PLAN.md §6: `Book` generalizes into a source container. Two buckets:
+/// product design §6: `Book` generalizes into a source container. Two buckets:
 /// a `book` keeps title/cover ceremony and holds many pages; everything else is
 /// a `quickScan` — a single real-world capture (sign, menu, screenshot, …).
 /// The finer sign/menu/screenshot split was cosmetic-only and was dropped.
@@ -47,7 +47,7 @@ final class Book {
     var translationLanguage: String?  // BCP-47 target; nil = translation OFF for this book (TRANSLATION_DESIGN §2)
     var createdAt: Date
 
-    /// Stored raw so SwiftData migrates it as a plain string (PIVOT_PLAN §6).
+    /// Stored raw so SwiftData migrates it as a plain string (product design §6).
     var kindRaw: String = SourceKind.book.rawValue
 
     @Attribute(.externalStorage)
@@ -131,7 +131,7 @@ final class Sentence {
     // Review / SRS state (nil until bookmarked)
     var srs: SRSState?
 
-    /// AI/user learning assets for this sentence (PIVOT_PLAN §6). Generated
+    /// AI/user learning assets for this sentence (product design §6). Generated
     /// lazily on first Sentence Learning View visit; never regenerated —
     /// sentence text is immutable once assets derive from it (D6).
     var learningAssets: LearningAssets?
@@ -156,13 +156,13 @@ final class Sentence {
 
 // MARK: - Annotation (a saved learning item, parented to a Sentence)
 
-/// What kind of learning unit the user saved (PIVOT_PLAN D3) — inferred from
+/// What kind of learning unit the user saved (product design D3) — inferred from
 /// the selection gesture, never asked.
 enum AnnotationType: String, Codable, CaseIterable {
     case word, phrase, sentence, grammar
 }
 
-/// Optional save intent (PIVOT_PLAN D3/D11): collected, shown in the Notebook,
+/// Optional save intent (product design D3/D11): collected, shown in the Notebook,
 /// editable later. Does NOT route review cards in v1 (D11).
 enum SaveIntent: String, Codable, CaseIterable {
     case remember, pronounce, use, confused
@@ -177,7 +177,7 @@ enum SaveIntent: String, Codable, CaseIterable {
     }
 }
 
-/// The single save unit (PIVOT_PLAN §6): saved words, phrases, whole sentences,
+/// The single save unit (product design §6): saved words, phrases, whole sentences,
 /// and grammar points are all typed annotations on a Sentence. The legacy
 /// `SavedWord` model was folded into this in V5 (DECISIONS #63) — words save as
 /// `type == .word`, so there is one save path and one review case.
@@ -210,7 +210,7 @@ final class Annotation {
     var isResolved: Bool = false
     var savedAt: Date
 
-    /// Lifecycle rule (PIVOT_PLAN Phase 4): suspended items keep their SRS
+    /// Lifecycle rule (product design Phase 4): suspended items keep their SRS
     /// history but leave the due queue until unsuspended.
     var isSuspended: Bool = false
     /// Confusion workflow: the generated explanation attempt (D7 provenance —
@@ -244,7 +244,7 @@ final class Annotation {
 // MARK: - LearningAssets (understand-section content, embedded value type)
 
 /// Phrase breakdown + key vocabulary + one grammar point for a sentence
-/// (PIVOT_PLAN §6). Produced by a `LearningAssetsProviding` service (D10) or
+/// (product design §6). Produced by a `LearningAssetsProviding` service (D10) or
 /// authored by the user in the fallback view; provenance is tracked per D7.
 struct LearningAssets: Codable {
     struct Chunk: Codable, Hashable {

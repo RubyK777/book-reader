@@ -3,7 +3,7 @@ import SwiftData
 import Translation
 import LearningKit
 
-/// The pivot's heart (PIVOT_PLAN §7 Phase 2, basic version): study one
+/// The pivot's heart (product design §7 Phase 2, basic version): study one
 /// sentence deeply. Drill-down from a Reader sentence card. Four sections:
 /// original + listen controls, translation, Understand (on-device generation
 /// with fallback, D1/D2/D7), and one-tap save-as-annotation (D3).

@@ -151,7 +151,7 @@ struct OCRReviewView: View {
 }
 
 /// Assign step for the Library entry path: Quick Scan (no book — a
-/// lightweight source auto-titled from the text, PIVOT_PLAN Phase 1), pick an
+/// lightweight source auto-titled from the text, product design Phase 1), pick an
 /// existing book, or quick-create one by title. Reused by the batch flow.
 struct AssignBookView: View {
   let books: [Book]

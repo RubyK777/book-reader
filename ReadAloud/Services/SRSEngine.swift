@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 import LearningKit
 
-/// Which card front a review item gets (PIVOT_PLAN D4: only gradeable modes,
+/// Which card front a review item gets (product design D4: only gradeable modes,
 /// routed by item TYPE — intent does not route in v1, D11).
 enum CardFace {
   /// Foreign text shown + spoken; recall the meaning. (Words, grammar.)
@@ -170,7 +170,7 @@ enum ReviewGrade: Int, CaseIterable, Identifiable {
 /// Spaced-repetition scheduling. Pure orchestration over `SRSState.review`.
 ///
 /// `SRSState` is a Codable struct, so `#Predicate` can't reach `srs.dueDate`
-/// (DECISIONS #26 / CLAUDE.md) — candidates are fetched, then filtered in memory.
+/// (DECISIONS #26 / development conventions) — candidates are fetched, then filtered in memory.
 enum SRSEngine {
   /// Bookmarked sentences + all saved annotations that are due at `now`.
   /// A nil `srs` counts as due (never reviewed).

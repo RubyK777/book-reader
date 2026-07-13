@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import ReadAloud
 
-/// PIVOT_PLAN Phase 1 acceptance: a V1 store (Ruby's device) opens through the
+/// product design Phase 1 acceptance: a V1 store (Ruby's device) opens through the
 /// migration plan with data intact, and the V2 additions behave.
 struct MigrationTests {
 

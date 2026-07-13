@@ -4,7 +4,7 @@ import AVFoundation
 /// Manages captured/imported audio on disk (AUDIO_LEARNING_DESIGN §5.3): a
 /// recording target, extracting a video's audio track locally, importing an
 /// audio file, and materializing a persisted SwiftData blob to a temp file for
-/// playback. UI-free (CLAUDE.md library rule); fully offline.
+/// playback. UI-free (development conventions library rule); fully offline.
 enum AudioFileStore {
     /// Directory for in-progress captures (kept out of the SwiftData store).
     static var captureDir: URL {

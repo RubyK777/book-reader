@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// Review resting screen — three states (PHASE3_DESIGN §2):
+/// Review resting screen — three states (review design §2):
 ///  (a) items due → "N due" + Start session,
 ///  (b) deck exists but nothing due → next-due date,
 ///  (c) empty deck → cross-promo to the Reader.

@@ -3,7 +3,7 @@ import SwiftData
 import Translation
 import LearningKit
 
-/// Recognition flashcard session (PHASE3_DESIGN §2). The FRONT shows the
+/// Recognition flashcard session (review design §2). The FRONT shows the
 /// foreign word/sentence (read it, hear it); the reviewer recalls its meaning,
 /// then reveals the BACK — the translation into their native language, plus
 /// their note and (for words) the source sentence. A grade of "Again"
@@ -549,7 +549,7 @@ struct ReviewSessionView: View {
 
             VStack(spacing: DesignSystem.Spacing.sm) {
                 // Ungraded shadowing practice on the session's full sentences
-                // (PIVOT_PLAN Phase 3 — never interrupts the graded flow).
+                // (product design Phase 3 — never interrupts the graded flow).
                 if !shadowableItems.isEmpty {
                     Button {
                         showShadowing = true

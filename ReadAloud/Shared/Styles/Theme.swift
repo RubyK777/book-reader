@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// The app's visual identity — "paper & ink" (CLAUDE.md Shared/Styles layer).
+/// The app's visual identity — "paper & ink" (development conventions Shared/Styles layer).
 /// Learning content (sentences, words, chunks) is set in serif like a book
 /// page; UI chrome stays in the system sans. One ink-blue accent everywhere.
 /// Screens compose these tokens; they never hardcode fonts or colors.

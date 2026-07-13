@@ -1,7 +1,7 @@
 // swift-tools-version: 5.9
 import PackageDescription
 
-/// Pure, app-agnostic learning engines (CLAUDE.md rule 3): sentence splitting,
+/// Pure, app-agnostic learning engines (development conventions rule 3): sentence splitting,
 /// word tokenizing, cloze construction, fragment detection, and pronunciation
 /// scoring. Foundation + NaturalLanguage only — no SwiftUI, no SwiftData, no app
 /// models — so other projects can depend on it directly (DECISIONS #68).

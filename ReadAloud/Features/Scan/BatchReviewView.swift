@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// Post-OCR review for a multi-page batch capture (docs/IMPROVEMENTS §3): page
+/// Post-OCR review for a multi-page batch capture (UX review §3): page
 /// through each captured page's recognized text, confirm one shared source
 /// language, then persist them all into a single book in order. Reuses
 /// `PageIngestor` (per-page) and `AssignBookView` (destination pick), mirroring

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Provider seam for the Understand section (PIVOT_PLAN D10). v1 ships exactly
+/// Provider seam for the Understand section (product design D10). v1 ships exactly
 /// one implementation — on-device Foundation Models. A cloud provider may plug
 /// in later as an explicit user opt-in; callers depend only on this protocol.
 /// Library rules apply: no SwiftUI, no singletons, dependencies passed in.
