@@ -590,3 +590,19 @@ entries stand as history).*
     consented, system-managed asset fetch — is permitted; the invariant is that **user audio/data never leaves
     the device**, which on-device recognition upholds. Regional match handled by `supportedLocale(equivalentTo:)`
     (fr-FR ↔ fr-CA). Recognition still device-only.
+
+60. **Active review: say-your-answer + pronunciation check (anti-cheat, interactive).** Self-graded practice
+    let people "think it in their head" and cheat. New `PronunciationScorer` (pure, tested): case/diacritic-
+    insensitive **LCS word alignment** marks each target word matched/missed and passes above a lenient ratio
+    (0.6) — reports **words to revisit, never a score** (#39). (a) **Speaking practice** reworked: read aloud →
+    "Say it" records (`VoiceRecorder`) → on-device transcribe → "Nicely said" or missed-word chips. (b)
+    **Graded review** (Ruby's pick): **listening & cloze** cards get a "Say it" mic in recall → transcribe →
+    score → reveal with feedback + a **suggested grade** (thicker ring; user still taps, SM-2 unchanged);
+    **meaning** cards stay think-then-reveal (the answer's in the native language). Mic-off / model-not-installed
+    degrade to plain reveal; no SRS change from the check itself. Reuses the transcriber built for audio sources.
+
+61. **Widgets are independent per instance (random seed, no shared index).** The deck index was a single App-
+    Group value and the shuffle intent called `reloadAllTimelines()`, so multiple widgets showed the same card
+    and shuffling one refreshed both. Fix: each timeline picks a **random seed**; the card = `deck[seed %
+    pool.count]` (per family), so instances differ. `ShuffleCardIntent` no longer reloads all — WidgetKit
+    reloads only the tapped widget (fresh seed → new card); others untouched. Dropped the shared card index.
