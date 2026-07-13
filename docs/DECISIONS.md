@@ -459,3 +459,12 @@ entries stand as history).*
     are untouched — new `SpeakingPracticeView` (text-first, `SpeechPlayer.speakOnce`, "Hear it"/"Slow"/Next,
     no recording, no SRS writes) runs over `SRSEngine.buildSession(from: deck)`. Distinct from Shadowing
     (model-first + record/compare); here the text leads and the audio is the reveal.
+
+50. **"Your progress" reflection screen — growth story, never a score.** New `ProgressReflectionView`
+    (sheet from a chart toolbar button on Review) buckets every saved item by SRS interval into a plant
+    metaphor: **Learning** (<7d) → **Taking root** (7–20d) → **Known** (≥`matureIntervalDays`=21), plus a
+    total-saved hero (`CountUpText` over `AnimatedMeshBackground`) and the soonest next-due line. Reflection,
+    not levels/XP/percentages (#39). Reuse-heavy: `SRSState.intervalDays/dueDate`, `CountUpText`,
+    `AnimatedMeshBackground`, `AnimatedEmptyState`. It queries annotations too (Review's `deck` doesn't),
+    so the button isn't gated on `deck` — the view shows its own "nothing planted yet" empty state.
+    Absorbs the deferred Phase-5 stats view.

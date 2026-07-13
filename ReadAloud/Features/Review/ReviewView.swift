@@ -18,6 +18,7 @@ struct ReviewView: View {
     @State private var isSessionPresented = false
     @State private var sessionItems: [ReviewItem] = []
     @State private var isSpeakingPresented = false
+    @State private var isProgressPresented = false
 
     private var deck: [ReviewItem] {
         bookmarkedSentences.map(ReviewItem.sentence) + savedWords.map(ReviewItem.word)
@@ -38,6 +39,13 @@ struct ReviewView: View {
                 }
             }
             .navigationTitle("Review")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { isProgressPresented = true } label: {
+                        Label("Your progress", systemImage: "chart.bar.xaxis")
+                    }
+                }
+            }
         }
         .task { refresh() }
         .fullScreenCover(isPresented: $isSessionPresented, onDismiss: refresh) {
@@ -45,6 +53,9 @@ struct ReviewView: View {
         }
         .sheet(isPresented: $isSpeakingPresented) {
             SpeakingPracticeView(items: SRSEngine.buildSession(from: deck))
+        }
+        .sheet(isPresented: $isProgressPresented) {
+            ProgressReflectionView()
         }
     }
 

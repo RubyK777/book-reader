@@ -46,6 +46,7 @@
 		9461FED56153753D5C6E091F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDB4B97B22174C66A13D1FD0 /* Models.swift */; };
 		955F285689DE5904DC2D4CA6 /* SavedItemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84155B48D97C2768DBA97847 /* SavedItemsView.swift */; };
 		A2F16B0E276A8ED4996246C0 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EFF62D5C22D3BB4F689CACE /* WelcomeView.swift */; };
+		A3E81958C1B59DD2161A5FE8 /* ProgressReflectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B2FB70494D3C8BD0550C5C4 /* ProgressReflectionView.swift */; };
 		A4C4A44471198E7F13D32198 /* SRSEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD2190E582454180E1BEA356 /* SRSEngine.swift */; };
 		A7A7AE67016A3CC26185BA8D /* AnnotationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEC7440E6ACE7DD03DF1A94E /* AnnotationDetailView.swift */; };
 		A9B1AB19A51E409B0D451CBF /* CameraAuthorizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 921F537C0F4FB33AD46DFDF9 /* CameraAuthorizer.swift */; };
@@ -111,6 +112,7 @@
 		921F537C0F4FB33AD46DFDF9 /* CameraAuthorizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraAuthorizer.swift; sourceTree = "<group>"; };
 		967112DE8BF44C16C2B32018 /* PageIngestor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageIngestor.swift; sourceTree = "<group>"; };
 		99064792B2BFA33B9C381863 /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
+		9B2FB70494D3C8BD0550C5C4 /* ProgressReflectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressReflectionView.swift; sourceTree = "<group>"; };
 		9FE07A0C952191918BEC544E /* ReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderView.swift; sourceTree = "<group>"; };
 		A0984307175077E8BECAE83B /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		A193A65A5B7597BF31549F06 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
@@ -245,6 +247,7 @@
 		5798C22E78FB93A6DC97AD0C /* Review */ = {
 			isa = PBXGroup;
 			children = (
+				9B2FB70494D3C8BD0550C5C4 /* ProgressReflectionView.swift */,
 				3CFC6FA27DFAF000FE142DA9 /* ReviewSessionView.swift */,
 				BEA9593268D61452EC45AF75 /* ReviewView.swift */,
 				1ADA921255F08DA069B07ECC /* ShadowingPracticeView.swift */,
@@ -515,6 +518,7 @@
 				82752AB6B9FF4BCE44B2BA01 /* OCRService.swift in Sources */,
 				0779DF97C0C16455C2261931 /* PageIngestor.swift in Sources */,
 				60BC30EB0F4797FB6B0E8D6F /* Palette.swift in Sources */,
+				A3E81958C1B59DD2161A5FE8 /* ProgressReflectionView.swift in Sources */,
 				FE7518DFE5F53EE5CC8C1E8A /* ReadAloudApp.swift in Sources */,
 				3028F5D064E57CDAA61339BF /* ReaderView.swift in Sources */,
 				AE7328E76AA525902F714096 /* ReviewReminderService.swift in Sources */,
