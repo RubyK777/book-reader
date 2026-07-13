@@ -577,3 +577,16 @@ entries stand as history).*
     lights the most recent word whose `start <= currentTime`, and the Reader's existing `highlightRange`
     rendering bolds/backgrounds it — same karaoke path as TTS. Falls back to sentence-level when a sentence
     has no word timings. Light transcript edits stay aligned; heavy edits drift (documented, §7).
+
+59. **On-demand model download via iOS 26 `SpeechAnalyzer`; model download is exempt from the no-network
+    rule.** Requiring users to add a keyboard/dictation language to get an offline model was inelegant, so
+    the transcriber now downloads the model itself, with consent. `TranscriberFactory` picks
+    `SpeechAnalyzerTranscriber` (iOS 26 `SpeechTranscriber`/`SpeechAnalyzer` — native per-word timings via
+    `.audioTimeRange` attributed runs, and `AssetInventory.assetInstallationRequest(...).downloadAndInstall()`
+    for the model) or the `SFSpeechRecognizer` baseline. `Transcribing` grew `isSupported`/`isModelInstalled`/
+    `installModel`; the capture flow shows **supported** languages (not just installed), and when the model is
+    missing it **asks permission** then downloads ("audio stays on your phone; only the model is fetched").
+    **Rule clarification (extends #31):** downloading Apple's on-device speech *model* — a one-time,
+    consented, system-managed asset fetch — is permitted; the invariant is that **user audio/data never leaves
+    the device**, which on-device recognition upholds. Regional match handled by `supportedLocale(equivalentTo:)`
+    (fr-FR ↔ fr-CA). Recognition still device-only.

@@ -10,14 +10,16 @@ struct AudioCaptureFlowView: View {
     @State private var recorder = AudioCaptureRecorder()
     @State private var step: Step = .capture
     @State private var languageHint = "fr-FR"
-    /// Languages whose offline model is ready on THIS device (nil until checked).
-    @State private var readyLanguageCodes: Set<String>?
+    /// Languages this device can transcribe (installed or downloadable); nil until checked.
+    @State private var supportedLanguageCodes: Set<String>?
     @State private var isImporting = false
     @State private var isWorking = false
     @State private var workingLabel = "Transcribing…"
     @State private var errorMessage: String?
+    @State private var showDownloadPrompt = false
+    @State private var pendingURL: URL?
 
-    private let transcriber: Transcribing = OnDeviceTranscriber()
+    private let transcriber: any Transcribing = TranscriberFactory.make()
 
     private enum Step {
         case capture
@@ -68,14 +70,6 @@ struct AudioCaptureFlowView: View {
                         }
                     }
                     .pickerStyle(.menu)
-
-                    if let readyLanguageCodes, !readyLanguageCodes.isEmpty {
-                        Text("Showing languages whose offline voice model is on your phone. Add more in Settings → General → Keyboard.")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, DesignSystem.Spacing.lg)
-                    }
                 }
 
                 if let errorMessage {
@@ -122,24 +116,33 @@ struct AudioCaptureFlowView: View {
                       allowsMultipleSelection: false) { result in
             handleImport(result)
         }
-        .task { computeReadyLanguages() }
+        .task { await computeSupportedLanguages() }
+        .confirmationDialog("Download the \(LanguageCatalog.name(for: languageHint)) voice model?",
+                            isPresented: $showDownloadPrompt, titleVisibility: .visible) {
+            Button("Download") { downloadThenTranscribe() }
+            Button("Cancel", role: .cancel) { pendingURL = nil }
+        } message: {
+            Text("A one-time download so this language works offline. Your audio stays on your phone and is never uploaded.")
+        }
     }
 
     /// True when a language should appear in the picker: everything until we've
-    /// checked, then only the ones whose offline model is on the device.
+    /// checked, then only the ones this device can transcribe (downloadable too).
     private func isSelectable(_ code: String) -> Bool {
-        guard let readyLanguageCodes, !readyLanguageCodes.isEmpty else { return true }
-        return readyLanguageCodes.contains(code)
+        guard let supportedLanguageCodes, !supportedLanguageCodes.isEmpty else { return true }
+        return supportedLanguageCodes.contains(code)
     }
 
-    /// Which catalog languages have an on-device model right now, and keep the
-    /// selection valid if the current pick isn't ready.
-    private func computeReadyLanguages() {
-        let transcriber = OnDeviceTranscriber()
-        let ready = Set(LanguageCatalog.options.map(\.code).filter { transcriber.isAvailable(for: $0) })
-        readyLanguageCodes = ready
-        if !ready.isEmpty, !ready.contains(languageHint) {
-            languageHint = LanguageCatalog.options.first { ready.contains($0.code) }?.code ?? languageHint
+    /// Which catalog languages this device can transcribe (installed or
+    /// downloadable), keeping the selection valid.
+    private func computeSupportedLanguages() async {
+        var supported: Set<String> = []
+        for option in LanguageCatalog.options where await transcriber.isSupported(option.code) {
+            supported.insert(option.code)
+        }
+        supportedLanguageCodes = supported
+        if !supported.isEmpty, !supported.contains(languageHint) {
+            languageHint = LanguageCatalog.options.first { supported.contains($0.code) }?.code ?? languageHint
         }
     }
 
@@ -211,17 +214,46 @@ struct AudioCaptureFlowView: View {
 
     private func transcribe(_ url: URL) {
         errorMessage = nil
+        Task { @MainActor in
+            guard await transcriber.isSupported(languageHint) else {
+                errorMessage = "This language isn't available for transcription."
+                return
+            }
+            if await transcriber.isModelInstalled(languageHint) {
+                await runTranscription(url)
+            } else {
+                pendingURL = url               // ask before downloading the model
+                showDownloadPrompt = true
+            }
+        }
+    }
+
+    private func downloadThenTranscribe() {
+        guard let url = pendingURL else { return }
+        pendingURL = nil
         isWorking = true
-        workingLabel = "Transcribing…"
+        workingLabel = "Downloading \(LanguageCatalog.name(for: languageHint)) voice model…"
         Task { @MainActor in
             do {
-                let transcript = try await transcriber.transcribe(fileURL: url, localeIdentifier: languageHint)
-                isWorking = false
-                step = .review(url: url, transcript: transcript, language: languageHint)
+                try await transcriber.installModel(languageHint)
+                await runTranscription(url)
             } catch {
                 isWorking = false
                 errorMessage = message(for: error)
             }
+        }
+    }
+
+    private func runTranscription(_ url: URL) async {
+        isWorking = true
+        workingLabel = "Transcribing…"
+        do {
+            let transcript = try await transcriber.transcribe(fileURL: url, localeIdentifier: languageHint)
+            isWorking = false
+            step = .review(url: url, transcript: transcript, language: languageHint)
+        } catch {
+            isWorking = false
+            errorMessage = message(for: error)
         }
     }
 
@@ -230,7 +262,11 @@ struct AudioCaptureFlowView: View {
         case TranscriptionError.notAuthorized:
             "Speech recognition is off — enable it in Settings to transcribe."
         case TranscriptionError.unavailableForLanguage:
-            "This language's offline voice model isn't on your phone yet. Add it under Settings → General → Keyboard (turn on Dictation and add the language), then try again — nothing is ever sent online."
+            "This language isn't available for on-device transcription."
+        case TranscriptionError.modelNotInstalled:
+            "This language's offline model isn't on your phone. On iOS 26 the app can download it for you; on older versions, add the language under Settings → General → Keyboard."
+        case TranscriptionError.downloadFailed:
+            "Couldn't download the voice model. Check your connection and try again."
         case TranscriptionError.noSpeechFound:
             "No speech found — record somewhere quieter, or closer to the speaker."
         default:

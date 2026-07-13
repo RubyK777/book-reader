@@ -18,26 +18,54 @@ struct Transcript: Sendable {
 
 enum TranscriptionError: Error {
     case notAuthorized
-    case unavailableForLanguage
+    case unavailableForLanguage       // the language isn't recognized at all
+    case modelNotInstalled            // recognized, but the on-device model needs downloading
+    case downloadFailed
     case recognitionFailed
     case noSpeechFound
 }
 
 /// Audio → timestamped text, fully on-device/offline (AUDIO_LEARNING_DESIGN §5.1).
+/// Recognition never sends audio anywhere; downloading the *model* (once, with
+/// consent) is a system asset download, not user data (DECISIONS #59).
 protocol Transcribing {
-    /// Whether on-device recognition is available for the given language.
-    func isAvailable(for localeIdentifier: String) -> Bool
+    /// The language is recognizable (its model may still need downloading).
+    func isSupported(_ localeIdentifier: String) async -> Bool
+    /// The on-device model is already present (transcription can run immediately).
+    func isModelInstalled(_ localeIdentifier: String) async -> Bool
+    /// Download + install the on-device model for a supported language.
+    func installModel(_ localeIdentifier: String) async throws
     /// Transcribe a local audio file into timestamped text. Never leaves the device.
     func transcribe(fileURL: URL, localeIdentifier: String) async throws -> Transcript
+}
+
+/// Picks the best available engine: iOS 26 `SpeechAnalyzer` (on-demand model
+/// download + word timings) when present, else the `SFSpeechRecognizer` baseline.
+enum TranscriberFactory {
+    static func make() -> any Transcribing {
+        if #available(iOS 26, *) {
+            return SpeechAnalyzerTranscriber()
+        }
+        return OnDeviceTranscriber()
+    }
 }
 
 /// `SFSpeechRecognizer` with `requiresOnDeviceRecognition = true` — audio never
 /// leaves the device (upholds DECISIONS #31). Whole-file recognition for the MVP;
 /// long-clip windowed chunking is a documented enhancement (§9).
 struct OnDeviceTranscriber: Transcribing {
-    func isAvailable(for localeIdentifier: String) -> Bool {
-        guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: localeIdentifier)) else { return false }
-        return recognizer.isAvailable && recognizer.supportsOnDeviceRecognition
+    func isSupported(_ localeIdentifier: String) async -> Bool {
+        SFSpeechRecognizer(locale: Locale(identifier: localeIdentifier)) != nil
+    }
+
+    func isModelInstalled(_ localeIdentifier: String) async -> Bool {
+        SFSpeechRecognizer(locale: Locale(identifier: localeIdentifier))?.supportsOnDeviceRecognition ?? false
+    }
+
+    /// Pre-iOS 26 there's no programmatic model download — the OS installs it when
+    /// the language is enabled for dictation. Surface that as a failure to install.
+    func installModel(_ localeIdentifier: String) async throws {
+        if await !isModelInstalled(localeIdentifier) { throw TranscriptionError.modelNotInstalled }
     }
 
     func transcribe(fileURL: URL, localeIdentifier: String) async throws -> Transcript {
@@ -46,7 +74,7 @@ struct OnDeviceTranscriber: Transcribing {
         }
         guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: localeIdentifier)),
               recognizer.supportsOnDeviceRecognition else {
-            throw TranscriptionError.unavailableForLanguage
+            throw TranscriptionError.modelNotInstalled
         }
 
         let request = SFSpeechURLRecognitionRequest(url: fileURL)
