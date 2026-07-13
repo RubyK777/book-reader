@@ -10,7 +10,6 @@ struct ProgressReflectionView: View {
     @Environment(\.dismiss) private var dismiss
 
     @Query(filter: #Predicate<Sentence> { $0.isBookmarked }) private var sentences: [Sentence]
-    @Query private var words: [SavedWord]
     @Query(filter: #Predicate<Annotation> { !$0.isSuspended }) private var annotations: [Annotation]
 
     /// One growth stage, from an item's SRS interval length.
@@ -51,7 +50,6 @@ struct ProgressReflectionView: View {
     private var intervals: [Int] {
         var out: [Int] = []
         out.append(contentsOf: sentences.map { $0.srs?.intervalDays ?? 0 })
-        out.append(contentsOf: words.map { $0.srs?.intervalDays ?? 0 })
         out.append(contentsOf: annotations.map { $0.srs?.intervalDays ?? 0 })
         return out
     }
@@ -73,7 +71,6 @@ struct ProgressReflectionView: View {
     private var nextDue: Date? {
         var dates: [Date] = []
         dates.append(contentsOf: sentences.compactMap { $0.srs?.dueDate })
-        dates.append(contentsOf: words.compactMap { $0.srs?.dueDate })
         dates.append(contentsOf: annotations.compactMap { $0.srs?.dueDate })
         return dates.filter { $0 > .now }.min()
     }

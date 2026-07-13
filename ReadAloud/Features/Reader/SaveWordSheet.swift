@@ -107,16 +107,19 @@ struct SaveWordSheet: View {
         guard !toSave.isEmpty else { return }
 
         // Skip words already saved for this language (avoids duplicates when
-        // selecting several at once).
-        let existing = (try? modelContext.fetch(FetchDescriptor<SavedWord>(
+        // selecting several at once). Saved words are word/phrase annotations.
+        let existing = (try? modelContext.fetch(FetchDescriptor<Annotation>(
             predicate: #Predicate { $0.languageCode == languageCode })))?
-            .map { $0.word.lowercased() } ?? []
+            .filter { $0.type == .word || $0.type == .phrase }
+            .map { $0.text.lowercased() } ?? []
         let existingSet = Set(existing)
 
         let applyNote = toSave.count == 1 && !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         for word in toSave where !existingSet.contains(word.lowercased()) {
-            let saved = SavedWord(word: word, contextSentence: sentence.text, languageCode: languageCode)
+            let saved = Annotation(type: .word, text: word,
+                                   contextSentence: sentence.text, languageCode: languageCode)
             saved.srs = SRSState()
+            saved.sentence = sentence
             if applyNote { saved.userNote = note }
             modelContext.insert(saved)
         }

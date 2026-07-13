@@ -58,7 +58,6 @@ struct ReviewSessionView: View {
             let isSentence: Bool = switch item {
             case .sentence: true
             case let .annotation(a): a.type == .sentence
-            case .word: false
             }
             guard isSentence, !seen.contains(item.id) else { return false }
             seen.insert(item.id)

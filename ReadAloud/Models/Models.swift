@@ -177,9 +177,10 @@ enum SaveIntent: String, Codable, CaseIterable {
     }
 }
 
-/// The single save unit of the pivot (PIVOT_PLAN §6): saved words, phrases,
-/// whole sentences, and grammar points are typed annotations on a Sentence.
-/// `SavedWord` remains for pre-pivot data until the Saved tab is ported.
+/// The single save unit (PIVOT_PLAN §6): saved words, phrases, whole sentences,
+/// and grammar points are all typed annotations on a Sentence. The legacy
+/// `SavedWord` model was folded into this in V5 (DECISIONS #63) — words save as
+/// `type == .word`, so there is one save path and one review case.
 @Model
 final class Annotation {
     /// Stored raw strings so migration stays lightweight.
@@ -269,23 +270,8 @@ struct LearningAssets: Codable {
     var userEditedAt: Date?
 }
 
-// MARK: - SavedWord (vocabulary item)
-@Model
-final class SavedWord {
-    var word: String
-    var contextSentence: String     // snapshot, survives page deletion
-    var languageCode: String
-    var userNote: String?
-    var savedAt: Date
-    var srs: SRSState?
-
-    init(word: String, contextSentence: String, languageCode: String) {
-        self.word = word
-        self.contextSentence = contextSentence
-        self.languageCode = languageCode
-        self.savedAt = .now
-    }
-}
+// SavedWord was removed in V5 — vocabulary now lives as `Annotation`s (type
+// `.word` / `.phrase`). The frozen definition survives in ReadAloudSchemaV4.
 
 // MARK: - SRSState (SM-2 spaced repetition, embedded value type)
 struct SRSState: Codable {

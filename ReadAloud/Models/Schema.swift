@@ -365,20 +365,53 @@ enum ReadAloudSchemaV3: VersionedSchema {
 /// **audio-source** fields — `ScanPage.audioData/audioDuration`,
 /// `Sentence.audioStart/audioEnd`, `SourceKind.conversation` (AUDIO_LEARNING_DESIGN).
 /// Reset fresh (no prod users) rather than a staged migration.
+/// V4 — **frozen snapshot** as installed on Ruby's iPhone. Book/ScanPage/
+/// Sentence/Annotation reference the live classes (they're unchanged since V4);
+/// `SavedWord` is frozen here as its own nested copy because V5 removes it from
+/// the live models (the port into `Annotation`), and this snapshot must keep the
+/// definition it shipped with. Never change these.
 enum ReadAloudSchemaV4: VersionedSchema {
     static let versionIdentifier = Schema.Version(4, 0, 0)
     static var models: [any PersistentModel.Type] {
         [Book.self, ScanPage.self, Sentence.self, SavedWord.self, Annotation.self]
     }
+
+    @Model
+    final class SavedWord {
+        var word: String
+        var contextSentence: String
+        var languageCode: String
+        var userNote: String?
+        var savedAt: Date
+        var srs: SRSState?
+
+        init(word: String, contextSentence: String, languageCode: String) {
+            self.word = word
+            self.contextSentence = contextSentence
+            self.languageCode = languageCode
+            self.savedAt = .now
+        }
+    }
+}
+
+/// V5 — the live models in `Models.swift`. **Drops `SavedWord`**: saved words &
+/// phrases are now `Annotation`s (type `.word` / `.phrase`), unifying the save
+/// path, the Saved tab, and the Notebook (one model, one review case). Reset
+/// fresh (no prod users) rather than a data-preserving migration — DECISIONS #63.
+enum ReadAloudSchemaV5: VersionedSchema {
+    static let versionIdentifier = Schema.Version(5, 0, 0)
+    static var models: [any PersistentModel.Type] {
+        [Book.self, ScanPage.self, Sentence.self, Annotation.self]
+    }
 }
 
 /// Current schema the container opens against.
-typealias ReadAloudSchema = ReadAloudSchemaV4
+typealias ReadAloudSchema = ReadAloudSchemaV5
 
 enum ReadAloudMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
         [ReadAloudSchemaV1.self, ReadAloudSchemaV2.self,
-         ReadAloudSchemaV3.self, ReadAloudSchemaV4.self]
+         ReadAloudSchemaV3.self, ReadAloudSchemaV4.self, ReadAloudSchemaV5.self]
     }
     static var stages: [MigrationStage] {
         [.lightweight(fromVersion: ReadAloudSchemaV1.self,
@@ -386,6 +419,11 @@ enum ReadAloudMigrationPlan: SchemaMigrationPlan {
          .lightweight(fromVersion: ReadAloudSchemaV2.self,
                       toVersion: ReadAloudSchemaV3.self),
          .lightweight(fromVersion: ReadAloudSchemaV3.self,
-                      toVersion: ReadAloudSchemaV4.self)]
+                      toVersion: ReadAloudSchemaV4.self),
+         // Removing the SavedWord entity is lightweight-eligible; in practice
+         // Ruby reinstalls (no prod users), so a fresh V5 store is created and
+         // this stage never runs.
+         .lightweight(fromVersion: ReadAloudSchemaV4.self,
+                      toVersion: ReadAloudSchemaV5.self)]
     }
 }

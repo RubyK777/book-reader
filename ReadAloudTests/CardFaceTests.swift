@@ -44,10 +44,4 @@ struct CardFaceTests {
         let sentence = Sentence(text: "Je t'aime.", orderIndex: 0)
         #expect(ReviewItem.sentence(sentence).face == .listening)
     }
-
-    @Test func savedWordShowsMeaning() {
-        let word = SavedWord(word: "livre", contextSentence: "J'ai un livre.",
-                             languageCode: "fr-FR")
-        #expect(ReviewItem.word(word).face == .meaning)
-    }
 }

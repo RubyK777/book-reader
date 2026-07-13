@@ -18,13 +18,11 @@ enum CardFace {
 /// writes straight back to it.
 enum ReviewItem: Identifiable {
   case sentence(Sentence)
-  case word(SavedWord)
   case annotation(Annotation)
 
   var id: PersistentIdentifier {
     switch self {
     case let .sentence(s): s.persistentModelID
-    case let .word(w): w.persistentModelID
     case let .annotation(a): a.persistentModelID
     }
   }
@@ -33,7 +31,6 @@ enum ReviewItem: Identifiable {
   var promptText: String {
     switch self {
     case let .sentence(s): s.text
-    case let .word(w): w.word
     case let .annotation(a): a.text
     }
   }
@@ -42,7 +39,6 @@ enum ReviewItem: Identifiable {
   var revealText: String {
     switch self {
     case let .sentence(s): s.text
-    case let .word(w): w.word
     case let .annotation(a): a.text
     }
   }
@@ -51,7 +47,6 @@ enum ReviewItem: Identifiable {
   var contextText: String? {
     switch self {
     case .sentence: nil
-    case let .word(w): w.contextSentence
     case let .annotation(a):
       a.contextSentence == a.text ? nil : a.contextSentence
     }
@@ -63,7 +58,6 @@ enum ReviewItem: Identifiable {
   var existingTranslation: String? {
     switch self {
     case let .sentence(s): s.translatedText
-    case .word: nil
     case let .annotation(a):
       a.translation ?? (a.type == .sentence ? a.sentence?.translatedText : nil)
     }
@@ -77,7 +71,6 @@ enum ReviewItem: Identifiable {
     switch self {
     case let .annotation(a): if a.translation == nil { a.translation = text }
     case let .sentence(s): if s.translatedText == nil { s.translatedText = text }
-    case .word: break
     }
   }
 
@@ -85,7 +78,6 @@ enum ReviewItem: Identifiable {
   var note: String? {
     switch self {
     case let .sentence(s): s.userNote
-    case let .word(w): w.userNote
     case let .annotation(a): a.userNote
     }
   }
@@ -93,7 +85,6 @@ enum ReviewItem: Identifiable {
   /// A single word vs. a full sentence — drives front-card typography.
   var isWord: Bool {
     switch self {
-    case .word: true
     case let .annotation(a): a.type == .word
     case .sentence: false
     }
@@ -103,7 +94,6 @@ enum ReviewItem: Identifiable {
   var languageCode: String {
     switch self {
     case let .sentence(s): s.page?.book?.languageCode ?? "en-US"
-    case let .word(w): w.languageCode
     case let .annotation(a): a.languageCode
     }
   }
@@ -120,7 +110,6 @@ enum ReviewItem: Identifiable {
   var face: CardFace {
     switch self {
     case .sentence: .listening
-    case .word: .meaning
     case let .annotation(a):
       switch a.type {
       case .word, .grammar: .meaning
@@ -138,14 +127,12 @@ enum ReviewItem: Identifiable {
     get {
       switch self {
       case let .sentence(s): s.srs ?? SRSState()
-      case let .word(w): w.srs ?? SRSState()
       case let .annotation(a): a.srs ?? SRSState()
       }
     }
     nonmutating set {
       switch self {
       case let .sentence(s): s.srs = newValue
-      case let .word(w): w.srs = newValue
       case let .annotation(a): a.srs = newValue
       }
     }
@@ -184,7 +171,7 @@ enum ReviewGrade: Int, CaseIterable, Identifiable {
 /// `SRSState` is a Codable struct, so `#Predicate` can't reach `srs.dueDate`
 /// (DECISIONS #26 / CLAUDE.md) — candidates are fetched, then filtered in memory.
 enum SRSEngine {
-  /// Bookmarked sentences + all saved words that are due at `now`.
+  /// Bookmarked sentences + all saved annotations that are due at `now`.
   /// A nil `srs` counts as due (never reviewed).
   @MainActor
   static func dueItems(in context: ModelContext, now: Date = .now) -> [ReviewItem] {
@@ -194,11 +181,6 @@ enum SRSEngine {
       predicate: #Predicate { $0.isBookmarked })
     if let sentences = try? context.fetch(sentenceFetch) {
       items += sentences.map(ReviewItem.sentence)
-    }
-
-    let wordFetch = FetchDescriptor<SavedWord>()
-    if let words = try? context.fetch(wordFetch) {
-      items += words.map(ReviewItem.word)
     }
 
     let annotationFetch = FetchDescriptor<Annotation>(
@@ -221,11 +203,6 @@ enum SRSEngine {
       FetchDescriptor<Sentence>(predicate: #Predicate { $0.isBookmarked })) {
       for s in sentences where (s.srs?.dueDate ?? now) > now {
         candidates.append((s.srs!.dueDate, s.page?.book?.title))
-      }
-    }
-    if let words = try? context.fetch(FetchDescriptor<SavedWord>()) {
-      for w in words where (w.srs?.dueDate ?? now) > now {
-        candidates.append((w.srs!.dueDate, nil))
       }
     }
     if let annotations = try? context.fetch(

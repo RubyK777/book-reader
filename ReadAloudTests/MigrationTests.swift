@@ -39,7 +39,8 @@ struct MigrationTests {
             try context.save()
         }
 
-        // Reopen through the migration plan (V1 → V2 → V3 lightweight).
+        // Reopen through the migration plan (V1 → V2 → V3 → V4 → V5, all
+        // lightweight). V5 drops the SavedWord entity (DECISIONS #63).
         let config = ModelConfiguration(url: url)
         let container = try ModelContainer(
             for: Schema(versionedSchema: ReadAloudSchema.self),
@@ -62,9 +63,8 @@ struct MigrationTests {
         #expect(sentence.learningAssets == nil)
         #expect(sentence.annotations.isEmpty)
 
-        let words = try context.fetch(FetchDescriptor<SavedWord>())
-        #expect(words.count == 1)
-        #expect(words.first?.word == "croire")
+        // The V1 SavedWord row is dropped by V5 (SavedWord entity removed); the
+        // type no longer exists to fetch. Books & sentences survive intact.
 
         // V2 additions work against the migrated store.
         let annotation = Annotation(

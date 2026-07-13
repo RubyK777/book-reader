@@ -47,8 +47,10 @@ struct ExportServiceTests {
         let fox = Sentence(text: "Le renard.", orderIndex: 0)
         fox.page = pageZero
 
-        let word = SavedWord(word: "renard",
-                             contextSentence: "Le renard.", languageCode: "fr-FR")
+        // Saved words are word/phrase annotations now (V5); the export still
+        // surfaces them under `savedWords`.
+        let word = Annotation(type: .word, text: "renard",
+                              contextSentence: "Le renard.", languageCode: "fr-FR")
         word.userNote = "fox"
         word.srs = SRSState()
 

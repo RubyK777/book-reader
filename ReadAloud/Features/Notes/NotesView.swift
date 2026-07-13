@@ -26,10 +26,8 @@ struct NotesView: View {
     @Query(sort: \Annotation.savedAt, order: .reverse)
     private var annotations: [Annotation]
 
-    @Query(filter: #Predicate<SavedWord> { $0.userNote != nil },
-           sort: \SavedWord.savedAt, order: .reverse)
-    private var notedWords: [SavedWord]
-
+    // Sentence notes (from the Reader) — word/phrase notes live on Annotations
+    // and appear in the Notebook segment above (V5, DECISIONS #63).
     @Query(filter: #Predicate<Sentence> { $0.userNote != nil })
     private var notedSentences: [Sentence]
 
@@ -60,29 +58,23 @@ struct NotesView: View {
         }
     }
 
-    /// A note plus the item it belongs to, for a unified list.
+    /// A sentence note, for the legacy "Item notes" list.
     fileprivate struct Entry: Identifiable {
-        enum Kind { case word(SavedWord), sentence(Sentence) }
         let id: PersistentIdentifier
         let note: String
         let term: String
         let languageCode: String
         let date: Date
-        let kind: Kind
+        let sentence: Sentence
     }
 
     private var entries: [Entry] {
         var out: [Entry] = []
-        for word in notedWords {
-            guard let note = word.userNote.nonBlank else { continue }
-            out.append(Entry(id: word.persistentModelID, note: note, term: word.word,
-                             languageCode: word.languageCode, date: word.savedAt, kind: .word(word)))
-        }
         for sentence in notedSentences {
             guard let note = sentence.userNote.nonBlank else { continue }
             out.append(Entry(id: sentence.persistentModelID, note: note, term: sentence.text,
                              languageCode: sentence.page?.book?.languageCode ?? "en-US",
-                             date: sentence.page?.scannedAt ?? .distantPast, kind: .sentence(sentence)))
+                             date: sentence.page?.scannedAt ?? .distantPast, sentence: sentence))
         }
         let filtered = search.isEmpty ? out : out.filter {
             $0.note.localizedCaseInsensitiveContains(search)
@@ -112,10 +104,7 @@ struct NotesView: View {
                 }
             }
             .navigationDestination(for: Entry.self) { entry in
-                switch entry.kind {
-                case let .word(word): SavedItemDetailView(word: word)
-                case let .sentence(sentence): SavedItemDetailView(sentence: sentence)
-                }
+                SavedItemDetailView(sentence: entry.sentence)
             }
             .navigationDestination(for: PersistentIdentifier.self) { id in
                 if let annotation = annotations.first(where: { $0.persistentModelID == id }) {

@@ -12,7 +12,6 @@ struct ReviewView: View {
     // The full deck, reactive to bookmark/save changes — drives states (b)/(c).
     @Query(filter: #Predicate<Sentence> { $0.isBookmarked })
     private var bookmarkedSentences: [Sentence]
-    @Query private var savedWords: [SavedWord]
     @Query(filter: #Predicate<Annotation> { !$0.isSuspended })
     private var annotations: [Annotation]
 
@@ -24,7 +23,6 @@ struct ReviewView: View {
 
     private var deck: [ReviewItem] {
         bookmarkedSentences.map(ReviewItem.sentence)
-            + savedWords.map(ReviewItem.word)
             + annotations.map(ReviewItem.annotation)
     }
 

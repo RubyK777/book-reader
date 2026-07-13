@@ -10,16 +10,16 @@ struct SettingsView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Query private var books: [Book]
-    @Query private var words: [SavedWord]
+    @Query private var annotations: [Annotation]
     @State private var previewer = VoicePreviewer()
     @State private var exportFile: ShareableFile?
     @State private var exportError: String?
 
-    /// Distinct source languages the user actually reads (books + saved words).
+    /// Distinct source languages the user actually reads (books + saved items).
     private var spokenLanguages: [String] {
         var set = Set<String>()
         for book in books { if let code = book.languageCode { set.insert(code) } }
-        for word in words { set.insert(word.languageCode) }
+        for annotation in annotations { set.insert(annotation.languageCode) }
         return set.sorted { LanguageCatalog.name(for: $0) < LanguageCatalog.name(for: $1) }
     }
 
@@ -62,7 +62,7 @@ struct SettingsView: View {
                     } label: {
                         Label("Export Data", systemImage: "square.and.arrow.up")
                     }
-                    .disabled(books.isEmpty && words.isEmpty)
+                    .disabled(books.isEmpty && annotations.isEmpty)
                 } header: {
                     Text("Data")
                 } footer: {

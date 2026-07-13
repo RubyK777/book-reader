@@ -11,11 +11,7 @@ struct SavedItemsView: View {
   @Environment(\.modelContext) private var modelContext
   @Environment(AppRouter.self) private var router
 
-  @Query(sort: \SavedWord.savedAt, order: .reverse)
-  private var words: [SavedWord]
-
-  // Pivot saves are Annotations; show word/phrase ones here too so a word saved
-  // from the Learn view is findable in Saved, not only the Notebook.
+  // Saved words & phrases are word/phrase annotations (V5 unified the model).
   @Query(filter: #Predicate<Annotation> { !$0.isSuspended })
   private var annotations: [Annotation]
 
@@ -25,49 +21,11 @@ struct SavedItemsView: View {
   @State private var tab: Tab = .words
   @State private var player = SpeechPlayer()
 
-  /// A saved vocabulary item — the legacy `SavedWord` or a word/phrase annotation.
-  private enum WordEntry: Identifiable {
-    case saved(SavedWord)
-    case annotation(Annotation)
-
-    var id: PersistentIdentifier {
-      switch self {
-      case let .saved(w): w.persistentModelID
-      case let .annotation(a): a.persistentModelID
-      }
-    }
-    var text: String {
-      switch self {
-      case let .saved(w): w.word
-      case let .annotation(a): a.text
-      }
-    }
-    var code: String {
-      switch self {
-      case let .saved(w): w.languageCode
-      case let .annotation(a): a.languageCode
-      }
-    }
-    var date: Date {
-      switch self {
-      case let .saved(w): w.savedAt
-      case let .annotation(a): a.savedAt
-      }
-    }
-  }
-
-  /// Legacy saved words + word/phrase annotations, newest first, deduped by text.
-  private var wordEntries: [WordEntry] {
-    let annotationEntries = annotations
+  /// Saved word/phrase annotations, newest first.
+  private var wordEntries: [Annotation] {
+    annotations
       .filter { $0.type == .word || $0.type == .phrase }
-      .map(WordEntry.annotation)
-    var seen = Set(annotationEntries.map { $0.text.lowercased() })
-    var entries = annotationEntries
-    for word in words where !seen.contains(word.word.lowercased()) {
-      seen.insert(word.word.lowercased())
-      entries.append(.saved(word))
-    }
-    return entries.sorted { $0.date > $1.date }
+      .sorted { $0.savedAt > $1.savedAt }
   }
 
   var body: some View {
@@ -91,7 +49,6 @@ struct SavedItemsView: View {
         .sensoryFeedback(.selection, trigger: tab)
       }
       .navigationTitle("Saved")
-      .navigationDestination(for: SavedWord.self) { SavedItemDetailView(word: $0) }
       .navigationDestination(for: Sentence.self) { SavedItemDetailView(sentence: $0) }
       .navigationDestination(for: PersistentIdentifier.self) { id in
         if let annotation = annotations.first(where: { $0.persistentModelID == id }) {
@@ -120,26 +77,13 @@ struct SavedItemsView: View {
     }
   }
 
-  @ViewBuilder
-  private func wordRow(_ entry: WordEntry) -> some View {
-    switch entry {
-    case let .saved(word):
-      NavigationLink(value: word) {
-        row(text: word.word, code: word.languageCode, date: word.savedAt, tint: Theme.accent)
-      }
-      .swipeActions(edge: .trailing) {
-        Button(role: .destructive) { delete(word) } label: {
-          Label("Delete", systemImage: "trash")
-        }
-      }
-    case let .annotation(annotation):
-      NavigationLink(value: annotation.persistentModelID) {
-        row(text: annotation.text, code: annotation.languageCode, date: annotation.savedAt, tint: Theme.accent)
-      }
-      .swipeActions(edge: .trailing) {
-        Button(role: .destructive) { delete(annotation) } label: {
-          Label("Delete", systemImage: "trash")
-        }
+  private func wordRow(_ annotation: Annotation) -> some View {
+    NavigationLink(value: annotation.persistentModelID) {
+      row(text: annotation.text, code: annotation.languageCode, date: annotation.savedAt, tint: Theme.accent)
+    }
+    .swipeActions(edge: .trailing) {
+      Button(role: .destructive) { delete(annotation) } label: {
+        Label("Delete", systemImage: "trash")
       }
     }
   }
@@ -207,12 +151,6 @@ struct SavedItemsView: View {
   }
 
   // MARK: - Mutations
-
-  private func delete(_ word: SavedWord) {
-    modelContext.delete(word)
-    try? modelContext.save()
-    router.recomputeDueCount(in: modelContext)
-  }
 
   private func delete(_ annotation: Annotation) {
     modelContext.delete(annotation)

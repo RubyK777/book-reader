@@ -42,8 +42,11 @@ enum ExportService {
     static func makeJSON(in context: ModelContext) throws -> Data {
         let books = (try? context.fetch(
             FetchDescriptor<Book>(sortBy: [SortDescriptor(\.createdAt)]))) ?? []
+        // Saved words & phrases are word/phrase annotations (V5, DECISIONS #63);
+        // export them under the stable `savedWords` key so backups don't change shape.
         let words = (try? context.fetch(
-            FetchDescriptor<SavedWord>(sortBy: [SortDescriptor(\.savedAt)]))) ?? []
+            FetchDescriptor<Annotation>(sortBy: [SortDescriptor(\.savedAt)])))?
+            .filter { $0.type == .word || $0.type == .phrase } ?? []
 
         let export = Export(
             exportedAt: Date(),
@@ -64,7 +67,7 @@ enum ExportService {
                     })
             },
             savedWords: words.map { w in
-                WordDTO(word: w.word, contextSentence: w.contextSentence, languageCode: w.languageCode,
+                WordDTO(word: w.text, contextSentence: w.contextSentence, languageCode: w.languageCode,
                         note: w.userNote, savedAt: w.savedAt, srs: w.srs)
             })
 

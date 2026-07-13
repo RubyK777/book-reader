@@ -616,3 +616,18 @@ entries stand as history).*
     resume if permitted) and route-change (pause on headphone unplug) handling `SpeechPlayer` has — real audio
     in the background needs it. `load()` now keeps the sentence strings + title only to label the card. No
     schema change. Deferred still: extracting the duplicated now-playing/session logic into a shared coordinator.
+
+63. **`SavedWord` folded into `Annotation` (schema V5, one save unit).** The legacy `SavedWord` @Model and the
+    pivot `Annotation` were two vocabulary stores with two save paths, two review-item cases, two detail views,
+    and duplicated queries across Saved / Notebook / Review / Progress / Settings. Removed `SavedWord`
+    entirely: **saved words & phrases are now `Annotation`s** (`type == .word` / `.phrase`), so there is one
+    save path (`SaveWordSheet` inserts an Annotation, links `.sentence`, dedupes against word/phrase
+    annotations), one `ReviewItem` case (`.word` dropped — `face`/`isWord`/`srs`/etc. simplified), and one
+    detail surface (`SavedItemDetailView` is now sentence-only; annotations use `AnnotationDetailView`). The
+    Notebook's "Item notes" segment is sentence-notes-only (word notes live on annotations, shown above).
+    `ExportService` still emits the stable `savedWords` JSON key, sourced from word/phrase annotations, so
+    backups don't change shape. **Schema:** froze `SavedWord` into `ReadAloudSchemaV4` (it referenced live
+    models before) and added **V5** = `[Book, ScanPage, Sentence, Annotation]` with a lightweight V4→V5 stage.
+    Removing an entity is lightweight-eligible — `MigrationTests` V1→V5 passes, so an in-place update migrates
+    cleanly (dropping only legacy `SavedWord` rows); Ruby can reinstall to be safe. Net deletion of code;
+    biggest cleanup win from docs/IMPROVEMENTS 03.
