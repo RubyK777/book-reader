@@ -131,7 +131,7 @@ struct SavedItemsView: View {
   private func caption(code: String, date: Date?) -> String {
     let name = LanguageCatalog.name(for: code)
     guard let date else { return name }
-    return "\(name) · \(date.formatted(.dateTime.month().day().year()))"
+    return "\(name) · \(date.shortDate)"
   }
 
   // MARK: - Mutations

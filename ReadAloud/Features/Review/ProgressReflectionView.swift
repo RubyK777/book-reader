@@ -155,7 +155,7 @@ struct ProgressReflectionView: View {
     @ViewBuilder
     private var nextUp: some View {
         if let nextDue {
-            Text("Next review \(nextDue.formatted(.relative(presentation: .named)))")
+            Text("Next review \(nextDue.relativeNamed)")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         } else {

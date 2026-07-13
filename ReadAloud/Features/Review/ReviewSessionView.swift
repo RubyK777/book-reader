@@ -426,7 +426,7 @@ struct ReviewSessionView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
                 } else if let next = nextDueDate() {
-                    Text("Next review \(next.formatted(.relative(presentation: .named)))")
+                    Text("Next review \(next.relativeNamed)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

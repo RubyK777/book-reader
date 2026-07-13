@@ -20,8 +20,7 @@ struct ScanDigestView: View {
 
     /// Nothing to translate when the page is already in the reader's language.
     private var canTranslate: Bool {
-        String(languageCode.prefix(2)).lowercased()
-            != String(nativeLanguage.prefix(2)).lowercased()
+        !languageCode.hasSameBaseLanguage(as: nativeLanguage)
     }
 
     var body: some View {

@@ -28,8 +28,6 @@ final class AppRouter {
     /// timelines. The widget shows one at a time and shuffles between them.
     @MainActor
     private func updateWidgetSnapshot(in context: ModelContext) {
-        SharedStore.writeDueCount(dueCount)
-
         var descriptor = FetchDescriptor<Annotation>(sortBy: [SortDescriptor(\.savedAt, order: .reverse)])
         descriptor.fetchLimit = 40
         let annotations = (try? context.fetch(descriptor)) ?? []
@@ -38,10 +36,10 @@ final class AppRouter {
             let contextLine = annotation.contextSentence == annotation.text ? nil : annotation.contextSentence
             return WidgetCard(
                 text: annotation.text,
-                meaning: nonEmpty(annotation.translation)
-                    ?? nonEmpty(annotation.userNote)
+                meaning: annotation.translation.nonBlank
+                    ?? annotation.userNote.nonBlank
                     ?? annotation.sentence?.translatedText,
-                note: nonEmpty(annotation.userExample) ?? contextLine,
+                note: annotation.userExample.nonBlank ?? contextLine,
                 type: annotation.type.rawValue,
                 languageName: LanguageCatalog.name(for: annotation.languageCode))
         }
@@ -54,7 +52,7 @@ final class AppRouter {
             seen.insert(sentence.text)
             cards.append(WidgetCard(
                 text: sentence.text,
-                meaning: nonEmpty(sentence.translatedText),
+                meaning: sentence.translatedText.nonBlank,
                 note: nil,
                 type: AnnotationType.sentence.rawValue,
                 languageName: LanguageCatalog.name(for: sentence.page?.book?.languageCode ?? "en-US")))
@@ -69,10 +67,5 @@ final class AppRouter {
         }
 
         WidgetCenter.shared.reloadAllTimelines()
-    }
-
-    private func nonEmpty(_ string: String?) -> String? {
-        guard let string, !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        return string
     }
 }

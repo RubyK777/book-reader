@@ -74,12 +74,12 @@ struct NotesView: View {
     private var entries: [Entry] {
         var out: [Entry] = []
         for word in notedWords {
-            guard let note = nonEmpty(word.userNote) else { continue }
+            guard let note = word.userNote.nonBlank else { continue }
             out.append(Entry(id: word.persistentModelID, note: note, term: word.word,
                              languageCode: word.languageCode, date: word.savedAt, kind: .word(word)))
         }
         for sentence in notedSentences {
-            guard let note = nonEmpty(sentence.userNote) else { continue }
+            guard let note = sentence.userNote.nonBlank else { continue }
             out.append(Entry(id: sentence.persistentModelID, note: note, term: sentence.text,
                              languageCode: sentence.page?.book?.languageCode ?? "en-US",
                              date: sentence.page?.scannedAt ?? .distantPast, kind: .sentence(sentence)))
@@ -296,10 +296,6 @@ struct NotesView: View {
             tint: Theme.slate)
     }
 
-    private func nonEmpty(_ string: String?) -> String? {
-        guard let string, !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        return string
-    }
 }
 
 extension NotesView.Entry: Hashable {

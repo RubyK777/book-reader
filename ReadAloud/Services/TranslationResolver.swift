@@ -18,9 +18,7 @@ enum TranslationResolver {
     static func begin(existing: String?, source: String, native: String)
         -> (meaning: TranslationMeaning, config: TranslationSession.Configuration?) {
         if let existing, !existing.isEmpty { return (.ready(existing), nil) }
-        let sourceBase = String(source.prefix(2)).lowercased()
-        let nativeBase = String(native.prefix(2)).lowercased()
-        guard sourceBase != nativeBase else { return (.unavailable, nil) }
+        guard !source.hasSameBaseLanguage(as: native) else { return (.unavailable, nil) }
         return (.translating, TranslationSession.Configuration(
             source: Locale.Language(identifier: source),
             target: Locale.Language(identifier: native)))

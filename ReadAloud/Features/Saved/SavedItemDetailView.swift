@@ -77,7 +77,7 @@ struct SavedItemDetailView: View {
         LabeledContent("Repetitions", value: "\(srs.repetitions)")
         LabeledContent("Ease", value: srs.easeFactor.formatted(.number.precision(.fractionLength(1))))
         LabeledContent("Interval", value: "\(srs.intervalDays) day\(srs.intervalDays == 1 ? "" : "s")")
-        LabeledContent("Due", value: srs.dueDate.formatted(.relative(presentation: .named)))
+        LabeledContent("Due", value: srs.dueDate.relativeNamed)
       }
 
       Section {
@@ -181,8 +181,8 @@ struct SavedItemDetailView: View {
 
   private var dateText: String? {
     switch item {
-    case let .word(w): w.savedAt.formatted(.dateTime.month().day().year())
-    case let .sentence(s): s.page?.scannedAt.formatted(.dateTime.month().day().year())
+    case let .word(w): w.savedAt.shortDate
+    case let .sentence(s): s.page?.scannedAt.shortDate
     }
   }
 

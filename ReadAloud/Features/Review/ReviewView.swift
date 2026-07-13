@@ -134,7 +134,7 @@ struct ReviewView: View {
     private var nextDueText: String {
         guard let next = nextDueDate else { return "Practice any time." }
         if next <= .now { return "Practice any time." }
-        return "Next up \(next.formatted(.relative(presentation: .named))) — or practice any time."
+        return "Next up \(next.relativeNamed) — or practice any time."
     }
 
     private var emptyState: some View {

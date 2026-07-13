@@ -104,13 +104,7 @@ struct OCRReviewView: View {
   }
 
   /// Auto-title for Quick Scan sources: the first few scanned words.
-  private var suggestedTitle: String {
-    let words = text
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-      .split(whereSeparator: \.isWhitespace)
-    let head = words.prefix(5).joined(separator: " ")
-    return words.count > 5 ? head + "…" : head
-  }
+  private var suggestedTitle: String { String.titleSnippet(from: text) }
 
   // MARK: Actions
 

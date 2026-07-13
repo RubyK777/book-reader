@@ -119,11 +119,7 @@ struct BatchReviewView: View {
 
   /// Auto-title from the first savable page's opening words.
   private var suggestedTitle: String {
-    let words = (savablePages.first?.text ?? "")
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-      .split(whereSeparator: \.isWhitespace)
-    let head = words.prefix(5).joined(separator: " ")
-    return words.count > 5 ? head + "…" : head
+    String.titleSnippet(from: savablePages.first?.text ?? "")
   }
 
   private func saveTapped() {

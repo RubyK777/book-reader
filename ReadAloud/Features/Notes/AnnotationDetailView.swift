@@ -153,7 +153,7 @@ struct AnnotationDetailView: View {
         Section("Review") {
             if let srs = annotation.srs {
                 LabeledContent("Next review",
-                               value: srs.dueDate.formatted(.relative(presentation: .named)))
+                               value: srs.dueDate.relativeNamed)
                 LabeledContent("Interval", value: "\(srs.intervalDays) days")
                 LabeledContent("Reviews", value: "\(srs.repetitions)")
             }

@@ -20,15 +20,9 @@ enum SharedStore {
     private static var defaults: UserDefaults? { UserDefaults(suiteName: appGroup) }
 
     private enum Key {
-        static let dueCount = "dueCount"
         static let cards = "reviewCards"
         static let cardIndex = "reviewCardIndex"
     }
-
-    // MARK: Due count (kept for any future due surface)
-
-    static func writeDueCount(_ count: Int) { defaults?.set(count, forKey: Key.dueCount) }
-    static func dueCount() -> Int { defaults?.integer(forKey: Key.dueCount) ?? 0 }
 
     // MARK: Review cards
 
@@ -46,12 +40,4 @@ enum SharedStore {
     /// Which card the widget currently shows (advanced by the shuffle button).
     static func writeCardIndex(_ index: Int) { defaults?.set(index, forKey: Key.cardIndex) }
     static func cardIndex() -> Int { defaults?.integer(forKey: Key.cardIndex) ?? 0 }
-
-    /// The card at the stored index, wrapped safely.
-    static func currentCard() -> WidgetCard? {
-        let cards = cards()
-        guard !cards.isEmpty else { return nil }
-        let index = min(max(cardIndex(), 0), cards.count - 1)
-        return cards[index]
-    }
 }

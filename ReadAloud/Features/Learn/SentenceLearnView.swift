@@ -581,9 +581,7 @@ struct SentenceLearnView: View {
     /// so the widget/review have it right away. Nil-then-set so the task re-fires
     /// on repeat saves; skipped when the source is already the native language.
     private func requestAnnotationTranslations() {
-        let sourceBase = String(languageCode.prefix(2)).lowercased()
-        let nativeBase = String(nativeLanguage.prefix(2)).lowercased()
-        guard sourceBase != nativeBase,
+        guard !languageCode.hasSameBaseLanguage(as: nativeLanguage),
               sentence.annotations.contains(where: { $0.translation == nil }) else { return }
         translateConfig = nil
         Task { @MainActor in
