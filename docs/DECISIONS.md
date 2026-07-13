@@ -631,3 +631,12 @@ entries stand as history).*
     Removing an entity is lightweight-eligible — `MigrationTests` V1→V5 passes, so an in-place update migrates
     cleanly (dropping only legacy `SavedWord` rows); Ruby can reinstall to be safe. Net deletion of code;
     biggest cleanup win from docs/IMPROVEMENTS 03.
+
+64. **Model download: real progress + inline offer, never a silent dead-end.** Extends #59. `installModel`
+    gained an `onProgress` variant (no-progress overload keeps old callers) that polls the system
+    `AssetInstallationRequest.progress.fractionCompleted` while it installs — surfaced as a **linear progress
+    bar** in audio capture, graded review, and speaking practice instead of an indeterminate spinner. And when
+    a review speech-check card's model isn't installed, the flow no longer quietly falls back to a plain
+    reveal: it shows **"Download model" (language named) → progress bar → Say it**, checked per card via
+    `.task(id:)`. Speaking practice got the same, replacing a stale "download it from Record audio" hint.
+    Consent + offline guarantees unchanged (only the model downloads; audio never leaves the device).
