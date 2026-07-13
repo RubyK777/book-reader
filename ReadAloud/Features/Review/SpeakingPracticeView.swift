@@ -38,27 +38,8 @@ struct SpeakingPracticeView: View {
     private func feedback(_ item: ReviewItem) -> some View {
         Group {
             if let result {
-                if result.passed {
-                    Label("Nicely said", systemImage: "checkmark.circle.fill")
-                        .font(.headline)
-                        .foregroundStyle(Theme.verdigris)
-                } else {
-                    VStack(spacing: DesignSystem.Spacing.sm) {
-                        Text("Give it another go — revisit:")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        FlowLayout(spacing: DesignSystem.Spacing.sm) {
-                            ForEach(Array(result.missedWords.enumerated()), id: \.offset) { _, word in
-                                Text(word)
-                                    .font(.callout.weight(.medium))
-                                    .padding(.horizontal, DesignSystem.Spacing.sm)
-                                    .padding(.vertical, DesignSystem.Spacing.xs)
-                                    .background(Palette.soft(Theme.coral), in: Capsule())
-                                    .foregroundStyle(Theme.coral)
-                            }
-                        }
-                    }
-                }
+                PronunciationFeedbackView(result: result,
+                                          revisitPrompt: "Give it another go — revisit:")
             } else if modelProgress == nil && checkUnavailable {
                 Text("Pronunciation check needs the \(LanguageCatalog.name(for: item.languageCode)) voice model — a one-time download.")
                     .font(.caption)

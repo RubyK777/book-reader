@@ -398,29 +398,8 @@ struct ReviewSessionView: View {
         }
     }
 
-    @ViewBuilder
     private func pronunciationFeedback(_ result: PronunciationResult) -> some View {
-        if result.passed {
-            Label("Nicely said", systemImage: "checkmark.circle.fill")
-                .font(.headline)
-                .foregroundStyle(Theme.verdigris)
-        } else {
-            VStack(spacing: DesignSystem.Spacing.xs) {
-                Text("Almost — revisit:")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                FlowLayout(spacing: DesignSystem.Spacing.sm) {
-                    ForEach(Array(result.missedWords.enumerated()), id: \.offset) { _, word in
-                        Text(word)
-                            .font(.callout.weight(.medium))
-                            .padding(.horizontal, DesignSystem.Spacing.sm)
-                            .padding(.vertical, DesignSystem.Spacing.xs)
-                            .background(Palette.soft(Theme.coral), in: Capsule())
-                            .foregroundStyle(Theme.coral)
-                    }
-                }
-            }
-        }
+        PronunciationFeedbackView(result: result)
     }
 
     /// The answer side: translated meaning, the user's note, and (for words)
