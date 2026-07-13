@@ -1,4 +1,5 @@
 import AVFoundation
+import MediaPlayer
 import Observation
 
 /// Real-audio sentence playback for conversation sources (AUDIO_LEARNING_DESIGN
@@ -25,14 +26,26 @@ final class RecordingPlayer: NSObject, SentencePlaying {
     private var boundaryTimer: Timer?
     private var tempURL: URL?
 
+    /// The Reader's player sets `managesNowPlaying` so it drives the lock-screen
+    /// Now Playing card + remote commands (mirrors `SpeechPlayer`). Sentence
+    /// texts/title are kept only for that display; playback itself uses `ranges`.
+    private let managesNowPlaying: Bool
+    private var sentences: [String] = []
+    private var title = "ReadAloud"
+    private var interruptedIndex: Int?
+
+    private var nowPlayingTitle: String { title }
+
     /// `ranges[i]` is sentence `i`'s time window; `wordTimings[i]` its per-word
     /// karaoke timings (empty ⇒ sentence-level highlight only).
     init(audioData: Data,
          ranges: [(start: Double, end: Double)],
-         wordTimings: [[WordTiming]] = []) {
+         wordTimings: [[WordTiming]] = [],
+         managesNowPlaying: Bool = false) {
         self.ranges = ranges
         self.wordTimings = wordTimings
         self.sentenceCount = ranges.count
+        self.managesNowPlaying = managesNowPlaying
         super.init()
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
         if let url = AudioFileStore.materialize(audioData, id: UUID()) {
@@ -41,11 +54,24 @@ final class RecordingPlayer: NSObject, SentencePlaying {
             player?.enableRate = true
             player?.prepareToPlay()
         }
+        if managesNowPlaying {
+            configureRemoteCommands()
+            observeAudioSession()
+        }
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+        if managesNowPlaying {
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        }
     }
 
     func load(sentences: [String], languageCode: String, title: String?) {
-        // Sentence strings/title aren't needed for real-audio playback (the
-        // Reader owns the text); keep the count in sync defensively.
+        // Real-audio playback uses `ranges`; keep the strings/title only to label
+        // the lock-screen Now Playing card. Sync the count defensively.
+        self.sentences = sentences
+        self.title = title.nonBlank ?? "ReadAloud"
         sentenceCount = min(sentences.count, ranges.count)
     }
 
@@ -59,6 +85,7 @@ final class RecordingPlayer: NSObject, SentencePlaying {
         player.play()
         isSpeaking = true
         startBoundaryTimer(for: index)
+        updateNowPlaying()
     }
 
     func togglePlayPause() {
@@ -67,6 +94,7 @@ final class RecordingPlayer: NSObject, SentencePlaying {
             player.pause()
             stopTimer()
             isSpeaking = false
+            updateNowPlaying()
         } else {
             play(at: currentSentenceIndex ?? 0)
         }
@@ -89,11 +117,15 @@ final class RecordingPlayer: NSObject, SentencePlaying {
         currentSentenceIndex = nil
         highlightRange = nil
         isSpeaking = false
+        if managesNowPlaying {
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        }
     }
 
     func reconcile() {
         if isSpeaking && player?.isPlaying == false {
             isSpeaking = false
+            updateNowPlaying()
         }
     }
 
@@ -128,14 +160,104 @@ final class RecordingPlayer: NSObject, SentencePlaying {
             currentSentenceIndex = index + 1
             highlightRange = nil
             startBoundaryTimer(for: index + 1)
+            updateNowPlaying()   // advance the lock-screen card with the audio
         } else {
             player?.pause()
             isSpeaking = false
+            updateNowPlaying()   // reached the end — reflect paused state
         }
     }
 
     private func stopTimer() {
         boundaryTimer?.invalidate()
         boundaryTimer = nil
+    }
+
+    // MARK: - Lock-screen: Now Playing + remote commands
+
+    private func configureRemoteCommands() {
+        let center = MPRemoteCommandCenter.shared()
+        center.playCommand.addTarget { [weak self] _ in
+            guard let self else { return .commandFailed }
+            if !self.isSpeaking { self.togglePlayPause() }
+            return .success
+        }
+        center.pauseCommand.addTarget { [weak self] _ in
+            guard let self else { return .commandFailed }
+            if self.isSpeaking { self.togglePlayPause() }
+            return .success
+        }
+        center.togglePlayPauseCommand.addTarget { [weak self] _ in
+            self?.togglePlayPause(); return .success
+        }
+        center.nextTrackCommand.addTarget { [weak self] _ in self?.next(); return .success }
+        center.previousTrackCommand.addTarget { [weak self] _ in self?.previous(); return .success }
+        // Sentences, not time, are the unit — skip/scrub commands don't apply.
+        center.skipForwardCommand.isEnabled = false
+        center.skipBackwardCommand.isEnabled = false
+        center.changePlaybackPositionCommand.isEnabled = false
+    }
+
+    private func updateNowPlaying() {
+        guard managesNowPlaying else { return }
+        var info: [String: Any] = [
+            MPMediaItemPropertyAlbumTitle: nowPlayingTitle,
+            MPNowPlayingInfoPropertyPlaybackRate: isSpeaking ? Double(speedMultiplier) : 0.0,
+            MPNowPlayingInfoPropertyDefaultPlaybackRate: 1.0,
+        ]
+        if let index = currentSentenceIndex, sentences.indices.contains(index) {
+            info[MPMediaItemPropertyTitle] = sentences[index]
+            info[MPNowPlayingInfoPropertyPlaybackQueueCount] = sentences.count
+            info[MPNowPlayingInfoPropertyPlaybackQueueIndex] = index
+        } else {
+            info[MPMediaItemPropertyTitle] = nowPlayingTitle
+        }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
+
+    // MARK: - Audio session robustness
+
+    private func observeAudioSession() {
+        let center = NotificationCenter.default
+        center.addObserver(self, selector: #selector(handleInterruption(_:)),
+                           name: AVAudioSession.interruptionNotification,
+                           object: AVAudioSession.sharedInstance())
+        center.addObserver(self, selector: #selector(handleRouteChange(_:)),
+                           name: AVAudioSession.routeChangeNotification,
+                           object: AVAudioSession.sharedInstance())
+    }
+
+    /// Phone call / Siri / another app grabs audio: pause on `.began`, and on
+    /// `.ended` resume the interrupted sentence only if the system permits.
+    @objc private func handleInterruption(_ note: Notification) {
+        guard let info = note.userInfo,
+              let raw = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
+        switch type {
+        case .began:
+            if isSpeaking {
+                interruptedIndex = currentSentenceIndex
+                stop()
+            }
+        case .ended:
+            guard let index = interruptedIndex else { return }
+            interruptedIndex = nil
+            let options = (info[AVAudioSessionInterruptionOptionKey] as? UInt).map(AVAudioSession.InterruptionOptions.init)
+            if options?.contains(.shouldResume) == true {
+                play(at: index)
+            }
+        @unknown default:
+            break
+        }
+    }
+
+    /// Headphones unplugged (`.oldDeviceUnavailable`): pause, matching the system
+    /// convention so audio doesn't suddenly blast from the speaker.
+    @objc private func handleRouteChange(_ note: Notification) {
+        guard let info = note.userInfo,
+              let raw = info[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: raw),
+              reason == .oldDeviceUnavailable else { return }
+        if isSpeaking { togglePlayPause() }
     }
 }

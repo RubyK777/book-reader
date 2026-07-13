@@ -42,7 +42,8 @@ struct ReaderView: View {
                 (start: sentence.audioStart ?? 0, end: sentence.audioEnd ?? duration)
             }
             let wordTimings: [[WordTiming]] = sorted.map { $0.wordTimings ?? [] }
-            return RecordingPlayer(audioData: data, ranges: ranges, wordTimings: wordTimings)
+            return RecordingPlayer(audioData: data, ranges: ranges, wordTimings: wordTimings,
+                                   managesNowPlaying: true)
         }
         return SpeechPlayer(managesNowPlaying: true)
     }
