@@ -1,5 +1,5 @@
 import Testing
-@testable import ReadAloud
+import LearningKit
 
 /// Sentence splitting and word tokenization — the text pipeline feeding the
 /// Reader and Save-Word sheet.

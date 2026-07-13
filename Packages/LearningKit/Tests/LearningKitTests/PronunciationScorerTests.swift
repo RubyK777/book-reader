@@ -1,5 +1,5 @@
 import Testing
-@testable import ReadAloud
+import LearningKit
 
 struct PronunciationScorerTests {
     @Test func exactMatchPasses() {

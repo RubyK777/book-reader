@@ -1,5 +1,5 @@
 import Testing
-@testable import ReadAloud
+import LearningKit
 
 /// UX_SPEC §8: fragments (signs, menu lines, prices) are phrase-type units.
 struct FragmentDetectorTests {

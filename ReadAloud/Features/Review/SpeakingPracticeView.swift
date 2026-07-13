@@ -1,4 +1,5 @@
 import SwiftUI
+import LearningKit
 
 /// Interactive speaking practice (PIVOT §7 pronunciation-compare): read the
 /// sentence aloud, tap the mic, and the app recognizes your speech on-device and

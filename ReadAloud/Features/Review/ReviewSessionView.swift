@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import Translation
+import LearningKit
 
 /// Recognition flashcard session (PHASE3_DESIGN §2). The FRONT shows the
 /// foreign word/sentence (read it, hear it); the reviewer recalls its meaning,

@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import PhotosUI
+import LearningKit
 
 /// Post-OCR, pre-persist review: edit the recognized text and confirm the
 /// source language before anything is saved. On "Use" the (edited) text is

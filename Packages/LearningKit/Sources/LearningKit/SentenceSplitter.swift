@@ -1,8 +1,10 @@
 import Foundation
 import NaturalLanguage
 
-struct SentenceSplitter {
-    func split(_ text: String, languageCode: String) -> [String] {
+public struct SentenceSplitter {
+    public init() {}
+
+    public func split(_ text: String, languageCode: String) -> [String] {
         let tokenizer = NLTokenizer(unit: .sentence)
         tokenizer.setLanguage(NLLanguage(rawValue: String(languageCode.prefix(2))))
         tokenizer.string = text

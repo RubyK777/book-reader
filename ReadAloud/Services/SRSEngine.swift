@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import LearningKit
 
 /// Which card front a review item gets (PIVOT_PLAN D4: only gradeable modes,
 /// routed by item TYPE — intent does not route in v1, D11).

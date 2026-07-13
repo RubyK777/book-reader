@@ -3,7 +3,7 @@ import Foundation
 /// UX_SPEC §8 fragment rule: real-world scans (signs, menus, labels) yield
 /// lines that aren't sentences — they become phrase-type learning units.
 /// Pure input → output; thresholds tuned against the 0.2 fixtures.
-enum FragmentDetector {
+public enum FragmentDetector {
     /// Characters that close a real sentence (Latin scripts + CJK terminals).
     private static let terminators: Set<Character> = [".", "!", "?", "…", "。", "！", "？"]
 
@@ -22,7 +22,7 @@ enum FragmentDetector {
 
     /// True when `text` should be treated as a phrase, not a sentence:
     /// no terminal punctuation AND under ~6 words, OR mostly numerals/symbols/prices.
-    static func isFragment(_ text: String) -> Bool {
+    public static func isFragment(_ text: String) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let last = trimmed.last else { return false }
 

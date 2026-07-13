@@ -2,9 +2,11 @@ import Foundation
 import NaturalLanguage
 
 /// Splits a sentence into distinct words for the Save-Word chip picker.
-struct WordTokenizer {
+public struct WordTokenizer {
+    public init() {}
+
     /// Words in first-occurrence order, deduped case-insensitively but keeping original casing.
-    func words(in sentence: String, languageCode: String) -> [String] {
+    public func words(in sentence: String, languageCode: String) -> [String] {
         let tokenizer = NLTokenizer(unit: .word)
         tokenizer.setLanguage(NLLanguage(rawValue: String(languageCode.prefix(2))))
         tokenizer.string = sentence

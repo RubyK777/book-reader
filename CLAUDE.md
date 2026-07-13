@@ -23,6 +23,7 @@ open ReadAloud.xcodeproj     # build/run from Xcode; camera needs a real device
 
 - **Never hand-edit `ReadAloud.xcodeproj`** — it's generated. Edit `project.yml`, rerun `xcodegen generate`.
 - Build check from CLI: `xcodebuild -project ReadAloud.xcodeproj -scheme ReadAloud -destination 'generic/platform=iOS Simulator' build`
+- **Pure engines live in `Packages/LearningKit`** (SentenceSplitter, WordTokenizer, ClozeBuilder, FragmentDetector, PronunciationScorer) — a local SPM package the app depends on via `import LearningKit`. Run its tests standalone: `cd Packages/LearningKit && swift test`. The app test target (`ReadAloudTests`) holds the model/SwiftData-bound tests; keep pure logic + its tests in the package (DECISIONS #68).
 - On the simulator use **Import Photo** instead of the camera.
 - OCR accuracy spike (macOS CLI, no Xcode needed): `swift Tools/OCRSpike/main.swift fr-FR Fixtures/*.jpg`
 

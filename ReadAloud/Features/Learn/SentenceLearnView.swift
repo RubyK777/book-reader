@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import Translation
+import LearningKit
 
 /// The pivot's heart (PIVOT_PLAN §7 Phase 2, basic version): study one
 /// sentence deeply. Drill-down from a Reader sentence card. Four sections:

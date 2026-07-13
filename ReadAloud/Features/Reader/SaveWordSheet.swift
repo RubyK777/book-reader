@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import LearningKit
 
 /// Half-sheet for saving words out of a sentence (UX_SPEC §3). Word chips come
 /// from WordTokenizer; tap to toggle any number, then save them all at once.

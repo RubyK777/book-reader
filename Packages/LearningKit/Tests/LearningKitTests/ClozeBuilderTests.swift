@@ -1,5 +1,5 @@
 import Testing
-@testable import ReadAloud
+import LearningKit
 
 /// D5: cloze blanks are deterministic — the saved term is the blank.
 struct ClozeBuilderTests {

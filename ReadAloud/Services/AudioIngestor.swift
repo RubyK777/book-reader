@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import LearningKit
 
 /// Persists a transcribed audio clip as a `.conversation` source: one `ScanPage`
 /// carrying the recording, its `Sentence`s carrying segment timings for

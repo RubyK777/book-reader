@@ -1,27 +1,38 @@
 import Foundation
 
 /// One target word and whether the learner said it recognizably.
-struct WordMatch: Equatable {
-    let text: String
-    let matched: Bool
+public struct WordMatch: Equatable {
+    public let text: String
+    public let matched: Bool
+
+    public init(text: String, matched: Bool) {
+        self.text = text
+        self.matched = matched
+    }
 }
 
 /// The outcome of comparing a spoken attempt to the target sentence. Anti-
 /// gamification (DECISIONS #39): the UI shows "words to revisit", never a score.
-struct PronunciationResult: Equatable {
-    let passed: Bool
-    let words: [WordMatch]
-    let ratio: Double
+public struct PronunciationResult: Equatable {
+    public let passed: Bool
+    public let words: [WordMatch]
+    public let ratio: Double
 
-    var missedWords: [String] { words.filter { !$0.matched }.map(\.text) }
+    public init(passed: Bool, words: [WordMatch], ratio: Double) {
+        self.passed = passed
+        self.words = words
+        self.ratio = ratio
+    }
+
+    public var missedWords: [String] { words.filter { !$0.matched }.map(\.text) }
 }
 
 /// Compares an on-device transcript of the learner's speech to the target text
 /// (AUDIO_LEARNING_DESIGN §9 / PIVOT §7 pronunciation-compare). Case- and
 /// diacritic-insensitive word alignment (LCS) marks each target word matched or
 /// missed; it passes when enough words line up. Pure + testable.
-enum PronunciationScorer {
-    static func score(target: String, heard: String, passRatio: Double = 0.6) -> PronunciationResult {
+public enum PronunciationScorer {
+    public static func score(target: String, heard: String, passRatio: Double = 0.6) -> PronunciationResult {
         let targetTokens = tokenize(target)
         let heardKeys = tokenize(heard).map(\.key)
         let flags = matchFlags(targetKeys: targetTokens.map(\.key), heardKeys: heardKeys)

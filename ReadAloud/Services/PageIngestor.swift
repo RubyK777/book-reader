@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import UIKit
+import LearningKit
 
 enum IngestError: Error { case noTextFound }
 

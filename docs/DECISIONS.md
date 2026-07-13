@@ -674,3 +674,15 @@ entries stand as history).*
     `ReviewView` observes that and opens a session on the due cards (or the whole deck when nothing's due),
     reading the store directly so it doesn't depend on `@State` having flushed. Reuses the App Group already in
     place for the widget. Phrases use `\(.applicationName)` so they read naturally with the app's name.
+
+68. **`Packages/LearningKit` — pure engines promoted to a local SPM package (CLAUDE.md rule 3).** The five
+    genuinely app-agnostic engines — `SentenceSplitter`, `WordTokenizer`, `ClozeBuilder`, `FragmentDetector`,
+    `PronunciationScorer` (Foundation + NaturalLanguage only; no SwiftUI/SwiftData/app models) — moved to
+    `Packages/LearningKit/Sources/LearningKit`, their types made `public`, and are referenced via `import
+    LearningKit` (wired in `project.yml` `packages:` + an app-target dependency). Their tests moved with them to
+    `Tests/LearningKitTests` and now run standalone with **`swift test`** (24 tests) — proving the package is
+    self-contained; the app test target keeps the model/SwiftData-bound tests (22 tests). Package declares
+    `iOS(.v16)/.macOS(.v13)` minimums (lower than the app, since the engines need neither) so other projects —
+    and `swift test` on macOS — can use it. **SM-2 stayed in the app** (deliberately): the algorithm lives on
+    `SRSState`, a SwiftData-embedded schema type, so it can't move without decoupling it from the model — a
+    larger change deferred. Build + both test suites green.
