@@ -10,6 +10,8 @@ struct AudioCaptureFlowView: View {
     @State private var recorder = AudioCaptureRecorder()
     @State private var step: Step = .capture
     @State private var languageHint = "fr-FR"
+    /// Languages whose offline model is ready on THIS device (nil until checked).
+    @State private var readyLanguageCodes: Set<String>?
     @State private var isImporting = false
     @State private var isWorking = false
     @State private var workingLabel = "Transcribing…"
@@ -61,11 +63,19 @@ struct AudioCaptureFlowView: View {
 
                 if recorder.state != .recording {
                     Picker("Spoken language", selection: $languageHint) {
-                        ForEach(LanguageCatalog.options, id: \.code) { lang in
+                        ForEach(LanguageCatalog.options.filter { isSelectable($0.code) }, id: \.code) { lang in
                             Text(lang.name).tag(lang.code)
                         }
                     }
                     .pickerStyle(.menu)
+
+                    if let readyLanguageCodes, !readyLanguageCodes.isEmpty {
+                        Text("Showing languages whose offline voice model is on your phone. Add more in Settings → General → Keyboard.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, DesignSystem.Spacing.lg)
+                    }
                 }
 
                 if let errorMessage {
@@ -111,6 +121,25 @@ struct AudioCaptureFlowView: View {
                       allowedContentTypes: [.audio, .movie, .mpeg4Movie, .mpeg4Audio],
                       allowsMultipleSelection: false) { result in
             handleImport(result)
+        }
+        .task { computeReadyLanguages() }
+    }
+
+    /// True when a language should appear in the picker: everything until we've
+    /// checked, then only the ones whose offline model is on the device.
+    private func isSelectable(_ code: String) -> Bool {
+        guard let readyLanguageCodes, !readyLanguageCodes.isEmpty else { return true }
+        return readyLanguageCodes.contains(code)
+    }
+
+    /// Which catalog languages have an on-device model right now, and keep the
+    /// selection valid if the current pick isn't ready.
+    private func computeReadyLanguages() {
+        let transcriber = OnDeviceTranscriber()
+        let ready = Set(LanguageCatalog.options.map(\.code).filter { transcriber.isAvailable(for: $0) })
+        readyLanguageCodes = ready
+        if !ready.isEmpty, !ready.contains(languageHint) {
+            languageHint = LanguageCatalog.options.first { ready.contains($0.code) }?.code ?? languageHint
         }
     }
 
@@ -201,7 +230,7 @@ struct AudioCaptureFlowView: View {
         case TranscriptionError.notAuthorized:
             "Speech recognition is off — enable it in Settings to transcribe."
         case TranscriptionError.unavailableForLanguage:
-            "On-device transcription isn't available for this language yet."
+            "This language's offline voice model isn't on your phone yet. Add it under Settings → General → Keyboard (turn on Dictation and add the language), then try again — nothing is ever sent online."
         case TranscriptionError.noSpeechFound:
             "No speech found — record somewhere quieter, or closer to the speaker."
         default:
