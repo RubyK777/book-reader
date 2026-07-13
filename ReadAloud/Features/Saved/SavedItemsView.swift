@@ -14,11 +14,61 @@ struct SavedItemsView: View {
   @Query(sort: \SavedWord.savedAt, order: .reverse)
   private var words: [SavedWord]
 
+  // Pivot saves are Annotations; show word/phrase ones here too so a word saved
+  // from the Learn view is findable in Saved, not only the Notebook.
+  @Query(filter: #Predicate<Annotation> { !$0.isSuspended })
+  private var annotations: [Annotation]
+
   @Query(filter: #Predicate<Sentence> { $0.isBookmarked })
   private var sentences: [Sentence]
 
   @State private var tab: Tab = .words
   @State private var player = SpeechPlayer()
+
+  /// A saved vocabulary item — the legacy `SavedWord` or a word/phrase annotation.
+  private enum WordEntry: Identifiable {
+    case saved(SavedWord)
+    case annotation(Annotation)
+
+    var id: PersistentIdentifier {
+      switch self {
+      case let .saved(w): w.persistentModelID
+      case let .annotation(a): a.persistentModelID
+      }
+    }
+    var text: String {
+      switch self {
+      case let .saved(w): w.word
+      case let .annotation(a): a.text
+      }
+    }
+    var code: String {
+      switch self {
+      case let .saved(w): w.languageCode
+      case let .annotation(a): a.languageCode
+      }
+    }
+    var date: Date {
+      switch self {
+      case let .saved(w): w.savedAt
+      case let .annotation(a): a.savedAt
+      }
+    }
+  }
+
+  /// Legacy saved words + word/phrase annotations, newest first, deduped by text.
+  private var wordEntries: [WordEntry] {
+    let annotationEntries = annotations
+      .filter { $0.type == .word || $0.type == .phrase }
+      .map(WordEntry.annotation)
+    var seen = Set(annotationEntries.map { $0.text.lowercased() })
+    var entries = annotationEntries
+    for word in words where !seen.contains(word.word.lowercased()) {
+      seen.insert(word.word.lowercased())
+      entries.append(.saved(word))
+    }
+    return entries.sorted { $0.date > $1.date }
+  }
 
   var body: some View {
     NavigationStack {
@@ -43,6 +93,11 @@ struct SavedItemsView: View {
       .navigationTitle("Saved")
       .navigationDestination(for: SavedWord.self) { SavedItemDetailView(word: $0) }
       .navigationDestination(for: Sentence.self) { SavedItemDetailView(sentence: $0) }
+      .navigationDestination(for: PersistentIdentifier.self) { id in
+        if let annotation = annotations.first(where: { $0.persistentModelID == id }) {
+          AnnotationDetailView(annotation: annotation)
+        }
+      }
     }
   }
 
@@ -50,23 +105,40 @@ struct SavedItemsView: View {
 
   @ViewBuilder
   private var wordsList: some View {
-    if words.isEmpty {
+    if wordEntries.isEmpty {
       AnimatedEmptyState(
         title: "No saved words yet",
-        message: "In the Reader, touch and hold a sentence, then choose the words worth keeping.",
+        message: "Tap a word in the Reader or Learn view to keep it — it shows up here.",
         systemImage: "textformat.abc",
         tint: Theme.accent)
     } else {
       List {
-        ForEach(words) { word in
-          NavigationLink(value: word) {
-            row(text: word.word, code: word.languageCode, date: word.savedAt, tint: Theme.accent)
-          }
-          .swipeActions(edge: .trailing) {
-            Button(role: .destructive) { delete(word) } label: {
-              Label("Delete", systemImage: "trash")
-            }
-          }
+        ForEach(wordEntries) { entry in
+          wordRow(entry)
+        }
+      }
+    }
+  }
+
+  @ViewBuilder
+  private func wordRow(_ entry: WordEntry) -> some View {
+    switch entry {
+    case let .saved(word):
+      NavigationLink(value: word) {
+        row(text: word.word, code: word.languageCode, date: word.savedAt, tint: Theme.accent)
+      }
+      .swipeActions(edge: .trailing) {
+        Button(role: .destructive) { delete(word) } label: {
+          Label("Delete", systemImage: "trash")
+        }
+      }
+    case let .annotation(annotation):
+      NavigationLink(value: annotation.persistentModelID) {
+        row(text: annotation.text, code: annotation.languageCode, date: annotation.savedAt, tint: Theme.accent)
+      }
+      .swipeActions(edge: .trailing) {
+        Button(role: .destructive) { delete(annotation) } label: {
+          Label("Delete", systemImage: "trash")
         }
       }
     }
@@ -138,6 +210,12 @@ struct SavedItemsView: View {
 
   private func delete(_ word: SavedWord) {
     modelContext.delete(word)
+    try? modelContext.save()
+    router.recomputeDueCount(in: modelContext)
+  }
+
+  private func delete(_ annotation: Annotation) {
+    modelContext.delete(annotation)
     try? modelContext.save()
     router.recomputeDueCount(in: modelContext)
   }
