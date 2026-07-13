@@ -48,12 +48,23 @@ struct RootView: View {
         .task {
             router.recomputeDueCount(in: modelContext)
             rescheduleReminder()
+            consumeStartReviewRequest()
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 router.recomputeDueCount(in: modelContext)
                 rescheduleReminder()
+                consumeStartReviewRequest()
             }
+        }
+    }
+
+    /// The "Start Review" App Intent left a flag in the App Group; honor it by
+    /// switching to the Review tab and asking `ReviewView` to open a session.
+    private func consumeStartReviewRequest() {
+        if SharedStore.consumeStartReviewRequest() {
+            router.tab = .review
+            router.startReviewRequested = true
         }
     }
 

@@ -17,9 +17,14 @@ final class AppRouter {
     /// Number of items due for review; drives the Review tab badge.
     private(set) var dueCount = 0
 
+    /// Set by the "Start Review" App Intent flow (via `SharedStore`); `ReviewView`
+    /// consumes it to auto-start a session. Reset once handled.
+    var startReviewRequested = false
+
     @MainActor
     func recomputeDueCount(in context: ModelContext) {
         dueCount = SRSEngine.dueCount(in: context)
+        SharedStore.writeDueCount(dueCount)      // keep the "words due" intent fresh
         updateWidgetSnapshot(in: context)
     }
 

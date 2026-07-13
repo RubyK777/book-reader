@@ -21,6 +21,8 @@ enum SharedStore {
 
     private enum Key {
         static let cards = "reviewCards"
+        static let dueCount = "dueCount"
+        static let pendingStartReview = "pendingStartReview"
     }
 
     // MARK: Review cards
@@ -34,5 +36,21 @@ enum SharedStore {
         guard let data = defaults?.data(forKey: Key.cards),
               let cards = try? JSONDecoder().decode([WidgetCard].self, from: data) else { return [] }
         return cards
+    }
+
+    // MARK: Due count (kept fresh by the app; read by the "words due" intent)
+
+    static func writeDueCount(_ count: Int) { defaults?.set(count, forKey: Key.dueCount) }
+    static func dueCount() -> Int { defaults?.integer(forKey: Key.dueCount) ?? 0 }
+
+    // MARK: Start-review request (set by the intent, consumed by the app on activate)
+
+    static func requestStartReview() { defaults?.set(true, forKey: Key.pendingStartReview) }
+
+    /// Returns true once per request, then clears it.
+    static func consumeStartReviewRequest() -> Bool {
+        guard defaults?.bool(forKey: Key.pendingStartReview) == true else { return false }
+        defaults?.removeObject(forKey: Key.pendingStartReview)
+        return true
     }
 }

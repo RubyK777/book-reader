@@ -49,7 +49,10 @@ struct ReviewView: View {
                 }
             }
         }
-        .task { refresh() }
+        .task { refresh(); startIfRequested() }
+        .onChange(of: router.startReviewRequested) { _, requested in
+            if requested { startIfRequested() }
+        }
         .fullScreenCover(isPresented: $isSessionPresented, onDismiss: refresh) {
             ReviewSessionView(items: sessionItems)
         }
@@ -157,5 +160,17 @@ struct ReviewView: View {
     private func refresh() {
         due = SRSEngine.dueItems(in: modelContext)
         router.recomputeDueCount(in: modelContext)
+    }
+
+    /// Honor a "Start Review" App Intent: open a session on the due cards (or the
+    /// whole deck when nothing's due). No-op if the deck is empty. Reads the store
+    /// directly so it doesn't depend on `due`'s @State having flushed yet.
+    private func startIfRequested() {
+        guard router.startReviewRequested else { return }
+        router.startReviewRequested = false
+        let dueNow = SRSEngine.dueItems(in: modelContext)
+        let items = dueNow.isEmpty ? deck : dueNow
+        guard !items.isEmpty else { return }
+        startSession(with: items)
     }
 }

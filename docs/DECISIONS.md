@@ -664,3 +664,13 @@ entries stand as history).*
     `TimelineProvider` → `AppIntentTimelineProvider`. *Migration:* changing the config type for the same kind
     means existing placed widgets must be removed and re-added once. (Two widgets set to the same "Show" value
     are as independent as WidgetKit allows; picking different slices guarantees distinct content.)
+
+67. **Siri / Shortcuts App Intents ("Start Review", "Words Due").** Two `AppIntent`s + an `AppShortcutsProvider`,
+    both App-Group-only (no SwiftData in the intent, staying offline). *DueCountIntent* (`openAppWhenRun = false`)
+    answers "how many words are due?" from the count the app writes to `SharedStore` on every activate — no
+    launch, instant Siri reply. *StartReviewIntent* (`openAppWhenRun = true`) raises a `SharedStore` flag;
+    `RootView` consumes it on activate (in both `.task` and the `scenePhase == .active` handler, so cold launch
+    and warm foreground both work), switches to the Review tab, and sets `AppRouter.startReviewRequested`;
+    `ReviewView` observes that and opens a session on the due cards (or the whole deck when nothing's due),
+    reading the store directly so it doesn't depend on `@State` having flushed. Reuses the App Group already in
+    place for the widget. Phrases use `\(.applicationName)` so they read naturally with the app's name.
