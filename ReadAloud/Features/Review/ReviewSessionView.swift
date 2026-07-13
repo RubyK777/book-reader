@@ -35,6 +35,14 @@ struct ReviewSessionView: View {
     @State private var confettiTrigger = 0
     @State private var masteryShown = false
 
+    // Say-your-answer speech check (listening & cloze faces).
+    @State private var recorder = VoiceRecorder()
+    @State private var speechPhase: SpeechPhase = .idle
+    @State private var pronunciation: PronunciationResult?
+    @State private var micDenied = false
+    @State private var suggestedGrade: ReviewGrade?
+    private let transcriber: any Transcribing = TranscriberFactory.make()
+
     init(items: [ReviewItem]) {
         _queue = State(initialValue: items)
     }
@@ -154,15 +162,7 @@ struct ReviewSessionView: View {
             Spacer()
 
             if phase == .recall {
-                Button {
-                    reveal(item)
-                } label: {
-                    Text("Reveal answer")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                recallActions(item)
             } else {
                 gradeButtons(item)
             }
@@ -251,8 +251,116 @@ struct ReviewSessionView: View {
     private func recallPrompt(_ item: ReviewItem) -> String {
         switch item.face {
         case .meaning: "What does this mean?"
-        case .listening: "Listen — what did you hear?"
-        case .cloze: "What fills the blank?"
+        case .listening: "Listen — then say what you heard."
+        case .cloze: "Say the word that fills the blank."
+        }
+    }
+
+    // MARK: - Say-your-answer (listening & cloze)
+
+    /// Listening & cloze cards let you *say* the answer (recognized on-device);
+    /// meaning cards stay think-then-reveal (the meaning is in your own language).
+    private func canSpeechCheck(_ item: ReviewItem) -> Bool {
+        !micDenied && (item.face == .listening || item.face == .cloze)
+    }
+
+    @ViewBuilder
+    private func recallActions(_ item: ReviewItem) -> some View {
+        if canSpeechCheck(item) {
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                if speechPhase == .checking {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        ProgressView().controlSize(.small)
+                        Text("Checking…").foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: DesignSystem.minTapTarget)
+                } else {
+                    Button {
+                        speechPhase == .recording ? stopSaying(item) : startSaying(item)
+                    } label: {
+                        Label(speechPhase == .recording ? "Stop" : "Say it",
+                              systemImage: speechPhase == .recording ? "stop.circle.fill" : "mic.fill")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .tint(speechPhase == .recording ? .red : Theme.accent)
+                }
+                Button("Reveal answer") { reveal(item) }
+                    .font(.subheadline)
+            }
+        } else {
+            Button {
+                reveal(item)
+            } label: {
+                Text("Reveal answer").font(.headline).frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+        }
+    }
+
+    private func startSaying(_ item: ReviewItem) {
+        player.stop()
+        Task { @MainActor in
+            guard await recorder.requestPermission() else {
+                micDenied = true
+                return
+            }
+            pronunciation = nil
+            recorder.startRecording()
+            speechPhase = .recording
+        }
+    }
+
+    private func stopSaying(_ item: ReviewItem) {
+        recorder.stopRecording()
+        speechPhase = .checking
+        Task { @MainActor in
+            guard let url = recorder.takeFileURL,
+                  await transcriber.isModelInstalled(item.languageCode) else {
+                speechPhase = .idle
+                reveal(item)                    // can't check — reveal for self-grading
+                return
+            }
+            do {
+                let transcript = try await transcriber.transcribe(
+                    fileURL: url, localeIdentifier: item.languageCode)
+                let scored = PronunciationScorer.score(target: item.promptText, heard: transcript.text)
+                pronunciation = scored
+                suggestedGrade = scored.passed ? .good : .again
+                scored.passed ? Haptics.success() : Haptics.select()
+            } catch {
+                // fall through to a plain reveal
+            }
+            speechPhase = .idle
+            reveal(item)
+        }
+    }
+
+    @ViewBuilder
+    private func pronunciationFeedback(_ result: PronunciationResult) -> some View {
+        if result.passed {
+            Label("Nicely said", systemImage: "checkmark.circle.fill")
+                .font(.headline)
+                .foregroundStyle(Theme.verdigris)
+        } else {
+            VStack(spacing: DesignSystem.Spacing.xs) {
+                Text("Almost — revisit:")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                FlowLayout(spacing: DesignSystem.Spacing.sm) {
+                    ForEach(Array(result.missedWords.enumerated()), id: \.offset) { _, word in
+                        Text(word)
+                            .font(.callout.weight(.medium))
+                            .padding(.horizontal, DesignSystem.Spacing.sm)
+                            .padding(.vertical, DesignSystem.Spacing.xs)
+                            .background(Palette.soft(Theme.coral), in: Capsule())
+                            .foregroundStyle(Theme.coral)
+                    }
+                }
+            }
         }
     }
 
@@ -261,6 +369,10 @@ struct ReviewSessionView: View {
     @ViewBuilder
     private func answerView(_ item: ReviewItem) -> some View {
         VStack(spacing: DesignSystem.Spacing.md) {
+            if let pronunciation {
+                pronunciationFeedback(pronunciation)
+            }
+
             // Cloze: the blanked term is the answer — show it first.
             if item.face == .cloze {
                 Text(item.revealText)
@@ -347,7 +459,7 @@ struct ReviewSessionView: View {
                         .background(grade.tint.opacity(0.15),
                                     in: RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium))
                         .overlay(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                            .stroke(grade.tint, lineWidth: 1))
+                            .stroke(grade.tint, lineWidth: grade == suggestedGrade ? 3 : 1))
                         .foregroundStyle(grade.tint)
                     }
                     .buttonStyle(.plain)
@@ -507,6 +619,10 @@ struct ReviewSessionView: View {
         player.stop()
         meaning = .none
         translateConfig = nil
+        recorder.reset()
+        speechPhase = .idle
+        pronunciation = nil
+        suggestedGrade = nil
         if index + 1 < queue.count {
             phase = .recall
             index += 1
