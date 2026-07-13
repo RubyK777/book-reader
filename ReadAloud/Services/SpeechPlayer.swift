@@ -10,7 +10,7 @@ import Observation
 /// replay players in Saved/Review do not, so they never fight over the
 /// lock screen (AUDIO_DESIGN §7).
 @Observable
-final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
+final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate, SentencePlaying {
     private let synthesizer = AVSpeechSynthesizer()
 
     private(set) var sentences: [String] = []

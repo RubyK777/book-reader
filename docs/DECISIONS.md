@@ -552,3 +552,17 @@ entries stand as history).*
     Record audio). Added `NSSpeechRecognitionUsageDescription`. **Phase 4 (real-audio `RecordingPlayer` +
     `SentencePlaying` protocol) is next** — until then a conversation's Reader plays the transcript via TTS,
     which already works. Recording + on-device transcription are device-only (not the simulator).
+
+57. **Audio Phase 4 — real-audio playback via a shared `SentencePlaying` protocol.** Extracted
+    `SentencePlaying` (the surface the Reader depends on: `currentSentenceIndex`/`highlightRange`/
+    `isSpeaking`/`speedMultiplier`/`repeatMode` + `load`/`play(at:)`/`togglePlayPause`/`next`/`previous`/
+    `stop`/`reconcile`). `SpeechPlayer` (TTS) conforms unchanged; new `RecordingPlayer` (AVAudioPlayer)
+    plays the **real recording**, seeking to each sentence's `[start, end]` and stepping at the boundary
+    (0.04 s timer, mirroring TTS stepping); `enableRate`/`rate` give 0.5–2.0× + Slow natively. Sentence-
+    level karaoke only for now (`highlightRange` stays nil → the Reader emphasizes the whole active
+    sentence; word-level ranges are a later schema bump). The Reader now holds `any SentencePlaying` and
+    **picks the engine at init** — a page with `audioData` → `RecordingPlayer` (ranges from the sentences'
+    stored timings), else TTS — so it never branches on kind mid-flow; the repeat/speed bindings became
+    manual `Binding(get:set:)` to avoid existential key-path issues. No schema change (no wipe). *Deferred
+    (§5.2/§9):* shared `AudioSessionCoordinator`, lock-screen Now Playing for `RecordingPlayer`, word-level
+    karaoke, long-clip chunking.

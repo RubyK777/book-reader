@@ -19,21 +19,39 @@ struct ReaderView: View {
 
     private let source: Source
 
-    /// Persisted page: sentences + affordances come from SwiftData.
+    /// Persisted page: sentences + affordances come from SwiftData. Audio pages
+    /// play the real recording; text pages use TTS.
     init(page: ScanPage) {
         self.source = .persisted(page)
+        _player = State(initialValue: Self.makePlayer(for: page))
     }
 
     /// Ephemeral: plain strings, no persistence affordances.
     init(sentences: [String], languageCode: String) {
         self.source = .ephemeral(sentences, languageCode)
+        _player = State(initialValue: SpeechPlayer(managesNowPlaying: true))
+    }
+
+    /// A conversation page (`audioData`) gets the real-audio `RecordingPlayer`,
+    /// seeked by each sentence's stored `[start, end]`; everything else uses TTS.
+    private static func makePlayer(for page: ScanPage) -> any SentencePlaying {
+        if let data = page.audioData {
+            let sorted = page.sentences.sorted { $0.orderIndex < $1.orderIndex }
+            let duration = page.audioDuration ?? 0
+            let ranges: [(start: Double, end: Double)] = sorted.map { sentence in
+                (start: sentence.audioStart ?? 0, end: sentence.audioEnd ?? duration)
+            }
+            return RecordingPlayer(audioData: data, ranges: ranges)
+        }
+        return SpeechPlayer(managesNowPlaying: true)
     }
 
     @Environment(\.modelContext) private var modelContext
     @Environment(AppRouter.self) private var router
     @Environment(\.scenePhase) private var scenePhase
-    // The Reader's player owns the lock-screen Now Playing + remote controls.
-    @State private var player = SpeechPlayer(managesNowPlaying: true)
+    // The Reader's player: TTS for text pages, real audio for conversation pages.
+    // The TTS player owns the lock-screen Now Playing + remote controls.
+    @State private var player: any SentencePlaying
     @State private var wordSheetSentence: Sentence?
     @State private var editingSentence: Sentence?
     @State private var sentenceToDelete: Sentence?
@@ -386,14 +404,16 @@ struct ReaderView: View {
             .font(.title2)
 
             HStack {
-                Toggle(isOn: $player.repeatMode) {
+                Toggle(isOn: Binding(get: { player.repeatMode },
+                                     set: { player.repeatMode = $0 })) {
                     Image(systemName: "repeat")
                 }
                 .toggleStyle(.button)
 
                 Spacer()
 
-                Picker("Speed", selection: $player.speedMultiplier) {
+                Picker("Speed", selection: Binding(get: { player.speedMultiplier },
+                                                   set: { player.speedMultiplier = $0 })) {
                     ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0], id: \.self) { speed in
                         Text("\(speed, specifier: "%.2g")×").tag(Float(speed))
                     }
