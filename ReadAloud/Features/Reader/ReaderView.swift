@@ -370,10 +370,7 @@ struct ReaderView: View {
     // MARK: Bookmark
 
     private func toggleBookmark(_ sentence: Sentence) {
-        sentence.isBookmarked.toggle()
-        if sentence.isBookmarked, sentence.srs == nil {
-            sentence.srs = SRSState()
-        }
+        sentence.setBookmarked(!sentence.isBookmarked)
         try? modelContext.save()
         router.recomputeDueCount(in: modelContext)
         Haptics.bookmark()

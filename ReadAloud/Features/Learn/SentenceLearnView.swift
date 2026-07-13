@@ -12,6 +12,7 @@ struct SentenceLearnView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppRouter.self) private var router
     @AppStorage("nativeLanguage") private var nativeLanguage = LanguageCatalog.deviceDefaultNative
 
     // Short replay player — never owns the lock screen (AUDIO_DESIGN §7).
@@ -420,9 +421,13 @@ struct SentenceLearnView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(selectedWords.isEmpty)
 
-                    Button(isFragment ? "Save Phrase" : "Save Sentence") { saveWholeSentence() }
-                        .buttonStyle(.bordered)
-                        .disabled(hasAnnotation(text: sentence.text))
+                    Button {
+                        saveWholeSentence()
+                    } label: {
+                        Label(wholeSentenceLabel, systemImage: wholeSentenceIcon)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(wholeSentenceSaved)
                 }
             }
         }
@@ -525,8 +530,36 @@ struct SentenceLearnView: View {
     }
 
     private func saveWholeSentence() {
-        // UX_SPEC §8: a fragment saves as a phrase, never a sentence.
-        save(type: isFragment ? .phrase : .sentence, text: sentence.text)
+        if isFragment {
+            // UX_SPEC §8: a fragment (sign/menu line) is a phrase, not a starred sentence.
+            save(type: .phrase, text: sentence.text)
+        } else {
+            // Saving a whole sentence *is* starring it — the same as the Reader star.
+            starSentence()
+        }
+    }
+
+    /// Whether the whole-sentence save is already done (starred, or phrase saved).
+    private var wholeSentenceSaved: Bool {
+        isFragment ? hasAnnotation(text: sentence.text) : sentence.isBookmarked
+    }
+
+    private var wholeSentenceLabel: String {
+        if isFragment { return wholeSentenceSaved ? "Phrase saved" : "Save phrase" }
+        return sentence.isBookmarked ? "Saved" : "Save sentence"
+    }
+
+    private var wholeSentenceIcon: String {
+        if isFragment { return "bookmark" }
+        return sentence.isBookmarked ? "star.fill" : "star"
+    }
+
+    private func starSentence() {
+        guard !sentence.isBookmarked else { return }
+        sentence.setBookmarked(true)
+        try? modelContext.save()
+        router.recomputeDueCount(in: modelContext)
+        Haptics.bookmark()
     }
 
     /// One-tap save of the generated key vocabulary: each item becomes a word

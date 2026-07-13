@@ -144,6 +144,14 @@ final class Sentence {
         self.orderIndex = orderIndex
         self.isBookmarked = false
     }
+
+    /// The single place that stars/unstars a sentence for review — used by both
+    /// the Reader star and the Learn "Save Sentence". Starring gives it a fresh
+    /// SRS state so it enters the review deck. Callers save + recompute the badge.
+    func setBookmarked(_ bookmarked: Bool) {
+        isBookmarked = bookmarked
+        if bookmarked, srs == nil { srs = SRSState() }
+    }
 }
 
 // MARK: - Annotation (a saved learning item, parented to a Sentence)
