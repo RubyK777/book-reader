@@ -360,9 +360,11 @@ enum ReadAloudSchemaV3: VersionedSchema {
 
 /// V4 — the live models in `Models.swift`. Adds `Annotation.isSuspended`
 /// (lifecycle rule), `Annotation.aiExplanation` (confusion workflow),
-/// `Annotation.translation` (cached meaning), and **drops `ScanPage.imageData`**
-/// — page photos are transient OCR fodder now; only the book cover is kept
-/// (DECISIONS #54). Reset fresh (no prod users) rather than a staged migration.
+/// `Annotation.translation` (cached meaning), **drops `ScanPage.imageData`**
+/// (page photos are transient OCR fodder now — DECISIONS #54), and adds the
+/// **audio-source** fields — `ScanPage.audioData/audioDuration`,
+/// `Sentence.audioStart/audioEnd`, `SourceKind.conversation` (AUDIO_LEARNING_DESIGN).
+/// Reset fresh (no prod users) rather than a staged migration.
 enum ReadAloudSchemaV4: VersionedSchema {
     static let versionIdentifier = Schema.Version(4, 0, 0)
     static var models: [any PersistentModel.Type] {

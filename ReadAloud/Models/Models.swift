@@ -8,7 +8,11 @@ import SwiftData
 /// a `quickScan` — a single real-world capture (sign, menu, screenshot, …).
 /// The finer sign/menu/screenshot split was cosmetic-only and was dropped.
 enum SourceKind: String, Codable, CaseIterable {
-    case book, quickScan
+    case book, quickScan, conversation
+
+    /// The kinds a user can pick when manually creating a source. Conversation
+    /// comes only from an audio capture, so it's excluded here.
+    static let manualCases: [SourceKind] = [.book, .quickScan]
 
     /// Decode a stored raw value, folding the legacy kinds
     /// (`sign`/`menu`/`screenshot`/`other`) into `.quickScan` so older captures
@@ -22,6 +26,7 @@ enum SourceKind: String, Codable, CaseIterable {
         switch self {
         case .book: "Book"
         case .quickScan: "Quick scan"
+        case .conversation: "Conversation"
         }
     }
 
@@ -29,6 +34,7 @@ enum SourceKind: String, Codable, CaseIterable {
         switch self {
         case .book: "book.closed"
         case .quickScan: "doc.text.viewfinder"
+        case .conversation: "waveform"
         }
     }
 }
@@ -62,18 +68,26 @@ final class Book {
     }
 }
 
-// MARK: - ScanPage (one captured page)
+// MARK: - ScanPage (one captured unit: an OCR page OR an audio clip)
 //
-// The captured photo is *not* persisted — it's only used transiently for OCR.
-// Once the sentences are extracted we keep them, plus the book's cover (set from
-// the first page); the raw page images are discarded to keep storage tiny.
+// A captured photo is *not* persisted — it's only OCR fodder. An audio clip IS
+// persisted (its `audioData`) so the Reader can play the real recording seeked
+// by sentence timing (AUDIO_LEARNING_DESIGN §3). `audioData == nil` ⇒ this unit
+// is a text/OCR page (TTS playback); non-nil ⇒ an audio unit (real playback).
 @Model
 final class ScanPage {
-    var rawText: String             // full OCR output
-    var orderIndex: Int             // page order within book
+    var rawText: String             // full OCR output / transcript
+    var orderIndex: Int             // unit order within book
     var scannedAt: Date
     var lastOpenedAt: Date?         // drives Resume; nil until first opened
     var book: Book?
+
+    /// The captured recording (audio units only). External storage keeps the
+    /// blob out of the main store file, like page images used to be.
+    @Attribute(.externalStorage)
+    var audioData: Data?
+    /// Total clip length in seconds (audio units only).
+    var audioDuration: Double?
 
     @Relationship(deleteRule: .cascade, inverse: \Sentence.page)
     var sentences: [Sentence] = []
@@ -93,6 +107,13 @@ final class Sentence {
     var isBookmarked: Bool
     var userNote: String?
     var translatedText: String?     // persisted translation of `text`; nil = not yet translated (TRANSLATION_DESIGN §2)
+
+    /// For audio units: this sentence's segment offsets (seconds) into the parent
+    /// clip. `audioStart == nil` ⇒ play via TTS; non-nil ⇒ play the recording
+    /// seeked to [audioStart, audioEnd] (AUDIO_LEARNING_DESIGN §4).
+    var audioStart: Double?
+    var audioEnd: Double?
+
     var page: ScanPage?
 
     // Review / SRS state (nil until bookmarked)

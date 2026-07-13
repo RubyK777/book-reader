@@ -44,7 +44,7 @@ struct BookFormView: View {
       Form {
         Section {
           Picker("Type", selection: $kind) {
-            ForEach(SourceKind.allCases, id: \.self) { kind in
+            ForEach(SourceKind.manualCases, id: \.self) { kind in
               Label(kind.displayName, systemImage: kind.systemImage).tag(kind)
             }
           }

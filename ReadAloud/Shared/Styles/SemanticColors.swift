@@ -13,6 +13,7 @@ extension SourceKind {
         switch self {
         case .book: Theme.accent
         case .quickScan: Palette.verdigris
+        case .conversation: Palette.violet
         }
     }
 }
