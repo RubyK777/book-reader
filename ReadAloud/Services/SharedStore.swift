@@ -1,10 +1,19 @@
 import Foundation
 
-/// A tiny snapshot shared with the widget process through the App Group. The
-/// app writes it (on due-count recompute); the widget reads it. Deliberately
+/// One review card shown by the widget — a saved item and its meaning. Encoded
+/// into the App Group so the widget can render without touching SwiftData.
+struct WidgetCard: Codable, Hashable {
+    let text: String        // the saved word / phrase / sentence
+    let meaning: String?    // its translation or the user's note
+    let note: String?       // an example or the context sentence (larger sizes)
+    let type: String        // "word" / "phrase" / "sentence" / "grammar"
+    let languageName: String
+}
+
+/// A tiny snapshot shared with the widget process through the App Group. The app
+/// writes it (on due-count recompute); the widget reads it. Deliberately
 /// UserDefaults, not SwiftData — a widget needs a few values, not the store, so
-/// this stays simple and robust (no schema/container coupling). This file is
-/// compiled into BOTH the app and the widget target.
+/// this stays simple and robust. Compiled into BOTH the app and widget target.
 enum SharedStore {
     static let appGroup = "group.com.rubyhung.ReadAloud"
 
@@ -12,30 +21,37 @@ enum SharedStore {
 
     private enum Key {
         static let dueCount = "dueCount"
-        static let phrase = "phrase"
-        static let phraseTranslation = "phraseTranslation"
-        static let phraseLanguage = "phraseLanguage"
+        static let cards = "reviewCards"
+        static let cardIndex = "reviewCardIndex"
     }
 
-    // MARK: Due count
+    // MARK: Due count (kept for any future due surface)
 
-    static func writeDueCount(_ count: Int) {
-        defaults?.set(count, forKey: Key.dueCount)
+    static func writeDueCount(_ count: Int) { defaults?.set(count, forKey: Key.dueCount) }
+    static func dueCount() -> Int { defaults?.integer(forKey: Key.dueCount) ?? 0 }
+
+    // MARK: Review cards
+
+    static func writeCards(_ cards: [WidgetCard]) {
+        let data = try? JSONEncoder().encode(cards)
+        defaults?.set(data, forKey: Key.cards)
     }
 
-    static func dueCount() -> Int {
-        defaults?.integer(forKey: Key.dueCount) ?? 0
+    static func cards() -> [WidgetCard] {
+        guard let data = defaults?.data(forKey: Key.cards),
+              let cards = try? JSONDecoder().decode([WidgetCard].self, from: data) else { return [] }
+        return cards
     }
 
-    // MARK: Phrase to remember
+    /// Which card the widget currently shows (advanced by the shuffle button).
+    static func writeCardIndex(_ index: Int) { defaults?.set(index, forKey: Key.cardIndex) }
+    static func cardIndex() -> Int { defaults?.integer(forKey: Key.cardIndex) ?? 0 }
 
-    static func writePhrase(_ text: String?, translation: String?, languageCode: String?) {
-        defaults?.set(text, forKey: Key.phrase)
-        defaults?.set(translation, forKey: Key.phraseTranslation)
-        defaults?.set(languageCode, forKey: Key.phraseLanguage)
+    /// The card at the stored index, wrapped safely.
+    static func currentCard() -> WidgetCard? {
+        let cards = cards()
+        guard !cards.isEmpty else { return nil }
+        let index = min(max(cardIndex(), 0), cards.count - 1)
+        return cards[index]
     }
-
-    static func phrase() -> String? { defaults?.string(forKey: Key.phrase) }
-    static func phraseTranslation() -> String? { defaults?.string(forKey: Key.phraseTranslation) }
-    static func phraseLanguage() -> String? { defaults?.string(forKey: Key.phraseLanguage) }
 }

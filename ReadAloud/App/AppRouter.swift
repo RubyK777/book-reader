@@ -23,20 +23,40 @@ final class AppRouter {
         updateWidgetSnapshot(in: context)
     }
 
-    /// Push the values the home-screen widget shows into the App Group and ask
-    /// WidgetKit to refresh: the due count, plus a "phrase to remember" (the
-    /// newest saved annotation, with its sentence's translation when there is one).
+    /// Refresh the home-screen widget's card deck: encode recent saved items
+    /// (word/phrase/sentence + meaning + note) into the App Group and reload
+    /// timelines. The widget shows one at a time and shuffles between them.
     @MainActor
     private func updateWidgetSnapshot(in context: ModelContext) {
         SharedStore.writeDueCount(dueCount)
 
         var descriptor = FetchDescriptor<Annotation>(sortBy: [SortDescriptor(\.savedAt, order: .reverse)])
-        descriptor.fetchLimit = 1
-        let newest = try? context.fetch(descriptor).first
-        SharedStore.writePhrase(newest?.text,
-                                translation: newest?.sentence?.translatedText,
-                                languageCode: newest?.languageCode)
+        descriptor.fetchLimit = 40
+        let annotations = (try? context.fetch(descriptor)) ?? []
+
+        let cards: [WidgetCard] = annotations.map { annotation in
+            let contextLine = annotation.contextSentence == annotation.text ? nil : annotation.contextSentence
+            return WidgetCard(
+                text: annotation.text,
+                meaning: nonEmpty(annotation.userNote) ?? annotation.sentence?.translatedText,
+                note: nonEmpty(annotation.userExample) ?? contextLine,
+                type: annotation.type.rawValue,
+                languageName: LanguageCatalog.name(for: annotation.languageCode))
+        }
+        SharedStore.writeCards(cards)
+
+        // Surface a random card each refresh (clamped when the deck shrinks).
+        if cards.isEmpty {
+            SharedStore.writeCardIndex(0)
+        } else if SharedStore.cardIndex() >= cards.count {
+            SharedStore.writeCardIndex(Int.random(in: 0..<cards.count))
+        }
 
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    private func nonEmpty(_ string: String?) -> String? {
+        guard let string, !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return string
     }
 }

@@ -487,3 +487,14 @@ entries stand as history).*
     store, and this avoids schema/container coupling and migration risk (#35). Small = due count; medium adds
     the phrase. The widget declares the `com.apple.widgetkit-extension` point via a hand-written Info.plist
     (`GENERATE_INFOPLIST_FILE: NO`). Prereq now paid for the other Features §6 widget/App-Intent ideas.
+
+53. **Widget redesigned from a due-count to a review-card deck (Ruby's steer).** The "N cards ready" framing
+    read oddly at 0; the phrase preview was the liked part. Now the widget is a flashcard: a random saved
+    word/phrase/sentence + its meaning, with an **interactive shuffle button** (iOS 17 `Button(intent:)` →
+    `ShuffleCardIntent`, runs in-process, no app launch) to switch cards. `SharedStore` now carries a
+    `[WidgetCard]` deck (text + meaning + note) + a current index; the app encodes up to 40 recent
+    annotations in `updateWidgetSnapshot` (meaning = `userNote ?? sentence.translatedText`; note =
+    `userExample ?? contextSentence`) and surfaces a random card each refresh. **Small** = type + text +
+    meaning; **medium/large** add the note/context. Empty state prompts saving. Meaning is best-effort from
+    already-stored fields (no background translation — the framework is UI-bound); cards without a stored
+    meaning still show their context.
