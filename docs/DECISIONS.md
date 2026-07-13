@@ -516,3 +516,20 @@ entries stand as history).*
     **V4** (redefined in place); frozen V1-V3 snapshots are untouched and MigrationTests still pass (dropping
     a property + adding an optional are lightweight). Incompatible old stores are handled by wiping
     (uninstall/reinstall), not a migration stage.
+
+## 2026-07-12 — Duplication cleanup sweep
+
+55. **Codebase de-duplication (3-agent survey → staged extraction).** Ran a parallel audit (data/logic,
+    view patterns, helpers/dead-code) and consolidated the safe, high-value duplication. New
+    `Shared/Extensions/`: `Optional<String>.nonBlank`, `String.isBlank/languageBase/hasSameBaseLanguage(as:)/
+    titleSnippet(from:)`, `Date.relativeNamed/shortDate`, `PhotosPickerItem.loadCoverJPEG()`. New
+    `Shared/Components/`: `ProgressCounter` (the "N of M" counter ×4) and **`PracticeSession`** — a scaffold
+    (counter, hero card, two injected content slots, Next/Finish, done screen, advance/finish state machine)
+    that Shadowing and Speaking (near-clones) now compose, injecting only their distinct controls +
+    `onLeaveCard` cleanup. `SpeechPlayer.speakLine(_:languageCode:slow:)` collapses the load+play/speakOnce
+    two-liner across 6 screens. Deleted dead code (`SharedStore.currentCard()` + the write-only `dueCount`
+    path). **Fixed two bugs the duplication hid:** `ReviewView`'s resting deck omitted Annotations, and
+    `ReviewSessionView.nextDueDate` ignored `isSuspended` + returned `.distantPast` for unreviewed items —
+    both now route through the canonical `SRSEngine.nextDue`. SRS thresholds unified via
+    `SRSEngine.takingRootIntervalDays` + `maturity(forInterval:)`. *Deferred (divergent, lower value):*
+    `SpineRow`, `MeaningView`, generic batch-translate helper.

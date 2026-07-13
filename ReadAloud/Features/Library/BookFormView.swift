@@ -146,10 +146,6 @@ struct BookFormView: View {
 
   private func loadCover(_ item: PhotosPickerItem?) {
     guard let item else { return }
-    Task {
-      guard let data = try? await item.loadTransferable(type: Data.self),
-            let image = UIImage(data: data) else { return }
-      coverData = ImageProcessor.coverJPEG(image)
-    }
+    Task { coverData = await item.loadCoverJPEG() }
   }
 }
