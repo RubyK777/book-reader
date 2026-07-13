@@ -63,6 +63,7 @@
 		B5FCECBD6B6004610C6A0D0F /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23278B10C8ACF15C7B57E9B3 /* DictionaryService.swift */; };
 		B6EEAB545124838D4DB8FF2C /* SavedItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781AF4A9B35C9D48B58F1F1F /* SavedItemDetailView.swift */; };
 		B8A0BB996DE2E55601B678A8 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5CE61ED10EBABDE785C5CDD /* LibraryView.swift */; };
+		BED6F042B309254228D1C526 /* ProgressCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A98BECF4BA3DDD7C6CF2B7F /* ProgressCounter.swift */; };
 		BEF13A09D9AAE11DD7FD09EC /* DocumentCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1DCF38F37736A77E40C074 /* DocumentCameraView.swift */; };
 		C39B8AF1FFDA35CFA2B68C90 /* ReadAloudWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1FAD3AE14FFF95207FAEE14 /* ReadAloudWidget.swift */; };
 		C529E9DA05DD1DFE863E457E /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECEC1376F072DAD1010DCC3 /* ConfettiView.swift */; };
@@ -129,6 +130,7 @@
 		3529C00819E2D64F263AA526 /* AnimatedMeshBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedMeshBackground.swift; sourceTree = "<group>"; };
 		36C0E6637A2D501C2ED788BC /* ReadAloudApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadAloudApp.swift; sourceTree = "<group>"; };
 		39F2F2D89C7D0D082BF9C8F2 /* SemanticColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticColors.swift; sourceTree = "<group>"; };
+		3A98BECF4BA3DDD7C6CF2B7F /* ProgressCounter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressCounter.swift; sourceTree = "<group>"; };
 		3CFC6FA27DFAF000FE142DA9 /* ReviewSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSessionView.swift; sourceTree = "<group>"; };
 		41E7C1CC8B6A9EDC0BCA01EE /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		470A81FF7ED627B6179921B1 /* ReadAloudWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReadAloudWidget.entitlements; sourceTree = "<group>"; };
@@ -334,6 +336,7 @@
 				BECEC1376F072DAD1010DCC3 /* ConfettiView.swift */,
 				3262026191CD0864D087631A /* CountUpText.swift */,
 				343C5C3588E21248150C1FC8 /* FlowLayout.swift */,
+				3A98BECF4BA3DDD7C6CF2B7F /* ProgressCounter.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -608,6 +611,7 @@
 				82752AB6B9FF4BCE44B2BA01 /* OCRService.swift in Sources */,
 				0779DF97C0C16455C2261931 /* PageIngestor.swift in Sources */,
 				60BC30EB0F4797FB6B0E8D6F /* Palette.swift in Sources */,
+				BED6F042B309254228D1C526 /* ProgressCounter.swift in Sources */,
 				A3E81958C1B59DD2161A5FE8 /* ProgressReflectionView.swift in Sources */,
 				FE7518DFE5F53EE5CC8C1E8A /* ReadAloudApp.swift in Sources */,
 				3028F5D064E57CDAA61339BF /* ReaderView.swift in Sources */,

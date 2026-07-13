@@ -252,8 +252,21 @@ enum SRSEngine {
   }
 
   /// Interval (days) at which an item counts as consolidated in memory — the
-  /// "taking root" threshold. Not a level or score; just a maturity marker.
+  /// "known" threshold. Not a level or score; just a maturity marker.
   static let matureIntervalDays = 21
+
+  /// Interval (days) at which an item moves from "learning" to "taking root".
+  static let takingRootIntervalDays = 7
+
+  /// A saved item's growth stage from its SRS interval — drives the progress
+  /// reflection buckets. One place for both thresholds.
+  enum Maturity { case learning, takingRoot, known }
+
+  static func maturity(forInterval intervalDays: Int) -> Maturity {
+    if intervalDays >= matureIntervalDays { .known }
+    else if intervalDays >= takingRootIntervalDays { .takingRoot }
+    else { .learning }
+  }
 
   /// What a grade produced beyond the schedule update — drives one-shot
   /// celebratory moments in a session (never a running score).

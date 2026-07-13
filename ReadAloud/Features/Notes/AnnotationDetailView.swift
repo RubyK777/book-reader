@@ -55,9 +55,7 @@ struct AnnotationDetailView: View {
                         .fontDesign(Theme.sentenceDesign)
                     Spacer()
                     Button {
-                        player.load(sentences: [annotation.text],
-                                    languageCode: annotation.languageCode)
-                        player.play(at: 0)
+                        player.speakLine(annotation.text, languageCode: annotation.languageCode)
                     } label: {
                         Image(systemName: "speaker.wave.2.fill")
                     }

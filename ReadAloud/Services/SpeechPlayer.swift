@@ -159,6 +159,18 @@ final class SpeechPlayer: NSObject, AVSpeechSynthesizerDelegate {
         self.nowPlayingTitle = title ?? "ReadAloud"
     }
 
+    /// Speak a single line as a one-item queue: normal (karaoke) playback, or the
+    /// slow one-shot when `slow` is true. Collapses the load+play / load+speakOnce
+    /// two-liner that was copied across the review, practice, and saved screens.
+    func speakLine(_ text: String, languageCode: String, slow: Bool = false) {
+        load(sentences: [text], languageCode: languageCode)
+        if slow {
+            speakOnce(text, slow: true)
+        } else {
+            play(at: 0)
+        }
+    }
+
     func play(at index: Int) {
         guard sentences.indices.contains(index) else { return }
         isJumping = synthesizer.isSpeaking

@@ -39,9 +39,7 @@ struct SpeakingPracticeView: View {
     @ViewBuilder
     private func practiceView(_ item: ReviewItem) -> some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
-            Text("\(index + 1) of \(items.count)")
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(.secondary)
+            ProgressCounter(current: index + 1, total: items.count)
 
             Spacer()
 
@@ -71,8 +69,7 @@ struct SpeakingPracticeView: View {
                 .buttonStyle(.borderedProminent)
 
                 Button {
-                    player.load(sentences: [item.promptText], languageCode: item.languageCode)
-                    player.speakOnce(item.promptText, slow: true)
+                    player.speakLine(item.promptText, languageCode: item.languageCode, slow: true)
                 } label: {
                     Label("Slow", systemImage: "tortoise.fill")
                         .frame(minHeight: DesignSystem.minTapTarget)
@@ -112,8 +109,7 @@ struct SpeakingPracticeView: View {
     }
 
     private func play(_ item: ReviewItem) {
-        player.load(sentences: [item.promptText], languageCode: item.languageCode)
-        player.play(at: 0)
+        player.speakLine(item.promptText, languageCode: item.languageCode)
     }
 
     private func advance() {

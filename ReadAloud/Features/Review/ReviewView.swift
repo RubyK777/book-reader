@@ -13,6 +13,8 @@ struct ReviewView: View {
     @Query(filter: #Predicate<Sentence> { $0.isBookmarked })
     private var bookmarkedSentences: [Sentence]
     @Query private var savedWords: [SavedWord]
+    @Query(filter: #Predicate<Annotation> { !$0.isSuspended })
+    private var annotations: [Annotation]
 
     @State private var due: [ReviewItem] = []
     @State private var isSessionPresented = false
@@ -21,7 +23,9 @@ struct ReviewView: View {
     @State private var isProgressPresented = false
 
     private var deck: [ReviewItem] {
-        bookmarkedSentences.map(ReviewItem.sentence) + savedWords.map(ReviewItem.word)
+        bookmarkedSentences.map(ReviewItem.sentence)
+            + savedWords.map(ReviewItem.word)
+            + annotations.map(ReviewItem.annotation)
     }
 
     /// Soonest due date across the whole deck (state (b)).

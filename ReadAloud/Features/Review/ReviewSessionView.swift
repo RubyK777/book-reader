@@ -131,9 +131,7 @@ struct ReviewSessionView: View {
     @ViewBuilder
     private func cardView(_ item: ReviewItem) -> some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
-            Text("\(index + 1) of \(queue.count)")
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(.secondary)
+            ProgressCounter(current: index + 1, total: queue.count)
 
             Spacer()
 
@@ -220,8 +218,7 @@ struct ReviewSessionView: View {
                     .buttonStyle(.bordered)
 
                     Button {
-                        player.load(sentences: [item.promptText], languageCode: item.languageCode)
-                        player.speakOnce(item.promptText, slow: true)
+                        player.speakLine(item.promptText, languageCode: item.languageCode, slow: true)
                     } label: {
                         Label("Slow", systemImage: "tortoise.fill")
                             .frame(minHeight: DesignSystem.minTapTarget)
@@ -425,7 +422,7 @@ struct ReviewSessionView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
-                } else if let next = nextDueDate() {
+                } else if let next = SRSEngine.nextDue(in: modelContext)?.date {
                     Text("Next review \(next.relativeNamed)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -453,8 +450,7 @@ struct ReviewSessionView: View {
     // MARK: - Actions
 
     private func speak(_ text: String, _ languageCode: String) {
-        player.load(sentences: [text], languageCode: languageCode)
-        player.play(at: 0)
+        player.speakLine(text, languageCode: languageCode)
     }
 
     /// Flip to the answer and resolve its meaning: reuse a stored translation,
@@ -542,23 +538,5 @@ struct ReviewSessionView: View {
         player.stop()
         router.recomputeDueCount(in: modelContext)
         dismiss()
-    }
-
-    /// Soonest due date across the whole deck, for the "Next review" line.
-    private func nextDueDate() -> Date? {
-        var dates: [Date] = []
-        let sentenceFetch = FetchDescriptor<Sentence>(predicate: #Predicate { $0.isBookmarked })
-        if let sentences = try? modelContext.fetch(sentenceFetch) {
-            dates += sentences.map { $0.srs?.dueDate ?? .distantPast }
-        }
-        let wordFetch = FetchDescriptor<SavedWord>()
-        if let words = try? modelContext.fetch(wordFetch) {
-            dates += words.map { $0.srs?.dueDate ?? .distantPast }
-        }
-        let annotationFetch = FetchDescriptor<Annotation>()
-        if let annotations = try? modelContext.fetch(annotationFetch) {
-            dates += annotations.map { $0.srs?.dueDate ?? .distantPast }
-        }
-        return dates.min()
     }
 }

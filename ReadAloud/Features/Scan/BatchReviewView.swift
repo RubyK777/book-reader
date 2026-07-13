@@ -88,9 +88,7 @@ struct BatchReviewView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
         HStack {
-          Text("Page \(index + 1) of \(pages.count)")
-            .font(.footnote.weight(.medium))
-            .foregroundStyle(.secondary)
+          ProgressCounter(current: index + 1, total: pages.count, noun: "Page")
           Spacer()
           if pages[index].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             Label("No text", systemImage: "exclamationmark.triangle")

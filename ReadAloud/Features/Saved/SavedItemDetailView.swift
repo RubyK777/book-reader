@@ -44,8 +44,7 @@ struct SavedItemDetailView: View {
             .foregroundStyle(.secondary)
         }
         Button {
-          player.load(sentences: [text], languageCode: languageCode)
-          player.play(at: 0)
+          player.speakLine(text, languageCode: languageCode)
           Haptics.select()
         } label: {
           Label("Play", systemImage: "speaker.wave.2.fill")

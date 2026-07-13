@@ -42,9 +42,7 @@ struct ShadowingPracticeView: View {
     @ViewBuilder
     private func practiceView(_ item: ReviewItem) -> some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
-            Text("\(index + 1) of \(items.count)")
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(.secondary)
+            ProgressCounter(current: index + 1, total: items.count)
 
             Spacer()
 
@@ -59,8 +57,7 @@ struct ShadowingPracticeView: View {
             HStack(spacing: DesignSystem.Spacing.md) {
                 Button {
                     recorder.stopPlayback()
-                    player.load(sentences: [item.promptText], languageCode: item.languageCode)
-                    player.play(at: 0)
+                    player.speakLine(item.promptText, languageCode: item.languageCode)
                 } label: {
                     Label("Original", systemImage: "speaker.wave.2.fill")
                 }
@@ -68,8 +65,7 @@ struct ShadowingPracticeView: View {
 
                 Button {
                     recorder.stopPlayback()
-                    player.load(sentences: [item.promptText], languageCode: item.languageCode)
-                    player.speakOnce(item.promptText, slow: true)
+                    player.speakLine(item.promptText, languageCode: item.languageCode, slow: true)
                 } label: {
                     Label("Slow", systemImage: "tortoise.fill")
                 }

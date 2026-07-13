@@ -164,8 +164,7 @@ private struct ReplayButton: View {
   var body: some View {
     Button {
       bounce += 1
-      player.load(sentences: [text], languageCode: code)
-      player.play(at: 0)
+      player.speakLine(text, languageCode: code)
       Haptics.select()
     } label: {
       Image(systemName: "speaker.wave.2.fill")

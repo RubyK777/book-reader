@@ -59,9 +59,11 @@ struct ProgressReflectionView: View {
     private var total: Int { intervals.count }
 
     private func stage(for interval: Int) -> Stage {
-        if interval >= SRSEngine.matureIntervalDays { .known }
-        else if interval >= 7 { .takingRoot }
-        else { .learning }
+        switch SRSEngine.maturity(forInterval: interval) {
+        case .known: .known
+        case .takingRoot: .takingRoot
+        case .learning: .learning
+        }
     }
 
     private func count(_ stage: Stage) -> Int {
