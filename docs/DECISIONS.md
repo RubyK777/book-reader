@@ -564,8 +564,8 @@ entries stand as history).*
     **picks the engine at init** — a page with `audioData` → `RecordingPlayer` (ranges from the sentences'
     stored timings), else TTS — so it never branches on kind mid-flow; the repeat/speed bindings became
     manual `Binding(get:set:)` to avoid existential key-path issues. No schema change (no wipe). *Deferred
-    (§5.2/§9):* shared `AudioSessionCoordinator`, lock-screen Now Playing for `RecordingPlayer`, word-level
-    karaoke, long-clip chunking.
+    (§5.2/§9):* shared `AudioSessionCoordinator`, ~~lock-screen Now Playing for `RecordingPlayer`~~ (done, #62),
+    word-level karaoke (done, #58), long-clip chunking.
 
 58. **Audio Phase 6a — word-level karaoke on real audio.** Store per-word timings and light up each word as
     the recording plays. **Schema:** `WordTiming` Codable (`start`/`end` seconds + `location`/`length`
@@ -606,3 +606,13 @@ entries stand as history).*
     and shuffling one refreshed both. Fix: each timeline picks a **random seed**; the card = `deck[seed %
     pool.count]` (per family), so instances differ. `ShuffleCardIntent` no longer reloads all — WidgetKit
     reloads only the tapped widget (fresh seed → new card); others untouched. Dropped the shared card index.
+
+62. **Lock-screen Now Playing + remote commands for conversation audio.** TTS playback already drove the lock
+    screen (#57/AUDIO_DESIGN §7); real-audio conversation playback did not, so a locked phone showed a dead
+    card. `RecordingPlayer` now takes `managesNowPlaying` (the Reader passes `true`) and mirrors `SpeechPlayer`:
+    `MPNowPlayingInfoCenter` (title = current sentence, album = book title, queue index/count, rate reflecting
+    the speed multiplier) updated on play/pause/advance/stop, and `MPRemoteCommandCenter` play/pause/toggle/
+    next/previous (sentence is the unit → skip/scrub disabled). Added the same interruption (pause on call/Siri,
+    resume if permitted) and route-change (pause on headphone unplug) handling `SpeechPlayer` has — real audio
+    in the background needs it. `load()` now keeps the sentence strings + title only to label the card. No
+    schema change. Deferred still: extracting the duplicated now-playing/session logic into a shared coordinator.
