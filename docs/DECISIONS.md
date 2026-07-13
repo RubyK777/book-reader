@@ -566,3 +566,14 @@ entries stand as history).*
     manual `Binding(get:set:)` to avoid existential key-path issues. No schema change (no wipe). *Deferred
     (§5.2/§9):* shared `AudioSessionCoordinator`, lock-screen Now Playing for `RecordingPlayer`, word-level
     karaoke, long-clip chunking.
+
+58. **Audio Phase 6a — word-level karaoke on real audio.** Store per-word timings and light up each word as
+    the recording plays. **Schema:** `WordTiming` Codable (`start`/`end` seconds + `location`/`length`
+    NSRange into the sentence text) + `Sentence.wordTimings: [WordTiming]?` (nil for text sentences); part
+    of the fingerprint (#35) so wiped fresh. **Ingest:** `AudioIngestor.map(...)` walks the recognizer's
+    per-word segments (one per `.byWords` token), pairing each to its NSRange in the sentence — producing
+    both the sentence range and its word timings (the old `timings` now derives from it; tested).
+    **Playback:** `RecordingPlayer.highlightRange` became a live `var`; its boundary timer (now 0.03 s)
+    lights the most recent word whose `start <= currentTime`, and the Reader's existing `highlightRange`
+    rendering bolds/backgrounds it — same karaoke path as TTS. Falls back to sentence-level when a sentence
+    has no word timings. Light transcript edits stay aligned; heavy edits drift (documented, §7).

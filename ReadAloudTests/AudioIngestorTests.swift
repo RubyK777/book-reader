@@ -36,4 +36,21 @@ struct AudioIngestorTests {
         let ranges = AudioIngestor.timings(for: ["a b", "c"], segments: [])
         #expect(ranges.allSatisfy { $0.start == nil && $0.end == nil })
     }
+
+    @Test func mapProducesPerWordRangesAndTimings() {
+        let segments = [
+            TranscriptSegment(text: "Bonjour", start: 0.0, duration: 0.5),
+            TranscriptSegment(text: "monde", start: 0.6, duration: 0.4),
+        ]
+        let mapped = AudioIngestor.map(sentences: ["Bonjour monde"], segments: segments)
+
+        #expect(mapped.count == 1)
+        #expect(mapped[0].words.count == 2)
+        #expect(mapped[0].words[0].location == 0)   // "Bonjour"
+        #expect(mapped[0].words[0].length == 7)
+        #expect(mapped[0].words[0].start == 0.0)
+        #expect(mapped[0].words[1].location == 8)   // "monde"
+        #expect(mapped[0].words[1].length == 5)
+        #expect(mapped[0].words[1].start == 0.6)
+    }
 }

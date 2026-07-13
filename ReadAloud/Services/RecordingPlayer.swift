@@ -10,7 +10,7 @@ import Observation
 @Observable
 final class RecordingPlayer: NSObject, SentencePlaying {
     private(set) var currentSentenceIndex: Int?
-    let highlightRange: NSRange? = nil          // sentence-level only for now
+    private(set) var highlightRange: NSRange?    // word-level karaoke, driven by playback time
     private(set) var isSpeaking = false
 
     var speedMultiplier: Float = 1.0 {
@@ -21,12 +21,17 @@ final class RecordingPlayer: NSObject, SentencePlaying {
     private var player: AVAudioPlayer?
     private var sentenceCount: Int
     private let ranges: [(start: Double, end: Double)]
+    private let wordTimings: [[WordTiming]]
     private var boundaryTimer: Timer?
     private var tempURL: URL?
 
-    /// `ranges[i]` is sentence `i`'s time window into the clip, in play order.
-    init(audioData: Data, ranges: [(start: Double, end: Double)]) {
+    /// `ranges[i]` is sentence `i`'s time window; `wordTimings[i]` its per-word
+    /// karaoke timings (empty ⇒ sentence-level highlight only).
+    init(audioData: Data,
+         ranges: [(start: Double, end: Double)],
+         wordTimings: [[WordTiming]] = []) {
         self.ranges = ranges
+        self.wordTimings = wordTimings
         self.sentenceCount = ranges.count
         super.init()
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
@@ -48,6 +53,7 @@ final class RecordingPlayer: NSObject, SentencePlaying {
         guard ranges.indices.contains(index), let player else { return }
         stopTimer()
         currentSentenceIndex = index
+        highlightRange = nil
         player.rate = speedMultiplier
         player.currentTime = ranges[index].start
         player.play()
@@ -81,6 +87,7 @@ final class RecordingPlayer: NSObject, SentencePlaying {
         player?.pause()
         player?.currentTime = 0
         currentSentenceIndex = nil
+        highlightRange = nil
         isSpeaking = false
     }
 
@@ -94,9 +101,17 @@ final class RecordingPlayer: NSObject, SentencePlaying {
 
     private func startBoundaryTimer(for index: Int) {
         let end = ranges[index].end
-        boundaryTimer = Timer.scheduledTimer(withTimeInterval: 0.04, repeats: true) { [weak self] _ in
+        let words = index < wordTimings.count ? wordTimings[index] : []
+        boundaryTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { [weak self] _ in
             guard let self, let player = self.player else { return }
-            if player.currentTime >= end || !player.isPlaying {
+            let time = player.currentTime
+            // Word-level karaoke: light up the most recent word that has started.
+            if let word = words.last(where: { $0.start <= time }) {
+                self.highlightRange = NSRange(location: word.location, length: word.length)
+            } else {
+                self.highlightRange = nil
+            }
+            if time >= end || !player.isPlaying {
                 self.sentenceBoundaryReached(index)
             }
         }

@@ -99,6 +99,15 @@ final class ScanPage {
     }
 }
 
+/// A word's karaoke timing within its parent audio clip. `location`/`length`
+/// are the NSRange into the sentence's `text`; `[start, end]` are clip seconds.
+struct WordTiming: Codable, Hashable {
+    var start: Double
+    var end: Double
+    var location: Int
+    var length: Int
+}
+
 // MARK: - Sentence (unit of listening; parent of all learning annotations)
 @Model
 final class Sentence {
@@ -113,6 +122,9 @@ final class Sentence {
     /// seeked to [audioStart, audioEnd] (AUDIO_LEARNING_DESIGN §4).
     var audioStart: Double?
     var audioEnd: Double?
+    /// Per-word timings within this sentence, for word-level karaoke on audio
+    /// playback (nil for text sentences). Part of the schema fingerprint (#35).
+    var wordTimings: [WordTiming]?
 
     var page: ScanPage?
 
