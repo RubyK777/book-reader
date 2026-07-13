@@ -13,6 +13,13 @@ targets:
       - path: ReadAloud
         excludes:
           - Info.plist
+    entitlements:
+      path: ReadAloud/ReadAloud.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.rubyhung.ReadAloud
+    dependencies:
+      - target: ReadAloudWidget
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
@@ -29,6 +36,29 @@ targets:
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
+
+  ReadAloudWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ReadAloudWidget
+      - path: ReadAloud/Services/SharedStore.swift
+    entitlements:
+      path: ReadAloudWidget/ReadAloudWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.rubyhung.ReadAloud
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: ReadAloudWidget/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.rubyhung.ReadAloud.widget
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
 
   ReadAloudTests:
     type: bundle.unit-test
