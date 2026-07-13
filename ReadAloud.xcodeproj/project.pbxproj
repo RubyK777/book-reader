@@ -16,6 +16,7 @@
 		0E837D97F1EB877AB93186AE /* TranslationResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCF95C248426B2E99665E51 /* TranslationResolver.swift */; };
 		0EBC25B89B8B456456174276 /* Interactive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BF178CA8B6AA8A5A0B3C472 /* Interactive.swift */; };
 		0EC1D1D1CE25AA459D3CA9F9 /* AudioCaptureRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58BDD23A0F8B2CC2A377D349 /* AudioCaptureRecorder.swift */; };
+		11EC8E5048BBC319E1C004E4 /* PronunciationScorerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 428EADB80D21629E375EEC2B /* PronunciationScorerTests.swift */; };
 		14C74E50C82378F057C8649B /* SentenceSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAF3F2DB98C5E0D76F887581 /* SentenceSplitter.swift */; };
 		18AD0B1D16ED0AAEA14FE65A /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B658E25EF1CE476ACB066241 /* DesignSystem.swift */; };
 		1DF4347D7B0519D490D26D01 /* LearningAssetsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DA4F0C51F04CC2E251D1A7D /* LearningAssetsProvider.swift */; };
@@ -36,6 +37,7 @@
 		47CCC908ED0B200DF13E1E3C /* VoiceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9351BF59A4835332603EC8 /* VoiceStore.swift */; };
 		4D68F17953EB427025542F55 /* LiveTextCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69D52E7E91C9BCFC0FFBF74A /* LiveTextCameraView.swift */; };
 		4F69DA2002BB46F03CC5D049 /* Cards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2974A505A9F296158208AD02 /* Cards.swift */; };
+		57E57A0EDA9EC83229773305 /* PronunciationScorer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B85AC8FF8D101F996D40ABB /* PronunciationScorer.swift */; };
 		595D28DE4F62FEB67C6CDDBB /* VoiceRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC7EBB40679D3855647E07FF /* VoiceRecorder.swift */; };
 		5EC5CF7CFAEF1E6A076332CF /* String+Text.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FF4A188324A81586A5C8CF /* String+Text.swift */; };
 		60BC30EB0F4797FB6B0E8D6F /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFC19E69947D7AA02E1F2594 /* Palette.swift */; };
@@ -151,10 +153,12 @@
 		3B9B826BF666401CA33E9D56 /* MicAuthorizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicAuthorizer.swift; sourceTree = "<group>"; };
 		3CFC6FA27DFAF000FE142DA9 /* ReviewSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSessionView.swift; sourceTree = "<group>"; };
 		41E7C1CC8B6A9EDC0BCA01EE /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		428EADB80D21629E375EEC2B /* PronunciationScorerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PronunciationScorerTests.swift; sourceTree = "<group>"; };
 		470A81FF7ED627B6179921B1 /* ReadAloudWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReadAloudWidget.entitlements; sourceTree = "<group>"; };
 		51F0C3479448E23F34AB2AB9 /* ClozeBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClozeBuilder.swift; sourceTree = "<group>"; };
 		57B1DD887B251250C03FAD49 /* ReadAloud.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReadAloud.entitlements; sourceTree = "<group>"; };
 		58BDD23A0F8B2CC2A377D349 /* AudioCaptureRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureRecorder.swift; sourceTree = "<group>"; };
+		5B85AC8FF8D101F996D40ABB /* PronunciationScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PronunciationScorer.swift; sourceTree = "<group>"; };
 		5B8BABAA11445B30F26F7FB8 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		69D52E7E91C9BCFC0FFBF74A /* LiveTextCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTextCameraView.swift; sourceTree = "<group>"; };
 		6F0A60928EF6AC9E9DBCA02A /* ScanFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFlowView.swift; sourceTree = "<group>"; };
@@ -276,6 +280,7 @@
 				CFF281D69EFBF8C5DA3E9571 /* ClozeBuilderTests.swift */,
 				B717D28674FF5282DADDDCF9 /* FragmentDetectorTests.swift */,
 				02C1FFB0C472AEB2F0F35E87 /* MigrationTests.swift */,
+				428EADB80D21629E375EEC2B /* PronunciationScorerTests.swift */,
 				D493A9331B369578A465E395 /* SRSStateTests.swift */,
 				B8BE74B31A842ECD63D6993D /* TextProcessingTests.swift */,
 			);
@@ -419,6 +424,7 @@
 				3B9B826BF666401CA33E9D56 /* MicAuthorizer.swift */,
 				0A38AC87DF4921A1C15348AC /* OCRService.swift */,
 				967112DE8BF44C16C2B32018 /* PageIngestor.swift */,
+				5B85AC8FF8D101F996D40ABB /* PronunciationScorer.swift */,
 				19D106D1ED697A43324C4380 /* RecordingPlayer.swift */,
 				2BE4CDA0B26AFB6A3D0C1988 /* ReviewReminderService.swift */,
 				2583F14FFBCC5BD788FE1122 /* SentencePlaying.swift */,
@@ -618,6 +624,7 @@
 				B23E035BB59F6434703C7584 /* ClozeBuilderTests.swift in Sources */,
 				63B3424A5CA8D2716404F578 /* FragmentDetectorTests.swift in Sources */,
 				1FAD825964E040F0D6C9DDBC /* MigrationTests.swift in Sources */,
+				11EC8E5048BBC319E1C004E4 /* PronunciationScorerTests.swift in Sources */,
 				DB6717A2F2A087D801DF8992 /* SRSStateTests.swift in Sources */,
 				79A530D266412C03E3D8EA82 /* TextProcessingTests.swift in Sources */,
 			);
@@ -668,6 +675,7 @@
 				FD6F130A1C963BD28C3F0046 /* PracticeSession.swift in Sources */,
 				BED6F042B309254228D1C526 /* ProgressCounter.swift in Sources */,
 				A3E81958C1B59DD2161A5FE8 /* ProgressReflectionView.swift in Sources */,
+				57E57A0EDA9EC83229773305 /* PronunciationScorer.swift in Sources */,
 				FE7518DFE5F53EE5CC8C1E8A /* ReadAloudApp.swift in Sources */,
 				3028F5D064E57CDAA61339BF /* ReaderView.swift in Sources */,
 				310223935EB9742FA1FCEEB3 /* RecordingPlayer.swift in Sources */,

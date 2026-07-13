@@ -23,6 +23,9 @@ final class VoiceRecorder: NSObject, AVAudioRecorderDelegate, AVAudioPlayerDeleg
     private let takeURL = FileManager.default.temporaryDirectory
         .appendingPathComponent("shadowing-take.m4a")
 
+    /// The last take's file, for transcribing (pronunciation check). Nil until recorded.
+    var takeFileURL: URL? { hasTake ? takeURL : nil }
+
     /// Ask for mic access (primes the system prompt on first use).
     func requestPermission() async -> Bool {
         let granted = await AVAudioApplication.requestRecordPermission()
