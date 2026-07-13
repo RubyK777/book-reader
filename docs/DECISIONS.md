@@ -533,3 +533,22 @@ entries stand as history).*
     both now route through the canonical `SRSEngine.nextDue`. SRS thresholds unified via
     `SRSEngine.takingRootIntervalDays` + `maturity(forInterval:)`. *Deferred (divergent, lower value):*
     `SpineRow`, `MeaningView`, generic batch-translate helper.
+
+## 2026-07-12 — Audio-capture loop (AUDIO_LEARNING_DESIGN)
+
+56. **Audio sources: capture → on-device transcribe → review → save (Phases 1–3).** A recorded/imported
+    clip becomes a `.conversation` `Book` whose `ScanPage` carries the recording and whose `Sentence`s carry
+    segment timings — reusing the whole downstream loop. **Ruby's scope:** both mic recording *and* file/
+    video import; build the transcriber and validate accuracy live on-device (no separate CLI spike); defer
+    speaker labels + word-level karaoke; one clip per source; French-first. **Schema:** `ScanPage.audioData`
+    (external storage) + `audioDuration`, `Sentence.audioStart/audioEnd` (nil ⇒ TTS, non-nil ⇒ real-audio),
+    `SourceKind.conversation` (excluded from the manual picker via `manualCases`); modified live models
+    directly + wiped (pre-users). **Services (UI-free):** `MicAuthorizer`, `AudioFileStore` (record target,
+    offline video→m4a extraction, blob↔temp-file), `OnDeviceTranscriber` (`SFSpeechRecognizer` +
+    `requiresOnDeviceRecognition = true` — audio never leaves the device, #31; whole-file for MVP, chunking
+    deferred), `AudioIngestor` (pure word-count timing map, tested; persist). **UI:** `AudioCaptureFlowView`
+    (record w/ level meter + `.fileImporter` for audio/movie) → `TranscriptionReviewView` (play original,
+    edit transcript, language + translate-to, Save). Library capture button became a menu (Scan text /
+    Record audio). Added `NSSpeechRecognitionUsageDescription`. **Phase 4 (real-audio `RecordingPlayer` +
+    `SentencePlaying` protocol) is next** — until then a conversation's Reader plays the transcript via TTS,
+    which already works. Recording + on-device transcription are device-only (not the simulator).

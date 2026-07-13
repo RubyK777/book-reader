@@ -26,7 +26,8 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_FILE: ReadAloud/Info.plist
         INFOPLIST_KEY_NSCameraUsageDescription: ReadAloud uses the camera to photograph book pages so it can read the text aloud.
-        INFOPLIST_KEY_NSMicrophoneUsageDescription: ReadAloud records your voice during shadowing practice so you can compare it with the original audio.
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: ReadAloud records audio — your voice during shadowing, and conversations or clips you capture — so it can transcribe and play them back for learning.
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: ReadAloud transcribes the audio you capture entirely on your device so you can read and study it. Nothing is sent anywhere.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight

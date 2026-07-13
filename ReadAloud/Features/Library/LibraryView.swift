@@ -16,6 +16,7 @@ struct LibraryView: View {
   var bookNamespace: Namespace.ID
 
   @State private var isScanPresented = false
+  @State private var isAudioPresented = false
   @State private var bookToEdit: Book?
   @State private var bookPendingDeletion: Book?
 
@@ -38,8 +39,15 @@ struct LibraryView: View {
     .navigationTitle("Library")
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
-        Button { isScanPresented = true } label: {
-          Label("Scan", systemImage: "camera")
+        Menu {
+          Button { isScanPresented = true } label: {
+            Label("Scan text", systemImage: "doc.text.viewfinder")
+          }
+          Button { isAudioPresented = true } label: {
+            Label("Record audio", systemImage: "waveform")
+          }
+        } label: {
+          Label("Capture", systemImage: "plus.circle.fill")
         }
         .symbolEffect(.wiggle, options: .repeat(.periodic(delay: 4)), isActive: books.isEmpty)
       }
@@ -61,6 +69,9 @@ struct LibraryView: View {
     }
     .sheet(isPresented: $isScanPresented) {
       ScanFlowView(book: nil)
+    }
+    .sheet(isPresented: $isAudioPresented) {
+      AudioCaptureFlowView()
     }
     .sheet(item: $bookToEdit) { book in
       BookFormView(mode: .edit(book))
