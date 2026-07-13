@@ -120,9 +120,14 @@ final class RecordingPlayer: NSObject, SentencePlaying {
     private func sentenceBoundaryReached(_ index: Int) {
         stopTimer()
         if repeatMode {
-            play(at: index)
+            play(at: index)   // replay this sentence (real seek)
         } else if index + 1 < ranges.count {
-            play(at: index + 1)
+            // Natural advance: the audio is already flowing into the next
+            // sentence, so DON'T re-seek (that stutters) — just move the
+            // highlight/boundary. play(at:) re-seeks only for manual jumps.
+            currentSentenceIndex = index + 1
+            highlightRange = nil
+            startBoundaryTimer(for: index + 1)
         } else {
             player?.pause()
             isSpeaking = false
