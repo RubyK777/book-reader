@@ -16,6 +16,7 @@ struct ReviewSessionView: View {
     @AppStorage("nativeLanguage") private var nativeLanguage = LanguageCatalog.deviceDefaultNative
 
     private enum Phase { case recall, revealed, summary }
+    private enum SpeechPhase { case idle, recording, checking }
 
     @State private var queue: [ReviewItem]
     @State private var index = 0

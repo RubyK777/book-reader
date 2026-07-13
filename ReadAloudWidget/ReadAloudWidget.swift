@@ -3,19 +3,21 @@ import SwiftUI
 import AppIntents
 
 /// Home-screen review-card widget: a random saved word/phrase/sentence with its
-/// meaning. Tap the shuffle button to switch to another card. Reads the App
-/// Group snapshot the app writes (`SharedStore`) — no SwiftData in the widget.
+/// meaning. Tap shuffle for another. Reads the App Group snapshot (`SharedStore`)
+/// — no SwiftData in the widget. Each timeline picks a *random seed*, so multiple
+/// widget instances are independent: they show different cards, and tapping
+/// shuffle on one reloads only that instance (its intent doesn't reload the rest).
 struct CardEntry: TimelineEntry {
     let date: Date
     let cards: [WidgetCard]
-    let index: Int
+    let seed: Int
 }
 
 struct ReadAloudProvider: TimelineProvider {
     func placeholder(in context: Context) -> CardEntry {
         CardEntry(date: Date(), cards: [WidgetCard(
             text: "à tout à l'heure", meaning: "see you soon",
-            note: "À tout à l'heure ! On se voit ce soir.", type: "phrase", languageName: "French")], index: 0)
+            note: "À tout à l'heure ! On se voit ce soir.", type: "phrase", languageName: "French")], seed: 0)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (CardEntry) -> Void) {
@@ -23,15 +25,14 @@ struct ReadAloudProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<CardEntry>) -> Void) {
-        // Reloaded by the app on change and by the shuffle button; this is a
-        // safety refresh only.
-        let refresh = Calendar.current.date(byAdding: .hour, value: 4, to: Date())
-            ?? Date().addingTimeInterval(14400)
-        completion(Timeline(entries: [current()], policy: .after(refresh)))
+        // One entry; a fresh random card comes on each reload (shuffle tap, or
+        // when the app refreshes the deck). `.never` keeps the card steady until
+        // then rather than auto-rotating.
+        completion(Timeline(entries: [current()], policy: .never))
     }
 
     private func current() -> CardEntry {
-        CardEntry(date: Date(), cards: SharedStore.cards(), index: SharedStore.cardIndex())
+        CardEntry(date: Date(), cards: SharedStore.cards(), seed: Int.random(in: 0 ..< 1_000_000))
     }
 }
 
@@ -49,7 +50,7 @@ struct ReadAloudWidgetEntryView: View {
         guard !all.isEmpty else { return nil }
         let pool = family == .systemSmall ? all.filter { $0.type != "sentence" } : all
         let deck = pool.isEmpty ? all : pool
-        return deck[((entry.index % deck.count) + deck.count) % deck.count]
+        return deck[abs(entry.seed) % deck.count]
     }
 
     var body: some View {

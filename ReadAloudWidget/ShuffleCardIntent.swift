@@ -1,22 +1,15 @@
 import AppIntents
-import WidgetKit
 
-/// Interactive shuffle: tap the widget's shuffle button to draw another random
-/// card. Writes a new index into the App Group and reloads the widget. Runs in
-/// the widget process — no app launch (iOS 17 interactive widgets).
+/// Interactive shuffle: tapping the widget's shuffle button runs this intent,
+/// after which WidgetKit reloads **only the tapped widget's** timeline — which
+/// picks a fresh random card. It deliberately does NOT reload all timelines, so
+/// other widget instances stay independent. Runs in the widget process (no app
+/// launch); the reload does the work, so `perform` has nothing else to do.
 struct ShuffleCardIntent: AppIntent {
     static var title: LocalizedStringResource = "Shuffle card"
     static var isDiscoverable = false
 
     func perform() async throws -> some IntentResult {
-        let count = SharedStore.cards().count
-        if count > 1 {
-            let current = SharedStore.cardIndex()
-            var next = Int.random(in: 0 ..< count)
-            if next == current { next = (next + 1) % count }   // never repeat the same card
-            SharedStore.writeCardIndex(next)
-        }
-        WidgetCenter.shared.reloadAllTimelines()
-        return .result()
+        .result()
     }
 }

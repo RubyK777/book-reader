@@ -21,7 +21,6 @@ enum SharedStore {
 
     private enum Key {
         static let cards = "reviewCards"
-        static let cardIndex = "reviewCardIndex"
     }
 
     // MARK: Review cards
@@ -36,8 +35,4 @@ enum SharedStore {
               let cards = try? JSONDecoder().decode([WidgetCard].self, from: data) else { return [] }
         return cards
     }
-
-    /// Which card the widget currently shows (advanced by the shuffle button).
-    static func writeCardIndex(_ index: Int) { defaults?.set(index, forKey: Key.cardIndex) }
-    static func cardIndex() -> Int { defaults?.integer(forKey: Key.cardIndex) ?? 0 }
 }

@@ -58,14 +58,7 @@ final class AppRouter {
                 languageName: LanguageCatalog.name(for: sentence.page?.book?.languageCode ?? "en-US")))
         }
         SharedStore.writeCards(cards)
-
-        // Surface a random card each refresh (clamped when the deck shrinks).
-        if cards.isEmpty {
-            SharedStore.writeCardIndex(0)
-        } else if SharedStore.cardIndex() >= cards.count {
-            SharedStore.writeCardIndex(Int.random(in: 0..<cards.count))
-        }
-
+        // Each widget instance picks its own random card from this deck.
         WidgetCenter.shared.reloadAllTimelines()
     }
 }
