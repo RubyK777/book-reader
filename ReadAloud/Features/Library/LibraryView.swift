@@ -171,10 +171,7 @@ private struct BookCover: View {
 
   @State private var image: UIImage?
 
-  private var coverData: Data? {
-    if let cover = book.coverImageData { return cover }
-    return book.pages.min { $0.orderIndex < $1.orderIndex }?.imageData
-  }
+  private var coverData: Data? { book.coverImageData }
 
   private var hasPhoto: Bool { coverData != nil }
 

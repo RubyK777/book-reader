@@ -38,7 +38,9 @@ final class AppRouter {
             let contextLine = annotation.contextSentence == annotation.text ? nil : annotation.contextSentence
             return WidgetCard(
                 text: annotation.text,
-                meaning: nonEmpty(annotation.userNote) ?? annotation.sentence?.translatedText,
+                meaning: nonEmpty(annotation.translation)
+                    ?? nonEmpty(annotation.userNote)
+                    ?? annotation.sentence?.translatedText,
                 note: nonEmpty(annotation.userExample) ?? contextLine,
                 type: annotation.type.rawValue,
                 languageName: LanguageCatalog.name(for: annotation.languageCode))

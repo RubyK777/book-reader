@@ -26,12 +26,14 @@ struct PageIngestor {
         guard !parts.isEmpty else { throw IngestError.noTextFound }
 
         let orderIndex = (book.pages.map(\.orderIndex).max() ?? -1) + 1
-        let page = ScanPage(imageData: ImageProcessor.storageJPEG(image),
-                            rawText: text,
-                            orderIndex: orderIndex)
+        // The captured photo is not persisted — pages are just OCR fodder.
+        let page = ScanPage(rawText: text, orderIndex: orderIndex)
         page.sentences = parts.enumerated().map { Sentence(text: $1, orderIndex: $0) }
 
         if book.languageCode == nil { book.languageCode = languageCode }
+        // Keep one image per source: the first page becomes the cover unless the
+        // user already chose one.
+        if book.coverImageData == nil { book.coverImageData = ImageProcessor.coverJPEG(image) }
 
         context.insert(page)
         book.pages.append(page)

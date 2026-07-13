@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Translation
 
 /// The pivot's heart (PIVOT_PLAN §7 Phase 2, basic version): study one
 /// sentence deeply. Drill-down from a Reader sentence card. Four sections:
@@ -22,6 +23,8 @@ struct SentenceLearnView: View {
     @State private var lookupTerm: DictionaryTerm?
     @State private var isEditingAssets = false
     @State private var confirmDeleteAssets = false
+    /// Drives translate-on-save: caches each saved annotation's meaning.
+    @State private var translateConfig: TranslationSession.Configuration?
     /// Token lit karaoke-style while its tap-to-hear utterance speaks.
     @State private var speakingTokenIndex: Int?
 
@@ -63,9 +66,13 @@ struct SentenceLearnView: View {
             }
             .onAppear {
                 player.load(sentences: [sentence.text], languageCode: languageCode)
+                requestAnnotationTranslations()
             }
             .onDisappear { player.stop() }
             .task { await generateIfNeeded() }
+            .translationTask(translateConfig) { session in
+                await translateMissingAnnotations(using: session)
+            }
             .dictionaryLookup(term: $lookupTerm)
         }
     }
@@ -542,6 +549,7 @@ struct SentenceLearnView: View {
         guard savedAny else { return }
         try? modelContext.save()
         Haptics.success()
+        requestAnnotationTranslations()
     }
 
     private func save(type: AnnotationType, text: String) {
@@ -558,12 +566,50 @@ struct SentenceLearnView: View {
         try? modelContext.save()
         selectedIntent = nil
         Haptics.success()
+        requestAnnotationTranslations()
     }
 
     private func hasAnnotation(text: String) -> Bool {
         sentence.annotations.contains {
             $0.text.compare(text, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
         }
+    }
+
+    // MARK: Translate-on-save
+
+    /// Kick a translation pass for any saved annotation still missing a meaning,
+    /// so the widget/review have it right away. Nil-then-set so the task re-fires
+    /// on repeat saves; skipped when the source is already the native language.
+    private func requestAnnotationTranslations() {
+        let sourceBase = String(languageCode.prefix(2)).lowercased()
+        let nativeBase = String(nativeLanguage.prefix(2)).lowercased()
+        guard sourceBase != nativeBase,
+              sentence.annotations.contains(where: { $0.translation == nil }) else { return }
+        translateConfig = nil
+        Task { @MainActor in
+            translateConfig = TranslationSession.Configuration(
+                source: Locale.Language(identifier: languageCode),
+                target: Locale.Language(identifier: nativeLanguage))
+        }
+    }
+
+    @MainActor
+    private func translateMissingAnnotations(using session: TranslationSession) async {
+        let missing = sentence.annotations.filter { $0.translation == nil }
+        guard !missing.isEmpty else { return }
+        var byID: [String: Annotation] = [:]
+        let requests = missing.map { annotation -> TranslationSession.Request in
+            let id = "\(annotation.persistentModelID)"
+            byID[id] = annotation
+            return TranslationSession.Request(sourceText: annotation.text, clientIdentifier: id)
+        }
+        guard let responses = try? await session.translations(from: requests) else { return }
+        for response in responses {
+            if let annotation = byID[response.clientIdentifier ?? ""], !response.targetText.isEmpty {
+                annotation.translation = response.targetText
+            }
+        }
+        try? modelContext.save()
     }
 
     // MARK: Section chrome

@@ -62,11 +62,13 @@ final class Book {
     }
 }
 
-// MARK: - ScanPage (one captured photo)
+// MARK: - ScanPage (one captured page)
+//
+// The captured photo is *not* persisted — it's only used transiently for OCR.
+// Once the sentences are extracted we keep them, plus the book's cover (set from
+// the first page); the raw page images are discarded to keep storage tiny.
 @Model
 final class ScanPage {
-    @Attribute(.externalStorage)
-    var imageData: Data             // original photo, for re-reading later
     var rawText: String             // full OCR output
     var orderIndex: Int             // page order within book
     var scannedAt: Date
@@ -76,8 +78,7 @@ final class ScanPage {
     @Relationship(deleteRule: .cascade, inverse: \Sentence.page)
     var sentences: [Sentence] = []
 
-    init(imageData: Data, rawText: String, orderIndex: Int) {
-        self.imageData = imageData
+    init(rawText: String, orderIndex: Int) {
         self.rawText = rawText
         self.orderIndex = orderIndex
         self.scannedAt = .now
@@ -157,6 +158,11 @@ final class Annotation {
     var userNote: String?
     var userExample: String?
     var tags: [String] = []
+
+    /// Cached machine translation of `text` into the user's native language.
+    /// Filled opportunistically (on Review reveal) and on save; nil until then.
+    /// On-device translation is deterministic, so this is stable once written.
+    var translation: String?
 
     var isConfusing: Bool = false
     var isResolved: Bool = false

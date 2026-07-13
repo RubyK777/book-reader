@@ -111,13 +111,23 @@ struct BookDetailView: View {
 
   private func pageRow(_ page: ScanPage) -> some View {
     HStack(spacing: DesignSystem.Spacing.md) {
-      CoverThumbnail(data: page.imageData, placeholder: "doc.text.image")
+      Image(systemName: "doc.text")
+        .font(.title2)
+        .foregroundStyle(.secondary)
+        .frame(width: DesignSystem.minTapTarget)
       VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
         Text("Page \(pageNumber(page)) · \(page.sentences.count) sentence\(page.sentences.count == 1 ? "" : "s")")
           .font(.body)
-        Text(page.scannedAt, format: .dateTime.month().day())
-          .font(.footnote)
-          .foregroundStyle(.secondary)
+        if let first = page.sentences.min(by: { $0.orderIndex < $1.orderIndex }) {
+          Text(first.text)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        } else {
+          Text(page.scannedAt, format: .dateTime.month().day())
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
       }
       Spacer()
       Image(systemName: "chevron.right")

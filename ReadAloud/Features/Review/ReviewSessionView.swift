@@ -471,6 +471,11 @@ struct ReviewSessionView: View {
     private func translateCurrent(using session: TranslationSession) async {
         guard let item = current else { return }
         meaning = await TranslationResolver.resolve(session, text: item.promptText)
+        // Opportunistic cache: keep the translation the app just computed.
+        if case let .ready(text) = meaning {
+            item.cacheTranslation(text)
+            try? modelContext.save()
+        }
     }
 
     private func submit(_ grade: ReviewGrade, _ item: ReviewItem) {

@@ -65,7 +65,19 @@ enum ReviewItem: Identifiable {
     case let .sentence(s): s.translatedText
     case .word: nil
     case let .annotation(a):
-      a.type == .sentence ? a.sentence?.translatedText : nil
+      a.translation ?? (a.type == .sentence ? a.sentence?.translatedText : nil)
+    }
+  }
+
+  /// Persist a freshly-computed translation back onto the item so it isn't
+  /// recomputed and the widget can show it (opportunistic cache). Only
+  /// annotations carry a dedicated field; sentences reuse `translatedText`.
+  func cacheTranslation(_ text: String) {
+    guard !text.isEmpty else { return }
+    switch self {
+    case let .annotation(a): if a.translation == nil { a.translation = text }
+    case let .sentence(s): if s.translatedText == nil { s.translatedText = text }
+    case .word: break
     }
   }
 

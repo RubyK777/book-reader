@@ -498,3 +498,21 @@ entries stand as history).*
     meaning; **medium/large** add the note/context. Empty state prompts saving. Meaning is best-effort from
     already-stored fields (no background translation — the framework is UI-bound); cards without a stored
     meaning still show their context.
+
+## 2026-07-12 — Fresh-start schema: drop page photos, cache translations
+
+54. **Page photos are no longer stored; translations are cached on the annotation.** Two schema changes,
+    taken as a clean reset (no prod users — wipe + reinstall rather than a staged migration, per Ruby).
+    **(a) Drop `ScanPage.imageData`** — captured photos are transient OCR fodder; once sentences are
+    extracted only the **book cover** is kept (set from the first ingested page in `PageIngestor` unless the
+    user chose one). Slashes storage (page JPEGs were ~200-500 KB each; one cover per book now). `BookCover`
+    drops its page-image fallback; `BookDetailView`'s page row shows a doc glyph + first-sentence preview
+    instead of a photo thumbnail; `ImageProcessor.storageJPEG` deleted. **(b) Add `Annotation.translation`**
+    — a cached machine translation of the meaning. Filled **opportunistically** (Review reveal now persists
+    what it already computed via `ReviewItem.cacheTranslation`) and by **translate-on-save**
+    (`SentenceLearnView` batch-translates freshly-saved annotations via a `.translationTask`, nil-then-set to
+    re-fire per save). The widget's meaning prefers `translation ?? userNote ?? sentence.translatedText`.
+    On-device translation is deterministic, so a card's meaning is stable once written. Both live in schema
+    **V4** (redefined in place); frozen V1-V3 snapshots are untouched and MigrationTests still pass (dropping
+    a property + adding an optional are lightweight). Incompatible old stores are handled by wiping
+    (uninstall/reinstall), not a migration stage.

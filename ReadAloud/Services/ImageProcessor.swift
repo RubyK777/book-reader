@@ -1,14 +1,9 @@
 import UIKit
 
 /// Downscales captured photos before persisting them (keeps the store small).
+/// Only the book cover is stored now — page photos are transient OCR fodder.
 enum ImageProcessor {
-    /// Page image for `ScanPage.imageData`: longest side ≤ maxDimension, JPEG at `quality`.
-    static func storageJPEG(_ image: UIImage, maxDimension: CGFloat = 2048, quality: CGFloat = 0.7) -> Data {
-        let scaled = downscale(image, maxDimension: maxDimension)
-        return scaled.jpegData(compressionQuality: quality) ?? Data()
-    }
-
-    /// Smaller image for `Book.coverImageData` (thumbnail-grade).
+    /// Small image for `Book.coverImageData` (thumbnail-grade).
     static func coverJPEG(_ image: UIImage) -> Data {
         let scaled = downscale(image, maxDimension: 1024)
         return scaled.jpegData(compressionQuality: 0.7) ?? Data()
