@@ -686,3 +686,16 @@ entries stand as history).*
     and `swift test` on macOS — can use it. **SM-2 stayed in the app** (deliberately): the algorithm lives on
     `SRSState`, a SwiftData-embedded schema type, so it can't move without decoupling it from the model — a
     larger change deferred. Build + both test suites green.
+
+## 2026-07-13 — SM-2 scheduler extracted to LearningKit
+
+69. **SM-2 scheduling math moved to `LearningKit.SM2Scheduler` (completes the deferral in #68).** The pure part
+    of `SRSState.review(quality:)` — the repetitions/ease/interval update — now lives in a new
+    `SM2Scheduler.review(_:quality:) -> Card` in the package: a value type + a static, deterministic function
+    with **no dates or persistence**. `SRSState` stays the SwiftData-embedded storage type (so the schema
+    fingerprint is **unchanged** — no version bump, no device reinstall); its `review` now maps its fields
+    through the scheduler and keeps only the impure `Calendar`-based due-date derivation. The seven SM-2 math
+    tests moved to `SM2SchedulerTests` in the package (now pure, plus a no-mutation test → 8), and the app keeps
+    three `SRSStateTests` covering the app-side wiring (delegation + `dueDate`). LearningKit 24→32 tests, app
+    22→18; both suites green. This resolves #68's "SM-2 stayed in the app" by decoupling the *math* from the
+    *model* rather than moving the model.

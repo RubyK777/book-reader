@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import LearningKit
 
 // MARK: - SourceKind (what kind of real-world source a Book container holds)
 
@@ -280,21 +281,18 @@ struct SRSState: Codable {
     var intervalDays: Int = 0
     var dueDate: Date = .now
 
-    // quality: 0 (fail) ... 5 (perfect)
+    /// quality: 0 (fail) ... 5 (perfect). The SM-2 scheduling math lives in
+    /// `LearningKit.SM2Scheduler` (pure + unit-tested); this maps the embedded
+    /// fields through it and derives the due date from the new interval.
     mutating func review(quality: Int) {
-        if quality < 3 {
-            repetitions = 0
-            intervalDays = 1
-        } else {
-            switch repetitions {
-            case 0: intervalDays = 1
-            case 1: intervalDays = 6
-            default: intervalDays = Int(Double(intervalDays) * easeFactor)
-            }
-            repetitions += 1
-        }
-        easeFactor = max(1.3, easeFactor + 0.1
-            - Double(5 - quality) * (0.08 + Double(5 - quality) * 0.02))
+        let next = SM2Scheduler.review(
+            .init(repetitions: repetitions,
+                  easeFactor: easeFactor,
+                  intervalDays: intervalDays),
+            quality: quality)
+        repetitions = next.repetitions
+        easeFactor = next.easeFactor
+        intervalDays = next.intervalDays
         dueDate = Calendar.current.date(byAdding: .day,
                                         value: intervalDays, to: .now) ?? .now
     }
