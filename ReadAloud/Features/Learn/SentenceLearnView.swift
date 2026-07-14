@@ -199,7 +199,14 @@ struct SentenceLearnView: View {
     private var understandSection: some View {
         sectionCard("Understand", systemImage: "lightbulb") {
             if let assets {
-                understandContent(assets)
+                UnderstandContentView(
+                    assets: assets,
+                    isSaved: { hasAnnotation(text: $0) },
+                    onSpeak: { player.speakOnce($0) },
+                    onSaveVocab: { saveKeyVocab($0) },
+                    onEdit: { isEditingAssets = true },
+                    onRegenerate: { Task { await generateIfNeeded(force: true) } },
+                    onDelete: { confirmDeleteAssets = true })
             } else if isGenerating {
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     ProgressView()
@@ -250,120 +257,6 @@ struct SentenceLearnView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("You can generate a fresh one afterwards.")
-        }
-    }
-
-    @ViewBuilder
-    private func understandContent(_ assets: LearningAssets) -> some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-            if !assets.chunks.isEmpty {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    ForEach(assets.chunks, id: \.self) { chunk in
-                        Button {
-                            player.speakOnce(chunk.text)
-                        } label: {
-                            HStack(alignment: .firstTextBaseline, spacing: DesignSystem.Spacing.sm) {
-                                Image(systemName: "speaker.wave.1")
-                                    .font(.caption)
-                                    .foregroundStyle(DesignSystem.accent)
-                                Text(chunk.text)
-                                    .fontWeight(.medium)
-                                    .fontDesign(Theme.sentenceDesign)
-                                Text(chunk.gloss)
-                                    .foregroundStyle(.secondary)
-                                Spacer(minLength: 0)
-                            }
-                            .font(.callout)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(chunk.text), meaning: \(chunk.gloss). Tap to hear.")
-                    }
-                }
-            }
-
-            if !assets.keyVocab.isEmpty {
-                Divider()
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    HStack {
-                        Text("Key vocabulary")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .textCase(.uppercase)
-                        Spacer(minLength: DesignSystem.Spacing.sm)
-                        let unsaved = assets.keyVocab.filter { !hasAnnotation(text: $0.term) }
-                        if !unsaved.isEmpty {
-                            Button {
-                                saveKeyVocab(unsaved)
-                            } label: {
-                                Label(unsaved.count == assets.keyVocab.count
-                                      ? "Save all" : "Save \(unsaved.count) more",
-                                      systemImage: "square.and.arrow.down")
-                                    .font(.caption)
-                            }
-                            .buttonStyle(.borderless)
-                        }
-                    }
-                    ForEach(assets.keyVocab, id: \.self) { item in
-                        HStack(alignment: .firstTextBaseline, spacing: DesignSystem.Spacing.sm) {
-                            Text(item.term).fontWeight(.medium).fontDesign(Theme.sentenceDesign)
-                            Text(item.meaning).foregroundStyle(.secondary)
-                            Spacer(minLength: 0)
-                            if hasAnnotation(text: item.term) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.caption)
-                                    .foregroundStyle(Theme.verdigris)
-                                    .accessibilityLabel("Saved")
-                            }
-                        }
-                        .font(.callout)
-                    }
-                }
-            }
-
-            if let grammar = assets.grammarPoint {
-                Divider()
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                    Text("Grammar point")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
-                    Text(grammar).font(.callout)
-                }
-            }
-
-            Divider()
-            HStack(spacing: DesignSystem.Spacing.md) {
-                if assets.isGenerated {
-                    // D7 provenance: generated content is always visibly marked.
-                    Label(assets.userEditedAt == nil
-                          ? "AI-generated — check anything that looks off"
-                          : "AI-generated, edited by you",
-                          systemImage: "sparkles")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-                Spacer(minLength: 0)
-                Button("Edit") { isEditingAssets = true }
-                    .font(.caption)
-                Menu {
-                    Button {
-                        Task { await generateIfNeeded(force: true) }
-                    } label: {
-                        Label("Regenerate", systemImage: "arrow.clockwise")
-                    }
-                    Button(role: .destructive) {
-                        confirmDeleteAssets = true
-                    } label: {
-                        Label("Delete Breakdown", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-                .accessibilityLabel("Breakdown options")
-            }
         }
     }
 
@@ -477,24 +370,8 @@ struct SentenceLearnView: View {
 
     private var savedItemsSection: some View {
         sectionCard("Saved from this sentence", systemImage: "bookmark") {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                ForEach(sentence.annotations.sorted { $0.savedAt < $1.savedAt }) { annotation in
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        Text(annotation.type.rawValue)
-                            .font(.caption2.weight(.semibold))
-                            .textCase(.uppercase)
-                            .foregroundStyle(DesignSystem.accent)
-                        Text(annotation.text)
-                            .font(.callout)
-                        if let intent = annotation.intent {
-                            Text(intent.displayName)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                }
-            }
+            SentenceSavedItemsList(
+                annotations: sentence.annotations.sorted { $0.savedAt < $1.savedAt })
         }
     }
 
