@@ -4,3 +4,6 @@ DerivedData/
 *.xcuserstate
 .build/
 build/
+
+# Local signing — holds your Apple Developer Team ID; must never be committed.
+Config/Local.xcconfig

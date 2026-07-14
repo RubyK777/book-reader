@@ -1,0 +1,9 @@
+// Copy this file to `Local.xcconfig` (same folder), then set your Team ID below.
+// `Local.xcconfig` is gitignored, so your team id never reaches GitHub.
+//
+// Find your Team ID:
+//   Xcode ▸ Settings ▸ Accounts ▸ (select your team) ▸ the 10-character ID, or
+//   developer.apple.com/account ▸ Membership details.
+//
+// Simulator builds don't need a team; on-device builds do.
+DEVELOPMENT_TEAM =

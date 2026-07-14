@@ -130,6 +130,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AAAA0000000000000000CF01 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Config/Signing.xcconfig"; sourceTree = SOURCE_ROOT; };
 		02C1FFB0C472AEB2F0F35E87 /* MigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationTests.swift; sourceTree = "<group>"; };
 		0A38AC87DF4921A1C15348AC /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
 		19D106D1ED697A43324C4380 /* RecordingPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPlayer.swift; sourceTree = "<group>"; };
@@ -598,11 +599,9 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					0F0BDCB94002BCE03EEBF099 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					77C66E34CAA102934E11953D = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -768,6 +767,7 @@
 /* Begin XCBuildConfiguration section */
 		2297FA1F050665F1A84B3D6D /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AAAA0000000000000000CF01 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -871,7 +871,6 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReadAloud/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "ReadAloud uses the camera to photograph book pages so it can read the text aloud.";
@@ -900,7 +899,6 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReadAloud/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "ReadAloud uses the camera to photograph book pages so it can read the text aloud.";
@@ -923,6 +921,7 @@
 		};
 		7659FE0A6046E65076E5A866 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AAAA0000000000000000CF01 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -983,7 +982,6 @@
 				CODE_SIGN_ENTITLEMENTS = ReadAloudWidget/ReadAloudWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ReadAloudWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1005,7 +1003,6 @@
 				CODE_SIGN_ENTITLEMENTS = ReadAloudWidget/ReadAloudWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ReadAloudWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
