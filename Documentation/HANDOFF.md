@@ -119,12 +119,13 @@ cd Packages/LearningKit && swift test
 
 The high-value, low-risk work is done. Remaining items and why they were deferred:
 
-- **Split `ReviewSessionView` (720 lines)** — it *is* the session state machine (many
+- **Split `ReviewSessionView` (~700 lines)** — it *is* the session state machine (many
   interdependent `@State`: speech phase, model download, translation, mastery). Extracting
   sub-sections means threading many bindings/closures; higher risk, do only if wanted.
 - **Split `SentenceLearnView` (665 lines) sections** — same coupling to parent `@State`.
-- **SM-2 → LearningKit** — the algorithm lives on `SRSState`, a SwiftData schema type, so it
-  can't move without decoupling the math from the model first (a real change, DECISIONS #68).
+
+*Done since this handoff:* **SM-2 → LearningKit** (DECISIONS #69) — the scheduler math moved to
+the pure, tested `LearningKit.SM2Scheduler`; `SRSState` stayed the storage type (no schema change).
 
 *(The old `docs/IMPROVEMENTS/` backlog was removed in the cleanup; its top picks were
 already shipped — audio-capture loop, pronunciation, say-your-answer, batch capture,
