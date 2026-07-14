@@ -119,13 +119,18 @@ cd Packages/LearningKit && swift test
 
 The high-value, low-risk work is done. Remaining items and why they were deferred:
 
-- **Split `ReviewSessionView` (~700 lines)** — it *is* the session state machine (many
-  interdependent `@State`: speech phase, model download, translation, mastery). Extracting
-  sub-sections means threading many bindings/closures; higher risk, do only if wanted.
-- **Split `SentenceLearnView` (665 lines) sections** — same coupling to parent `@State`.
+- **`ReviewSessionView` / `SentenceLearnView` — further splitting is optional.** A first pass
+  extracted the cohesive, low-coupling pieces into per-file subviews (see below), taking each from
+  ~700/665 → ~553/542 lines. The remaining bulk is each view's tightly-coupled `@State` state
+  machine (Review: recall/speech/model-download phases; Learn: the karaoke original + save flow).
+  Breaking those apart means threading many bindings — higher risk, low reward; do only if wanted.
 
-*Done since this handoff:* **SM-2 → LearningKit** (DECISIONS #69) — the scheduler math moved to
-the pure, tested `LearningKit.SM2Scheduler`; `SRSState` stayed the storage type (no schema change).
+*Done since this handoff:*
+- **SM-2 → LearningKit** (DECISIONS #69) — the scheduler math moved to the pure, tested
+  `LearningKit.SM2Scheduler`; `SRSState` stayed the storage type (no schema change).
+- **View splits (first pass)** — `ReviewSessionView` → `MasteryBanner`, `ReviewGradeButtons`,
+  `ReviewSummaryView`; `SentenceLearnView` → `UnderstandContentView`, `SentenceSavedItemsList`.
+  Verbatim, behavior-preserving; state stays in the parent and is passed in as values/closures.
 
 *(The old `docs/IMPROVEMENTS/` backlog was removed in the cleanup; its top picks were
 already shipped — audio-capture loop, pronunciation, say-your-answer, batch capture,
