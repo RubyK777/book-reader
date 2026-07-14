@@ -75,7 +75,14 @@ struct ReviewSessionView: View {
             ZStack {
                 Group {
                     if phase == .summary || current == nil {
-                        summaryView
+                        ReviewSummaryView(
+                            tally: tally,
+                            shadowableCount: shadowableItems.count,
+                            remainingDue: remainingDue,
+                            nextDueDate: remainingDue > 0 ? nil : SRSEngine.nextDue(in: modelContext)?.date,
+                            onPracticeSpeaking: { showShadowing = true },
+                            onReviewMore: { startMore() },
+                            onDone: { finish() })
                     } else if let item = current {
                         cardView(item)
                             .task(id: item.id) { await refreshModelState(item) }
@@ -110,34 +117,9 @@ struct ReviewSessionView: View {
                 ConfettiView(trigger: confettiTrigger)
             }
             .overlay(alignment: .top) {
-                if masteryShown { masteryBanner }
+                if masteryShown { MasteryBanner() }
             }
         }
-    }
-
-    /// The "taking root" moment banner — a leaf, a warm line, gone in a beat.
-    private var masteryBanner: some View {
-        HStack(spacing: DesignSystem.Spacing.sm) {
-            Image(systemName: "leaf.fill")
-                .foregroundStyle(Theme.verdigris)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Taking root")
-                    .font(.subheadline.weight(.semibold))
-                Text("You've really learned this.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.horizontal, DesignSystem.Spacing.md)
-        .padding(.vertical, DesignSystem.Spacing.sm)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().stroke(Theme.verdigris.opacity(0.35), lineWidth: 1))
-        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
-        .padding(.top, DesignSystem.Spacing.sm)
-        .transition(reduceMotion ? .opacity
-                    : .move(edge: .top).combined(with: .opacity))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Taking root. You've really learned this.")
     }
 
     // MARK: - Card
@@ -169,7 +151,7 @@ struct ReviewSessionView: View {
             if phase == .recall {
                 recallActions(item)
             } else {
-                gradeButtons(item)
+                ReviewGradeButtons(suggestedGrade: suggestedGrade) { submit($0, item) }
             }
         }
         .padding(DesignSystem.Spacing.lg)
@@ -467,134 +449,6 @@ struct ReviewSessionView: View {
                     .buttonStyle(.bordered)
                 }
             }
-        }
-    }
-
-    private func gradeButtons(_ item: ReviewItem) -> some View {
-        VStack(spacing: DesignSystem.Spacing.sm) {
-            Text("How well did you know it?")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: DesignSystem.Spacing.xs) {
-                ForEach(ReviewGrade.allCases) { grade in
-                    Button {
-                        submit(grade, item)
-                    } label: {
-                        VStack(spacing: 2) {
-                            Text(grade.label)
-                                .font(.callout.weight(.semibold))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                            Text(grade.hint)
-                                .font(.caption2)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                                .opacity(0.9)
-                        }
-                        .frame(maxWidth: .infinity, minHeight: DesignSystem.minTapTarget)
-                        .padding(.vertical, DesignSystem.Spacing.sm)
-                        .background(grade.tint.opacity(0.15),
-                                    in: RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium))
-                        .overlay(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                            .stroke(grade.tint, lineWidth: grade == suggestedGrade ? 3 : 1))
-                        .foregroundStyle(grade.tint)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(grade.label), \(grade.hint)")
-                }
-            }
-        }
-    }
-
-    // MARK: - Summary
-
-    private var summaryView: some View {
-        let total = tally.values.reduce(0, +)
-        return VStack(spacing: DesignSystem.Spacing.lg) {
-            Spacer()
-
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: DesignSystem.IconSize.xl))
-                .foregroundStyle(Theme.verdigris)
-                .symbolEffect(.bounce)
-
-            VStack(spacing: DesignSystem.Spacing.xs) {
-                Text("Session complete")
-                    .font(.title2.bold())
-                Text(total == 1 ? "You reviewed 1 card" : "You reviewed \(total) cards")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(Array(ReviewGrade.allCases.enumerated()), id: \.element) { index, grade in
-                    HStack {
-                        Circle()
-                            .fill(grade.tint)
-                            .frame(width: 8, height: 8)
-                        Text(grade.label)
-                        Spacer()
-                        CountUpText(value: tally[grade] ?? 0,
-                                    delay: 0.15 * Double(index),
-                                    font: .body.monospacedDigit())
-                    }
-                }
-            }
-            .padding(DesignSystem.Spacing.md)
-            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium))
-            .padding(.horizontal, DesignSystem.Spacing.screenMargin)
-
-            Spacer()
-
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                // Ungraded shadowing practice on the session's full sentences
-                // (product design Phase 3 — never interrupts the graded flow).
-                if !shadowableItems.isEmpty {
-                    Button {
-                        showShadowing = true
-                    } label: {
-                        Label("Practice speaking (\(shadowableItems.count))",
-                              systemImage: "mic")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                }
-
-                if remainingDue > 0 {
-                    Button {
-                        startMore()
-                    } label: {
-                        Text("Review \(remainingDue) more")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                } else if let next = SRSEngine.nextDue(in: modelContext)?.date {
-                    Text("Next review \(next.relativeNamed)")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                if remainingDue > 0 {
-                    Button { finish() } label: {
-                        Text("Done").font(.headline).frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                } else {
-                    Button { finish() } label: {
-                        Text("Done").font(.headline).frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.screenMargin)
-            .padding(.bottom, DesignSystem.Spacing.lg)
         }
     }
 

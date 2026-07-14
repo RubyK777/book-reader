@@ -32,6 +32,9 @@
 		3D63CAAEA51D32EA86A7BD8B /* SemanticColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39F2F2D89C7D0D082BF9C8F2 /* SemanticColors.swift */; };
 		428F775FFD469F7BE967F07F /* AudioSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F79359DEB2BEEA2C0C8CCE /* AudioSessionCoordinator.swift */; };
 		429A765D5E28AF1C1B8E8D75 /* ReviewSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFC6FA27DFAF000FE142DA9 /* ReviewSessionView.swift */; };
+		BEEF00000000000000000001 /* MasteryBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFE00000000000000000001 /* MasteryBanner.swift */; };
+		BEEF00000000000000000002 /* ReviewGradeButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFE00000000000000000002 /* ReviewGradeButtons.swift */; };
+		BEEF00000000000000000003 /* ReviewSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFE00000000000000000003 /* ReviewSummaryView.swift */; };
 		458722027C19E105E1787019 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9BD38CB316ACEB701246F2C /* BookDetailView.swift */; };
 		47AA47B9D73824CEDC5DB364 /* ReviewCardConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F16457957DD25A5878802B30 /* ReviewCardConfiguration.swift */; };
 		47CCC908ED0B200DF13E1E3C /* VoiceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9351BF59A4835332603EC8 /* VoiceStore.swift */; };
@@ -155,6 +158,9 @@
 		3A98BECF4BA3DDD7C6CF2B7F /* ProgressCounter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressCounter.swift; sourceTree = "<group>"; };
 		3B9B826BF666401CA33E9D56 /* MicAuthorizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicAuthorizer.swift; sourceTree = "<group>"; };
 		3CFC6FA27DFAF000FE142DA9 /* ReviewSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSessionView.swift; sourceTree = "<group>"; };
+		CAFE00000000000000000001 /* MasteryBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasteryBanner.swift; sourceTree = "<group>"; };
+		CAFE00000000000000000002 /* ReviewGradeButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewGradeButtons.swift; sourceTree = "<group>"; };
+		CAFE00000000000000000003 /* ReviewSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewSummaryView.swift; sourceTree = "<group>"; };
 		41E7C1CC8B6A9EDC0BCA01EE /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		455B870BDAEAC81096C8029B /* EditSentenceSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditSentenceSheet.swift; sourceTree = "<group>"; };
 		470A81FF7ED627B6179921B1 /* ReadAloudWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReadAloudWidget.entitlements; sourceTree = "<group>"; };
@@ -349,6 +355,9 @@
 			children = (
 				9B2FB70494D3C8BD0550C5C4 /* ProgressReflectionView.swift */,
 				3CFC6FA27DFAF000FE142DA9 /* ReviewSessionView.swift */,
+				CAFE00000000000000000001 /* MasteryBanner.swift */,
+				CAFE00000000000000000002 /* ReviewGradeButtons.swift */,
+				CAFE00000000000000000003 /* ReviewSummaryView.swift */,
 				BEA9593268D61452EC45AF75 /* ReviewView.swift */,
 				1ADA921255F08DA069B07ECC /* ShadowingPracticeView.swift */,
 				E49ADB589E2CDDD87B845643 /* SpeakingPracticeView.swift */,
@@ -707,6 +716,9 @@
 				310223935EB9742FA1FCEEB3 /* RecordingPlayer.swift in Sources */,
 				AE7328E76AA525902F714096 /* ReviewReminderService.swift in Sources */,
 				429A765D5E28AF1C1B8E8D75 /* ReviewSessionView.swift in Sources */,
+				BEEF00000000000000000001 /* MasteryBanner.swift in Sources */,
+				BEEF00000000000000000002 /* ReviewGradeButtons.swift in Sources */,
+				BEEF00000000000000000003 /* ReviewSummaryView.swift in Sources */,
 				9208BA5D51517B653F2F08C7 /* ReviewView.swift in Sources */,
 				EC4E3CCE423E6092349671CF /* RootView.swift in Sources */,
 				A4C4A44471198E7F13D32198 /* SRSEngine.swift in Sources */,
